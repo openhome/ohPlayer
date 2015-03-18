@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+
+    This propdesc file contains the descriptions of Recipe Sample custom properties.
+    To register/unregister, use the PropertySchema SDK sample, or http://www.codeplex.com/prop.
+
+-->
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://schemas.microsoft.com/windows/2006/propertydescription"
+        schemaVersion="1.0">
+  <propertyDescriptionList publisher="Linn" product="LitePipeTestApp">
+    <propertyDescription name="Linn.LitePipeTestApp.UDN" formatID="{c4fb2bb5-8109-4ac2-9aa0-655b29b015fb}" propID="100">
+      <description>This property indicates the preparation difficulty of a recipe.</description>
+      <typeInfo type="String"/>
+      <labelInfo label="UDN" invitationText="Unique Device Name" />
+    </propertyDescription>
+  </propertyDescriptionList>
+</schema>

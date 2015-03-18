@@ -1,0 +1,260 @@
+#include "ExampleMediaPlayer.h"
+#include <OpenHome/Net/Private/DviStack.h>
+#include <OpenHome/Media/Utils/DriverBasic.h>
+
+#include <process.h>
+#include <propsys.h>
+#include <Shobjidl.h>
+#include <string.h>
+
+using namespace OpenHome;
+using namespace OpenHome::Av;
+using namespace OpenHome::Av::Test;
+using namespace OpenHome::Net;
+
+static ExampleMediaPlayer* emp = nullptr; /* Test media player instance. */
+
+// Register a custom property schema.
+static bool RegisterSchema(PCWSTR pszFileName)
+{
+    HRESULT hr = PSRegisterPropertySchema(pszFileName);
+    if (SUCCEEDED(hr))
+    {
+        return true;
+    }
+// Return the required property value as a string.
+    else
+    {
+        return false;
+    }
+}
+
+// Remove a custom property schema.
+static void UnregisterSchema(PCWSTR pszFileName)
+{
+    PSUnregisterPropertySchema(pszFileName);
+}
+
+// Get the property store for a specified file.
+HRESULT GetPropertyStore(PCWSTR pszFilename, GETPROPERTYSTOREFLAGS gpsFlags, IPropertyStore** ppps)
+{
+    WCHAR szExpanded[MAX_PATH];
+    HRESULT hr = ExpandEnvironmentStrings(pszFilename, szExpanded, ARRAYSIZE(szExpanded)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+    if (SUCCEEDED(hr))
+    {
+        WCHAR szAbsPath[MAX_PATH];
+        hr = _wfullpath(szAbsPath, szExpanded, ARRAYSIZE(szAbsPath)) ? S_OK : E_FAIL;
+        if (SUCCEEDED(hr))
+        {
+            hr = SHGetPropertyStoreFromParsingName(szAbsPath, NULL, gpsFlags, IID_PPV_ARGS(ppps));
+        }
+    }
+    return hr;
+}
+
+// Return the required property value as a string.
+TChar *GetPropertyString(IPropertyStore *pps, REFPROPERTYKEY key)
+{
+    TChar *retVal            = NULL;
+    PROPVARIANT propvarValue = {0};
+    HRESULT hr               = pps->GetValue(key, &propvarValue);
+
+    if (SUCCEEDED(hr))
+    {
+        const size_t bufferLen = 256;
+        PWSTR pszStringValue   = NULL;
+
+        hr = PSFormatForDisplayAlloc(key, propvarValue, PDFF_DEFAULT, &pszStringValue);
+        if (SUCCEEDED(hr))
+        {
+            size_t theSize;
+
+            // Allocate a buffer to hold the property.
+            retVal = (TChar *)malloc(bufferLen);
+
+            if (retVal != NULL)
+            {
+                if (wcstombs_s(&theSize, retVal, bufferLen, pszStringValue, bufferLen-1) != 0)
+                {
+                    free(retVal);
+                    retVal = NULL;
+                }
+            }
+
+            CoTaskMemFree(pszStringValue);
+        }
+
+        PropVariantClear(&propvarValue);
+
+        return retVal;
+    }
+
+    return NULL;
+}
+
+TChar *GetPropertyValue(PCWSTR pszFilename, PCWSTR pszCanonicalName)
+{
+    TChar *retVal = NULL;
+
+    // Convert the Canonical name of the property to PROPERTYKEY
+    PROPERTYKEY key;
+    HRESULT hr = PSGetPropertyKeyFromName(pszCanonicalName, &key);
+
+    if (SUCCEEDED(hr))
+    {
+        IPropertyStore* pps = NULL;
+
+        // Call the helper to get the property store for the initialized item
+        hr = GetPropertyStore(pszFilename, GPS_DEFAULT, &pps);
+        if (SUCCEEDED(hr))
+        {
+            retVal = GetPropertyString(pps, key);
+            pps->Release();
+
+            return retVal;
+        }
+    }
+
+    return NULL;
+}
+
+void InitAndRunMediaPlayer(void * /*args*/)
+{
+    /* Pipeline configuration. */
+    TChar *aRoom     = "AldoTestRoom";
+    TChar *aUdn      = NULL;
+    TChar *aName     = "";
+
+    const TChar* cookie ="ExampleMediaPlayer";
+
+    Library            *lib     = nullptr;
+    NetworkAdapter     *adapter = nullptr;
+    Net::DvStack       *dvStack = nullptr;
+    Media::DriverBasic *driver  = nullptr;
+    Bwh udn;
+
+    // Read persistrent configration from the application property store,
+
+    // Intialise COM
+    HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED | COINIT_DISABLE_OLE1DDE);
+    if (SUCCEEDED(hr))
+    {
+        // Register the custom property schema used for persistent data purposes.
+        if (RegisterSchema(L"LitePipeTestApp.propdesc"))
+        {
+            // Read configuration.
+            aUdn = GetPropertyValue(L"Config.docx", L"Linn.LitePipeTestApp.UDN");
+
+            // Unregister schema
+            UnregisterSchema(L"LitePipeTestApp.propdesc");
+        }
+
+        // Close COM
+        CoUninitialize();
+    }
+
+    // Allocate a dummy UDN if none populated from teh property store
+    if (aUdn == NULL)
+    {
+        aUdn = _strdup("AldoDevice");
+    }
+
+    // Create lib.
+    lib  = ExampleMediaPlayerInit::CreateLibrary();
+    if (lib == nullptr)
+    {
+        return;
+    }
+
+    adapter = lib->CurrentSubnetAdapter(cookie);
+    if (adapter == nullptr)
+    {
+        goto cleanup;
+    }
+
+    dvStack = lib->StartDv();
+    if (dvStack == nullptr)
+    {
+        goto cleanup;
+    }
+
+    adapter->RemoveRef(cookie);
+
+    // Create ExampleMediaPlayer.
+    driver = new Media::DriverBasic(dvStack->Env());
+    if (driver == nullptr)
+    {
+        goto cleanup;
+    }
+
+    emp = new ExampleMediaPlayer(*dvStack, Brn(aUdn), aRoom, aName,
+                                  Brx::Empty()/*aUserAgent*/,
+                                 *driver);
+
+    driver->SetPipeline(emp->Pipeline());
+
+    /* Run the media player. (Blocking) */
+    emp->RunWithSemaphore();
+
+cleanup:
+    /* Tidy up on exit. */
+
+    free(aUdn);
+
+    if (driver != nullptr)
+    {
+        delete driver;
+    }
+
+    if (dvStack == nullptr)
+    {
+        /* Freeing dvStack causes compiler error. Maybe one to mention to
+         * the customer. */
+        //delete dvStack;
+    }
+
+    if (emp != nullptr)
+    {
+        delete emp;
+    }
+
+    if (lib != nullptr)
+    {
+        delete lib;
+    }
+
+    // Explicitly terminate this thread.
+    _endthread();
+}
+
+void ExitMediaPlayer()
+{
+    if (emp != nullptr)
+    {
+        emp->StopPipeline();
+    }
+}
+
+void PipeLinePlay()
+{
+    if (emp != nullptr)
+    {
+        emp->PlayPipeline();
+    }
+}
+
+void PipeLinePause()
+{
+    if (emp != nullptr)
+    {
+        emp->PausePipeline();
+    }
+}
+
+void PipeLineStop()
+{
+    if (emp != nullptr)
+    {
+        emp->HaltPipeline();
+    }
+}
