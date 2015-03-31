@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>8B106CF2-37E4-4FC5-B6AB-DE2BEFCA5145</string>
+	<key>IDESourceControlProjectName</key>
+	<string>sample</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>79734ABBA677EC9675B2AB7A0DE9E5851283EA2B</key>
+		<string>https://github.com/openhome/LitePipeSampleApps.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>osx/sample.xcodeproj</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>79734ABBA677EC9675B2AB7A0DE9E5851283EA2B</key>
+		<string>../../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://github.com/openhome/LitePipeSampleApps.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>79734ABBA677EC9675B2AB7A0DE9E5851283EA2B</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>79734ABBA677EC9675B2AB7A0DE9E5851283EA2B</string>
+			<key>IDESourceControlWCCName</key>
+			<string>LitePipeSampleApps</string>
+		</dict>
+	</array>
+</dict>
+</plist>
