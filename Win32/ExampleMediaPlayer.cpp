@@ -9,12 +9,12 @@
 #include <OpenHome/Media/Pipeline/Pipeline.h>
 #include <OpenHome/Private/Printer.h>
 
+#include <Windows.h>
 #include "ExampleMediaPlayer.h"
 #include "RamStore.h"
 
 using namespace OpenHome;
 using namespace OpenHome::Av;
-using namespace OpenHome::Av::Test;
 using namespace OpenHome::Configuration;
 using namespace OpenHome::Media;
 using namespace OpenHome::Net;
@@ -112,6 +112,7 @@ void ExampleMediaPlayer::StopPipeline()
         waitCount--;
     }
     iMediaPlayer->Quit();
+
     iSemShutdown.Signal();
 }
 
@@ -228,13 +229,18 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
                                                   kSongcastSenderIconFileName));
 }
 
-void ExampleMediaPlayer::WriteResource(const Brx& aUriTail, TIpAddress /*aInterface*/, std::vector<char*>& /*aLanguageList*/, IResourceWriter& aResourceWriter)
+void ExampleMediaPlayer::WriteResource(const Brx& aUriTail,
+                                       TIpAddress /*aInterface*/,
+                                       std::vector<char*>& /*aLanguageList*/,
+                                       IResourceWriter& aResourceWriter)
 {
-        if (aUriTail == kSongcastSenderIconFileName) {
-                    aResourceWriter.WriteResourceBegin(sizeof(kIconDriverSongcastSender), kIconDriverSongcastSenderMimeType);
-                            aResourceWriter.WriteResource(kIconDriverSongcastSender, sizeof(kIconDriverSongcastSender));
-                                    aResourceWriter.WriteResourceEnd();
-                                        }
+    if (aUriTail == kSongcastSenderIconFileName) {
+        aResourceWriter.WriteResourceBegin(sizeof(kIconDriverSongcastSender),
+                                           kIconDriverSongcastSenderMimeType);
+        aResourceWriter.WriteResource(kIconDriverSongcastSender,
+                                      sizeof(kIconDriverSongcastSender));
+        aResourceWriter.WriteResourceEnd();
+    }
 }
 
 TUint ExampleMediaPlayer::Hash(const Brx& aBuf)

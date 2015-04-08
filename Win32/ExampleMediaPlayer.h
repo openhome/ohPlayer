@@ -1,5 +1,5 @@
-#ifndef HEADER_TESTMEDIAPLAYER
-#define HEADER_TESTMEDIAPLAYER
+#ifndef HEADER_EXAMPLEMEDIAPLAYER
+#define HEADER_EXAMPLEMEDIAPLAYER
 
 #include <OpenHome/Av/MediaPlayer.h>
 #include <OpenHome/Av/Utils/DriverSongcastSender.h>
@@ -22,7 +22,6 @@ namespace Configuration {
 }
 namespace Av {
     class RamStore;
-namespace Test {
 
 class ExampleMediaPlayer : private Net::IResourceManager,
                            private Media::IPipelineObserver
@@ -80,8 +79,7 @@ public:
     static OpenHome::Net::Library* CreateLibrary();
 };
 
-} // namespace Test
 } // namespace Av
 } // namespace OpenHome
 
-#endif // HEADER_TESTMEDIAPLAYER
+#endif // HEADER_EXAMPLEMEDIAPLAYER

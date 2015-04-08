@@ -1,6 +1,7 @@
 #include "ExampleMediaPlayer.h"
+#include "AudioDriver.h"
 #include <OpenHome/Net/Private/DviStack.h>
-#include <OpenHome/Media/Utils/DriverBasic.h>
+#include <OpenHome/Private/Printer.h>
 
 #include <process.h>
 #include <propsys.h>
@@ -9,7 +10,7 @@
 
 using namespace OpenHome;
 using namespace OpenHome::Av;
-using namespace OpenHome::Av::Test;
+using namespace OpenHome::Media;
 using namespace OpenHome::Net;
 
 static ExampleMediaPlayer* emp = nullptr; /* Test media player instance. */
@@ -22,7 +23,6 @@ static bool RegisterSchema(PCWSTR pszFileName)
     {
         return true;
     }
-// Return the required property value as a string.
     else
     {
         return false;
@@ -36,19 +36,31 @@ static void UnregisterSchema(PCWSTR pszFileName)
 }
 
 // Get the property store for a specified file.
-HRESULT GetPropertyStore(PCWSTR pszFilename, GETPROPERTYSTOREFLAGS gpsFlags, IPropertyStore** ppps)
+HRESULT GetPropertyStore(PCWSTR pszFilename,
+                         GETPROPERTYSTOREFLAGS gpsFlags,
+                         IPropertyStore** ppps)
 {
     WCHAR szExpanded[MAX_PATH];
-    HRESULT hr = ExpandEnvironmentStrings(pszFilename, szExpanded, ARRAYSIZE(szExpanded)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+    HRESULT hr = ExpandEnvironmentStrings(pszFilename,
+                                          szExpanded,
+                                          ARRAYSIZE(szExpanded)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+
     if (SUCCEEDED(hr))
     {
         WCHAR szAbsPath[MAX_PATH];
-        hr = _wfullpath(szAbsPath, szExpanded, ARRAYSIZE(szAbsPath)) ? S_OK : E_FAIL;
+        hr = _wfullpath(szAbsPath,
+                        szExpanded,
+                        ARRAYSIZE(szAbsPath)) ? S_OK : E_FAIL;
+
         if (SUCCEEDED(hr))
         {
-            hr = SHGetPropertyStoreFromParsingName(szAbsPath, NULL, gpsFlags, IID_PPV_ARGS(ppps));
+            hr = SHGetPropertyStoreFromParsingName(szAbsPath,
+                                                   NULL,
+                                                   gpsFlags,
+                                                   IID_PPV_ARGS(ppps));
         }
     }
+
     return hr;
 }
 
@@ -64,7 +76,11 @@ TChar *GetPropertyString(IPropertyStore *pps, REFPROPERTYKEY key)
         const size_t bufferLen = 256;
         PWSTR pszStringValue   = NULL;
 
-        hr = PSFormatForDisplayAlloc(key, propvarValue, PDFF_DEFAULT, &pszStringValue);
+        hr = PSFormatForDisplayAlloc(key,
+                                     propvarValue,
+                                     PDFF_DEFAULT,
+                                     &pszStringValue);
+
         if (SUCCEEDED(hr))
         {
             size_t theSize;
@@ -74,7 +90,11 @@ TChar *GetPropertyString(IPropertyStore *pps, REFPROPERTYKEY key)
 
             if (retVal != NULL)
             {
-                if (wcstombs_s(&theSize, retVal, bufferLen, pszStringValue, bufferLen-1) != 0)
+                if (wcstombs_s(&theSize,
+                               retVal,
+                               bufferLen,
+                               pszStringValue,
+                               bufferLen-1) != 0)
                 {
                     free(retVal);
                     retVal = NULL;
@@ -118,10 +138,10 @@ TChar *GetPropertyValue(PCWSTR pszFilename, PCWSTR pszCanonicalName)
     return NULL;
 }
 
-void InitAndRunMediaPlayer(void * /*args*/)
+DWORD WINAPI InitAndRunMediaPlayer( LPVOID /*lpParam*/ )
 {
     /* Pipeline configuration. */
-    TChar *aRoom     = "AldoTestRoom";
+    TChar *aRoom     = "ExampleTestRoom";
     TChar *aUdn      = NULL;
     TChar *aName     = "";
 
@@ -130,13 +150,21 @@ void InitAndRunMediaPlayer(void * /*args*/)
     Library            *lib     = nullptr;
     NetworkAdapter     *adapter = nullptr;
     Net::DvStack       *dvStack = nullptr;
-    Media::DriverBasic *driver  = nullptr;
+    AudioDriver        *driver  = nullptr;
     Bwh udn;
 
-    // Read persistrent configration from the application property store,
+    if(!SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS))
+    {
+        Log::Print("Can't up the process priority of InitAndRunMediaPlayer "
+                   "\n");
+    }
 
-    // Intialise COM
-    HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED | COINIT_DISABLE_OLE1DDE);
+    // Read persistent configuration from the application property store,
+
+    // Initialise COM
+    HRESULT hr = CoInitializeEx(NULL,
+                                COINIT_MULTITHREADED | COINIT_DISABLE_OLE1DDE);
+
     if (SUCCEEDED(hr))
     {
         // Register the custom property schema used for persistent data purposes.
@@ -153,17 +181,17 @@ void InitAndRunMediaPlayer(void * /*args*/)
         CoUninitialize();
     }
 
-    // Allocate a dummy UDN if none populated from teh property store
+    // Allocate a dummy UDN if none populated from the property store
     if (aUdn == NULL)
     {
-        aUdn = _strdup("AldoDevice");
+        aUdn = _strdup("ExampleDevice");
     }
 
     // Create lib.
     lib  = ExampleMediaPlayerInit::CreateLibrary();
     if (lib == nullptr)
     {
-        return;
+        return 1;
     }
 
     adapter = lib->CurrentSubnetAdapter(cookie);
@@ -181,7 +209,7 @@ void InitAndRunMediaPlayer(void * /*args*/)
     adapter->RemoveRef(cookie);
 
     // Create ExampleMediaPlayer.
-    driver = new Media::DriverBasic(dvStack->Env());
+    driver = new AudioDriver(dvStack->Env());
     if (driver == nullptr)
     {
         goto cleanup;
@@ -203,6 +231,7 @@ cleanup:
 
     if (driver != nullptr)
     {
+        // FIXME - Deleting this object causes shutdown on crash.
         delete driver;
     }
 
@@ -223,8 +252,7 @@ cleanup:
         delete lib;
     }
 
-    // Explicitly terminate this thread.
-    _endthread();
+    return 1;
 }
 
 void ExitMediaPlayer()

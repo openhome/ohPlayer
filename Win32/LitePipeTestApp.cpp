@@ -17,6 +17,7 @@
 HINSTANCE g_hInst            = NULL;
 HMENU     g_hSubMenu         = NULL;
 BOOL      g_updatesAvailable = false;
+HANDLE    _MplayerThread     = NULL;
 
 UINT const WMAPP_NOTIFYCALLBACK = WM_APP + 1;
 
@@ -146,11 +147,8 @@ void ShowContextMenu(HWND hwnd, POINT pt)
     HMENU hMenu = LoadMenu(g_hInst, MAKEINTRESOURCE(IDC_CONTEXTMENU));
     if (hMenu)
     {
-#if 0
-        HMENU hSubMenu = GetSubMenu(hMenu, 0);
-#else
         g_hSubMenu = GetSubMenu(hMenu, 0);
-#endif
+
         if (g_hSubMenu)
         {
             // Our window must be foreground before calling TrackPopupMenu
@@ -202,7 +200,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
 
             /* Register UPnP/OhMedia devices. */
-            _beginthread(&InitAndRunMediaPlayer, 0 , NULL);
+            _MplayerThread = CreateThread(NULL, 0, &InitAndRunMediaPlayer,
+                                          NULL, 0, NULL);
 
             break;
         }
@@ -250,6 +249,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                 case IDM_EXIT:
                 {
                     ExitMediaPlayer();
+
+                    WaitForSingleObject(_MplayerThread, INFINITE);
+                    CloseHandle(_MplayerThread);
+
                     DestroyWindow(hwnd);
                     break;
                 }

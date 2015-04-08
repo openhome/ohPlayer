@@ -105,6 +105,9 @@ cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/OsTypes.h $TEST_APP/Include/OpenHome
 cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Defines.h $TEST_APP/Include/OpenHome
 cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Buffer.h $TEST_APP/Include/OpenHome
 cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Exception.h $TEST_APP/Include/OpenHome
+cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Os.h $TEST_APP/Include/OpenHome
+cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/OsWrapper.h $TEST_APP/Include/OpenHome
+cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/OsWrapper.inl $TEST_APP/Include/OpenHome
 cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Private/Standard.h $TEST_APP/Include/OpenHome/Private
 cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Buffer.inl $TEST_APP/Include/OpenHome
 cp $CVS_VIEWS/LitePipe/OpenHome/Av/MediaPlayer.h $TEST_APP/Include/OpenHome/Av
