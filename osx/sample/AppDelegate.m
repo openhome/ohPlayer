@@ -30,6 +30,7 @@ SampleMediaPlayer *samplePlayer;
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
+    [samplePlayer shutdown];
 }
 
 

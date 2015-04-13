@@ -79,9 +79,13 @@ using namespace OpenHome::Net;
 
 
 - (void) shutdown {
-    delete driver;
+    mp->StopPipeline();
     delete mp;
+    mp = nil;
+    
     delete lib;
+    lib = nil;
+    
 }
 
 - (BOOL) play {
