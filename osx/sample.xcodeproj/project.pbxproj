@@ -2367,9 +2367,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		EB40D91C1A9B23A20043722C /* sample */ = {
+		EB40D91C1A9B23A20043722C /* OpenHome LitePipe Sample */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EB40D9401A9B23A20043722C /* Build configuration list for PBXNativeTarget "sample" */;
+			buildConfigurationList = EB40D9401A9B23A20043722C /* Build configuration list for PBXNativeTarget "OpenHome LitePipe Sample" */;
 			buildPhases = (
 				EB40D9191A9B23A20043722C /* Sources */,
 				EB40D91A1A9B23A20043722C /* Frameworks */,
@@ -2379,7 +2379,7 @@
 			);
 			dependencies = (
 			);
-			name = sample;
+			name = "OpenHome LitePipe Sample";
 			productName = sample;
 			productReference = EB40D91D1A9B23A20043722C /* sample.app */;
 			productType = "com.apple.product-type.application";
@@ -2433,7 +2433,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				EB40D91C1A9B23A20043722C /* sample */,
+				EB40D91C1A9B23A20043722C /* OpenHome LitePipe Sample */,
 				EB40D9351A9B23A20043722C /* sampleTests */,
 			);
 		};
@@ -2492,7 +2492,7 @@
 /* Begin PBXTargetDependency section */
 		EB40D9381A9B23A20043722C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = EB40D91C1A9B23A20043722C /* sample */;
+			target = EB40D91C1A9B23A20043722C /* OpenHome LitePipe Sample */;
 			targetProxy = EB40D9371A9B23A20043722C /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -2687,7 +2687,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EB40D9401A9B23A20043722C /* Build configuration list for PBXNativeTarget "sample" */ = {
+		EB40D9401A9B23A20043722C /* Build configuration list for PBXNativeTarget "OpenHome LitePipe Sample" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EB40D9411A9B23A20043722C /* Debug */,
