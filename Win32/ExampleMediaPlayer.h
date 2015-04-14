@@ -30,8 +30,7 @@ class ExampleMediaPlayer : private Net::IResourceManager,
 public:
     ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn,
                        const TChar* aRoom, const TChar* aProductName,
-                       const Brx& aUserAgent,
-                       Media::IPipelineDriver& aPipelineDriver);
+                       const Brx& aUserAgent);
     virtual ~ExampleMediaPlayer();
     void StopPipeline();
     void PlayPipeline();
@@ -54,6 +53,7 @@ private:
     void Disabled();
 protected:
     MediaPlayer* iMediaPlayer;
+    Media::PipelineInitParams* iInitParams;
     Net::DvDeviceStandard* iDevice;
     Net::DvDevice* iDeviceUpnpAv;
     RamStore* iRamStore;

@@ -16,78 +16,7 @@
 using namespace OpenHome;
 using namespace OpenHome::Media;
 
-DataBuffer::DataBuffer(TUint bufferSize) :
-    _Buffer(NULL),
-    _Datap(NULL)
-{
-    _Buffer = new TByte[bufferSize];
-
-    if (_Buffer != NULL)
-    {
-        _Datap = _Buffer;
-        _BufferLength = bufferSize;
-    }
-}
-
-DataBuffer::~DataBuffer()
-{
-    delete(_Buffer);
-    _Buffer = NULL;
-    _Datap  = NULL;
-}
-
-TByte *DataBuffer::GetBufferPtr()
-{
-    return _Datap;
-}
-
-TUint DataBuffer::GetBufferLength()
-{
-    return _BufferLength;
-}
-
-bool DataBuffer::ConsumeBufferData(TUint bytes)
-{
-    // Sanity check.
-    if (bytes > _BufferLength)
-    {
-        return false;
-    }
-
-    _Datap        += bytes;
-    _BufferLength -= bytes;
-
-    return true;
-}
-
-TUint DataBuffer::CopyToBuffer(const TByte *srcBuffer, TUint size)
-{
-    TUint amount = size;
-
-    if (_BufferLength < size)
-    {
-        amount = _BufferLength;
-    }
-
-    TByte *ptr  = (TByte *)(srcBuffer + 0);
-    TByte *ptr1 = (TByte *)_Datap;
-    TByte *endp = _Buffer + amount;
-
-    ASSERT(amount % 2 == 0);
-
-    // Little endian byte order required by native audio.
-    while (ptr1 < endp)
-    {
-        *ptr1++ = *(ptr+1);
-        *ptr1++ = *(ptr);
-        ptr +=2;
-    }
-
-    // Return amount copied
-    return amount;
-}
-
-AudioDriver::AudioDriver(Environment& aEnv) :
+AudioDriver::AudioDriver(Environment& /*aEnv*/, IPipeline& aPipeline) :
     _AudioEndpoint(NULL),
     _AudioClient(NULL),
     _RenderClient(NULL),
@@ -95,24 +24,20 @@ AudioDriver::AudioDriver(Environment& aEnv) :
     _MixFormat(NULL),
     _AudioSamplesReadyEvent(NULL),
     _StreamSwitchEvent(NULL),
-    _StreamSwitchCompleteEvent(NULL),
     _ShutdownEvent(NULL),
-    _RenderThread(NULL),
-    _EngineLatencyInMS(1000),
+    _EngineLatencyInMS(100),
     _BufferSize(0),
-    _RenderBufferSize(0),
-    _CachedDataBuffer(NULL),
     _AudioEngineInitialised(false),
+    _RenderBytesThisPeriod(0),
+    _RenderBytesRemaining(0),
 
     Thread("PipelineAnimator", kPrioritySystemHighest),
-    iPipeline(NULL),
-    iSem("DRVB", 0),
-    iOsCtx(aEnv.OsCtx()),
+    iPipeline(aPipeline),
     iPlayable(NULL),
-    iPullLock("DBPL"),
-    iPullValue(kClockPullDefault),
     iQuit(false)
 {
+    iPipeline.SetAnimator(*this);
+    Start();
 }
 
 AudioDriver::~AudioDriver()
@@ -120,19 +45,10 @@ AudioDriver::~AudioDriver()
     Join();
 }
 
-void AudioDriver::SetPipeline(IPipelineElementUpstream& aPipeline)
-{
-    iPipeline = &aPipeline;
-    Start();
-}
-
 Msg* AudioDriver::ProcessMsg(MsgMode* aMsg)
 {
     Log::Print("Pipeline Mode Msg\n");
 
-    iPullLock.Wait();
-    iPullValue = kClockPullDefault;
-    iPullLock.Signal();
     aMsg->RemoveRef();
     return NULL;
 }
@@ -197,16 +113,19 @@ Msg* AudioDriver::ProcessMsg(MsgSilence* /*aMsg*/)
     return NULL;
 }
 
-void AudioDriver::PullClock(TInt32 aValue)
-{
-    AutoMutex _(iPullLock);
-    iPullValue += aValue;
-    Log::Print("AudioDriver::PullClock now at %u%%\n", iPullValue / (1<<29));
-}
-
 TUint AudioDriver::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/,
                                               TUint /*aSampleRateTo*/)
 {
+    TUint dummy = 0;
+
+    Log::Print("PipelineDriverDelayJiffies\n");
+
+    // Throw an exception here if the sample rate cannot be supported.
+    if (dummy == 1)
+    {
+        THROW(SampleRateUnsupported);
+    }
+
     return 0;
 }
 
@@ -229,13 +148,11 @@ Msg* AudioDriver::ProcessMsg(MsgDecodedStream* aMsg)
     iSampleRate  = stream.SampleRate();
     iNumChannels = stream.NumChannels();
     iBitDepth    = stream.BitDepth();
-    iJiffiesPerSample = Jiffies::JiffiesPerSample(iSampleRate);
 
     Log::Print("Audio Pipeline Stream Configuration:\n");
     Log::Print("\tSample Rate:        %6u\n", iSampleRate);
     Log::Print("\tNumber Of Channels: %6u\n", iNumChannels);
     Log::Print("\tBit Depth:          %6u\n", iBitDepth);
-    Log::Print("\tJiffies Per Sample: %6u\n", iJiffiesPerSample);
 
     // We should already have obtained the mix format from the system
     if (_MixFormat == NULL)
@@ -261,8 +178,6 @@ Msg* AudioDriver::ProcessMsg(MsgDecodedStream* aMsg)
                                                  _MixFormat,
                                                  &closestMix);
 
-    CoTaskMemFree(closestMix);
-
     if (SUCCEEDED(hr))
     {
         // Now that we know the stream format and that it is viable
@@ -272,22 +187,7 @@ Msg* AudioDriver::ProcessMsg(MsgDecodedStream* aMsg)
         // loop in Run().
         if (InitializeAudioEngine())
         {
-            // Calculate the buffer size for our queue of data read from the
-            // pipeline, to be consumed on demand to the renderer thread.
-            _RenderBufferSize = BufferSizePerPeriod() * _MixFormat->nBlockAlign;
-
-            // Create the rendering thread.
-            _RenderThread = CreateThread(NULL, 0, WASAPIRenderThread,
-                                         this, 0, NULL);
-            if (_RenderThread == NULL)
-            {
-                Log::Print("Unable to create transport thread: %x.",
-                           GetLastError());
-            }
-            else
-            {
-                _AudioEngineInitialised = true;
-            }
+            _AudioEngineInitialised = true;
         }
     }
     else
@@ -323,38 +223,43 @@ Msg* AudioDriver::ProcessMsg(MsgDecodedStream* aMsg)
                    savedMixFormat.wBitsPerSample);
     }
 
+    CoTaskMemFree(closestMix);
+
     aMsg->RemoveRef();
     return NULL;
 }
 
-// Dump the contents of a data buffer to stdout. For debug purposes only.
-void AudioDriver::DumpDataBuffer(TByte* buf, TUint length)
+void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
 {
-    TUint i;
+    BYTE *pData;
 
-    printf_s("DumpDataBuffer: %u\n\n", length);
+    iPlayable = NULL;
 
-    for (i=0; i<length; i++)
-    {
-        printf_s("%02x ", buf[i]);
-
-        if (i % 25 == 0 && i != 0)
-        {
-            printf_s("\n");
-        }
-    }
-
-    printf_s("\n\n");
-}
-
-// Queue the audio data obtained from the pipeline ready for consumption
-// by the renderer thread.
-void AudioDriver::QueueData(MsgPlayable* aMsg, TUint bytes)
-{
-    // If the native audio system failed to initialise just throw
+    // If the native audio system is not available yet. just
     // the data away.
     if (! _AudioEngineInitialised)
     {
+        return;
+    }
+
+    TUint framesToWrite = aMsg->Bytes() / _MixFormat->nBlockAlign;
+    HRESULT hr;
+
+    if (aMsg->Bytes() > _RenderBytesRemaining)
+    {
+        // We've passed enough data for this period. Hold on to the data
+        // for the next render period.
+        iPlayable = aMsg;
+        return;
+    }
+
+    hr = _RenderClient->GetBuffer(framesToWrite, &pData);
+    if (! SUCCEEDED(hr))
+    {
+        // Can't get render buffer. Hold on to the data for the next
+        // render period.
+        iPlayable = aMsg;
+        _RenderClient->ReleaseBuffer(0, 0);
         return;
     }
 
@@ -364,52 +269,32 @@ void AudioDriver::QueueData(MsgPlayable* aMsg, TUint bytes)
     aMsg->Read(pcmProcessor);
     Brn buf(pcmProcessor.Buf());
 
-    const TByte* ptr = buf.Ptr();
+    // Swap Big Endian to Little endian and write into native render buffer.
+    {
+        // Copy the pipeline data in the render buffer. converting to
+        // little endian in the process.
+        TByte *ptr  = (TByte *)(buf.Ptr() + 0);
+        TByte *ptr1 = (TByte *)pData;
+        TByte *endp = ptr1 + aMsg->Bytes();
 
-    // Create a new data buffer.
-    DataBuffer *buffer = new DataBuffer(bytes);
+        ASSERT(aMsg->Bytes() % 2 == 0);
 
-    // Copy the data into the buffer, changing the byte order to suite.
-    buffer->CopyToBuffer((const TByte *)(ptr), bytes);
-
-    // Queue buffer.
-    _RenderQueue.push(buffer);
-}
-
-void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
-{
-    iPlayable              = NULL;
-    const TUint numSamples = aMsg->Bytes() / ((iBitDepth/8) * iNumChannels);
-    TUint jiffies          = numSamples * iJiffiesPerSample;
-
-    if (jiffies > iPendingJiffies) {
-        // More data available in this message than is currently required.
-        jiffies = iPendingJiffies;
-        const TUint bytes =
-            Jiffies::BytesFromJiffies(jiffies,
-                                      iJiffiesPerSample,
-                                      iNumChannels,
-                                      (iBitDepth/8));
-
-        if (bytes == 0) {
-            iPendingJiffies = 0;
-            iPlayable = aMsg;
-            return;
+        // Little endian byte order required by native audio.
+        while (ptr1 < endp)
+        {
+            *ptr1++ = *(ptr+1);
+            *ptr1++ = *(ptr);
+            ptr +=2;
         }
 
-        // Copy 'bytes' into our new buffer and queue when full.
-        QueueData(aMsg, bytes);
+        // Release the render buffer.
+        _RenderClient->ReleaseBuffer(framesToWrite, 0);
 
-        iPlayable = aMsg->Split(bytes);
+        _RenderBytesRemaining -= aMsg->Bytes();
+
+        // Release the source buffer.
+        aMsg->RemoveRef();
     }
-    else {
-        // Deal with all data in this message.
-        QueueData(aMsg, aMsg->Bytes());
-    }
-
-    iPendingJiffies -= jiffies;
-
-    aMsg->RemoveRef();
 }
 
 Msg* AudioDriver::ProcessMsg(MsgPlayable* aMsg)
@@ -424,8 +309,7 @@ Msg* AudioDriver::ProcessMsg(MsgQuit* aMsg)
     Log::Print("Quit\n");
 
     iQuit = true;
-    iPendingJiffies = 0;
-    iNextTimerDuration = 0;
+    StopAudioEngine();
     aMsg->RemoveRef();
     return NULL;
 }
@@ -437,8 +321,6 @@ Msg* AudioDriver::ProcessMsg(MsgHalt* aMsg)
     // TBD: Not sure if anything needs done here for Audio Engine/Client
     //
     // Halt input audio processing from the pipeline.
-    iPendingJiffies = 0;
-    iNextTimerDuration = 0;
     aMsg->RemoveRef();
     return NULL;
 }
@@ -488,6 +370,8 @@ bool AudioDriver::InitializeAudioEngine()
 {
     HRESULT hr;
 
+    Log::Print("Initializing Audio Engine\n");
+
     hr = _AudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED,
                                   AUDCLNT_STREAMFLAGS_EVENTCALLBACK |
                                   AUDCLNT_STREAMFLAGS_NOPERSIST,
@@ -511,6 +395,12 @@ bool AudioDriver::InitializeAudioEngine()
         Log::Print("Unable to get audio client buffer: %x. \n", hr);
         return false;
     }
+
+    //
+    // Setup the maximum amout of data to buffer prior to starting the
+    // audio client, to avoid glitches on startup.
+    _RenderBytesThisPeriod = _BufferSize * _MixFormat->nBlockAlign;
+    _RenderBytesRemaining  = _RenderBytesThisPeriod;
 
     hr = _AudioClient->SetEventHandle(_AudioSamplesReadyEvent);
     if (FAILED(hr))
@@ -633,14 +523,6 @@ void AudioDriver::ShutdownAudioEngine()
 {
     Log::Print("ShutdownAudioEngine: Starting ...\n");
 
-    if (_RenderThread)
-    {
-        SetEvent(_ShutdownEvent);
-        WaitForSingleObject(_RenderThread, INFINITE);
-        CloseHandle(_RenderThread);
-        _RenderThread = NULL;
-    }
-
     if (_ShutdownEvent)
     {
         CloseHandle(_ShutdownEvent);
@@ -696,303 +578,7 @@ void AudioDriver::StopAudioEngine()
         Log::Print("Unable to stop audio client: %x\n", hr);
     }
 
-    if (_RenderThread)
-    {
-        WaitForSingleObject(_RenderThread, INFINITE);
-
-        CloseHandle(_RenderThread);
-        _RenderThread = NULL;
-    }
-
-    //
-    //  Drain the buffers in the render buffer queue.
-    //
-    while (! _RenderQueue.isEmpty())
-    {
-        DataBuffer *renderBuffer = _RenderQueue.pop();
-        delete renderBuffer;
-    }
-
     Log::Print("StopAudioEngine: Complete\n");
-}
-
-//
-//  Render thread - processes samples from the audio engine
-//
-DWORD AudioDriver::WASAPIRenderThread(LPVOID Context)
-{
-    AudioDriver *renderer = static_cast<AudioDriver *>(Context);
-
-    DWORD threadPriority = GetThreadPriority(GetCurrentThread());
-    Log::Print("Audio Driver  Thread Priority [%d]\n", threadPriority);
-
-    threadPriority = GetPriorityClass(GetCurrentProcess());
-    Log::Print("Run Thread Class [%x]\n", threadPriority);
-
-    return renderer->DoRenderThread();
-}
-
-DWORD AudioDriver::DoRenderThread()
-{
-    bool stillPlaying    = true;
-    bool DisableMMCSS    = false;
-    HANDLE waitArray[3]  = {_ShutdownEvent,
-                            _StreamSwitchEvent,
-                            _AudioSamplesReadyEvent};
-    HANDLE mmcssHandle   = NULL;
-    DWORD  mmcssTaskIndex = 0;
-    BYTE  *pData;
-
-    HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-    if (FAILED(hr))
-    {
-        Log::Print("Unable to initialize COM in render thread: %x\n", hr);
-        return hr;
-    }
-
-    if (!DisableMMCSS)
-    {
-        mmcssHandle = AvSetMmThreadCharacteristics(L"Audio", &mmcssTaskIndex);
-        if (mmcssHandle == NULL)
-        {
-            Log::Print("Unable to enable MMCSS on render thread: %d\n",
-                       GetLastError());
-        }
-    }
-
-    // Pre-populate the render buffer prior to starting the audio client
-    // to avoid initial glitches.
-    {
-        hr = _RenderClient->GetBuffer(_BufferSize, &pData);
-        if (SUCCEEDED(hr))
-        {
-            UINT32      framesToWrite = 0;
-            UINT32      bufferFrames  = 0;
-            UINT32      offset        = 0;
-            DataBuffer *renderBuffer;
-
-            if (_CachedDataBuffer != NULL)
-            {
-                renderBuffer = _CachedDataBuffer;
-                _CachedDataBuffer = NULL;
-            }
-            else
-            {
-                renderBuffer = _RenderQueue.pop();
-            }
-
-            bufferFrames = renderBuffer->GetBufferLength() /
-                           _MixFormat->nBlockAlign;
-
-            while (framesToWrite + bufferFrames <= _BufferSize)
-            {
-                //
-                //  Copy data from the render buffer to the output
-                //  buffer and bump our render pointer.
-                //
-                CopyMemory(pData + offset, renderBuffer->GetBufferPtr(),
-                           renderBuffer->GetBufferLength());
-
-                framesToWrite += bufferFrames;
-                offset += renderBuffer->GetBufferLength();
-
-                delete renderBuffer;
-                renderBuffer = NULL;
-
-                //
-                // Check for empty queue to avoid the potential for the
-                // pop operation to block.
-                if (_RenderQueue.isEmpty())
-                {
-                    break;
-                }
-
-                renderBuffer = _RenderQueue.pop();
-
-                bufferFrames = renderBuffer->GetBufferLength() /
-                               _MixFormat->nBlockAlign;
-            }
-
-            _CachedDataBuffer = renderBuffer;
-
-            hr = _RenderClient->ReleaseBuffer(framesToWrite, 0);
-            if (!SUCCEEDED(hr))
-            {
-                Log::Print("Unable to release buffer: %x\n", hr);
-                stillPlaying = false;
-            }
-
-            Log::Print("Audio Client - Pre-Loaded Frames %d\n", framesToWrite);
-        }
-        else
-        {
-            Log::Print("Unable to obtain buffer: %x\n", hr);
-            stillPlaying = false;
-        }
-    }
-
-    // Start the Audio client
-    hr = _AudioClient->Start();
-    if (FAILED(hr))
-    {
-        Log::Print("Unable to start render client: %x.\n", hr);
-        stillPlaying = false;
-    }
-
-    while (stillPlaying)
-    {
-        DWORD waitResult =
-            WaitForMultipleObjects(3, waitArray, FALSE, INFINITE);
-
-        switch (waitResult)
-        {
-        case WAIT_OBJECT_0 + 0:     // _ShutdownEvent
-            stillPlaying = false;       // We're done, exit the loop.
-            break;
-        case WAIT_OBJECT_0 + 1:     // _StreamSwitchEvent
-            // FIXME - Not supported.
-            break;
-        case WAIT_OBJECT_0 + 2:     // _AudioSamplesReadyEvent
-            //
-            //  We need to provide the next buffer of samples to the
-            //  audio renderer.
-            //
-            BYTE    *pData;
-            UINT32   padding;
-            UINT32   framesAvailable;
-            HRESULT  hr;
-
-            //
-            //  We want to find out how much of the buffer *isn't* available
-            //  (is padding).
-            //
-            hr = _AudioClient->GetCurrentPadding(&padding);
-            if (SUCCEEDED(hr))
-            {
-                //
-                //  Calculate the number of frames available.  We'll render
-                //  that many frames or the number of frames left in the buffer,
-                //  whichever is smaller.
-                //
-                framesAvailable = _BufferSize - padding;
-
-                // No data to write.
-                if (_RenderQueue.isEmpty() && _CachedDataBuffer == NULL)
-                {
-                    Log::Print("_AudioSamplesReadyEvent: Yikes No Data\n");
-                    break;
-                }
-
-                // Get the maximum buffer available and write as much
-                // as we can into it.
-                hr = _RenderClient->GetBuffer(framesAvailable, &pData);
-                if (SUCCEEDED(hr))
-                {
-                    UINT32      framesToWrite = 0;
-                    UINT32      bufferFrames  = 0;
-                    UINT32      offset        = 0;
-                    DataBuffer *renderBuffer  = NULL;
-
-                    if (_CachedDataBuffer != NULL)
-                    {
-                        renderBuffer = _CachedDataBuffer;
-                        _CachedDataBuffer = NULL;
-                    }
-                    else
-                    {
-                        renderBuffer = _RenderQueue.pop();
-                    }
-
-                    bufferFrames = renderBuffer->GetBufferLength() /
-                                   _MixFormat->nBlockAlign;
-
-                    while (framesToWrite + bufferFrames <= framesAvailable)
-                    {
-                        //
-                        //  Copy data from the render buffer to the output
-                        //  buffer and bump our render pointer.
-                        //
-                        CopyMemory(pData + offset, renderBuffer->GetBufferPtr(),
-                                   renderBuffer->GetBufferLength());
-
-                        framesToWrite += bufferFrames;
-                        offset        += renderBuffer->GetBufferLength();
-
-                        delete renderBuffer;
-                        renderBuffer = NULL;
-
-                        if (_RenderQueue.isEmpty())
-                        {
-                            break;
-                        }
-
-                        renderBuffer = _RenderQueue.pop();
-
-                        bufferFrames = renderBuffer->GetBufferLength() /
-                                       _MixFormat->nBlockAlign;
-                    }
-
-                    _CachedDataBuffer = renderBuffer;
-
-                    // Split queued buffer is not enough room in render buffer.
-                    if (_CachedDataBuffer != NULL)
-                    {
-                        if (framesToWrite + bufferFrames > framesAvailable)
-                        {
-                            TUint bytes = (framesAvailable - framesToWrite) *
-                                          _MixFormat->nBlockAlign;
-
-                            CopyMemory(pData + offset,
-                                       _CachedDataBuffer->GetBufferPtr(),
-                                       bytes);
-
-                            framesToWrite = framesAvailable;
-
-                            // Remove the consumed data from the buffer.
-                            _CachedDataBuffer->ConsumeBufferData(bytes);
-                        }
-                    }
-
-#if 0
-                    // Debugging purposes only.
-                    if (framesAvailable * 0.75 > framesToWrite)
-                    {
-                        Log::Print("Frames Written %u:%u\n",
-                                   framesToWrite,
-                                   framesAvailable);
-                    }
-#endif
-
-                    hr = _RenderClient->ReleaseBuffer(framesToWrite, 0);
-                    if (!SUCCEEDED(hr))
-                    {
-                        Log::Print("Unable to release buffer: %x\n", hr);
-                        stillPlaying = false;
-                    }
-                }
-                else
-                {
-                    Log::Print("Unable to obtain buffer: %x\n", hr);
-                    stillPlaying = false;
-                }
-            }
-
-            break;
-        }
-    }
-
-    Log::Print("Exited Render Loop\n");
-
-    //
-    //  Unhook from MMCSS.
-    //
-    if (!DisableMMCSS)
-    {
-        AvRevertMmThreadCharacteristics(mmcssHandle);
-    }
-
-    CoUninitialize();
-    return 0;
 }
 
 //
@@ -1015,97 +601,151 @@ TUint32 AudioDriver::BufferSizePerPeriod()
 
     double devicePeriodInSeconds = defaultDevicePeriod / (10000.0*1000.0);
 
+    Log::Print("Device Period: %f\n", devicePeriodInSeconds);
+
     return static_cast<UINT32>(_MixFormat->nSamplesPerSec *
                                devicePeriodInSeconds + 0.5);
 }
 
 void AudioDriver::Run()
 {
-    DWORD threadPriority = GetThreadPriority(GetCurrentThread());
-    Log::Print("Run Thread Priority [%d]\n", threadPriority);
+    HANDLE mmcssHandle    = NULL;
+    DWORD  mmcssTaskIndex = 0;
 
-    if(!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL))
-    {
-        Log::Print("Can't up the priority of Run()\n");
-    }
-
-    threadPriority = GetThreadPriority(GetCurrentThread());
-    Log::Print("Run Thread Priority [%d]\n", threadPriority);
-
-    threadPriority = GetPriorityClass(GetCurrentProcess());
-    Log::Print("Run Thread Class [%x]\n", threadPriority);
-
-    // Initialise the audio client and the audio engine.
+    // Gain access to the system multimedia audio endpoint and associate an
+    // audio client object with it..
     if (InitializeAudioClient() == false)
     {
         return;
     }
 
-    // For the moment use the default mechanism for reading the PCM data.
+    HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    if (FAILED(hr))
+    {
+        Log::Print("Unable to initialize COM in render thread: %x\n", hr);
+    }
 
-    // pull the first (assumed non-audio) msg here so that any delays
-    // populating the pipeline don't affect timing calculations below.
-    Msg* msg = iPipeline->Pull();
-    ASSERT(msg != NULL);
-    (void)msg->Process(*this);
+    // Hook up to the Multimedia Class Scheduler Service to prioritise
+    // our render activities.
+    mmcssHandle = AvSetMmThreadCharacteristics(L"Audio", &mmcssTaskIndex);
+    if (mmcssHandle == NULL)
+    {
+        Log::Print("Unable to enable MMCSS on render thread: %d\n",
+                   GetLastError());
+    }
 
-    TUint64 now = OsTimeInUs(iOsCtx);
-    iLastTimeUs = now;
-    iNextTimerDuration = kTimerFrequencyMs;
-    iPendingJiffies = kTimerFrequencyMs * Jiffies::kPerMs;
+    // Events used to unblock this thread.
+    HANDLE waitArray[3]   = {_ShutdownEvent,
+                             _StreamSwitchEvent,
+                             _AudioSamplesReadyEvent};
+
+    // Pipeline processing loop.
     try {
+        bool audioClientStarted = false;
+
         for (;;) {
-            while (iPendingJiffies > 0) {
+
+            if (_AudioEngineInitialised)
+            {
+                TUint32 padding;
+
+                //
+                //  Calculate the number of bytes in the render buffer
+                //  for this period.
+                //
+                //  This is the maximum we will pull from the pipeline
+                //  this period.
+                //
+                hr = _AudioClient->GetCurrentPadding(&padding);
+                if (SUCCEEDED(hr))
+                {
+                    _RenderBytesThisPeriod = (_BufferSize - padding) *
+                                        _MixFormat->nBlockAlign;
+                }
+                else
+                {
+                    Log::Print("Couldn't read render buffer padding\n");
+                    _RenderBytesThisPeriod = 0;
+                }
+
+                _RenderBytesRemaining = _RenderBytesThisPeriod;
+            }
+
+            // Process pipeline messages until we've reached the maximum for
+            // this period.
+            for(;;)
+            {
                 if (iPlayable != NULL) {
                     ProcessAudio(iPlayable);
                 }
                 else {
-                    Msg* msg = iPipeline->Pull();
-                    msg = msg->Process(*this);
-                    ASSERT(msg == NULL);
+                    Msg* msg = iPipeline.Pull();
+                    (void)msg->Process(*this);
+                    ASSERT(msg != NULL);
+                }
+
+                // Have we reached the data limit for this period or been told
+                // to exit.
+                if (iPlayable != NULL || iQuit)
+                {
+                    break;
                 }
             }
 
-            //Log::Print("Escaped Loop: JpMs [%u]\n", Jiffies::kPerMs);
+            if (iQuit)
+            {
+                break;
+            }
+
+            // Start the Audio client once we have pre-loaded some
+            // data to the render buffer. This will prevent any initial
+            // audio abnormalities.
+            if (! audioClientStarted)
+            {
+                // There was no data read this period so try again next period.
+                if (_RenderBytesThisPeriod == _RenderBytesRemaining)
+                {
+                    continue;
+                }
+
+                hr = _AudioClient->Start();
+                if (FAILED(hr))
+                {
+                    Log::Print("Unable to start render client: %x.\n", hr);
+                    break;
+                }
+
+                audioClientStarted = true;
+            }
+
+            // Wait for a kick from the native audio engine or quit handler.
+            DWORD waitResult =
+                WaitForMultipleObjects(3, waitArray, FALSE, INFINITE);
+
+            switch (waitResult) {
+                case WAIT_OBJECT_0 + 0:     // _ShutdownEvent
+                    Log::Print("Shutdown Audio Engine\n");
+                    break;
+                case WAIT_OBJECT_0 + 1:     // _StreamSwitchEvent
+                    // FIXME - Not supported.
+                    break;
+                case WAIT_OBJECT_0 + 2:     // _AudioSamplesReadyEvent
+                    break;
+                default:
+                    Log::Print("Error unexpected event received  [%d]\n",
+                               waitResult);
+            }
 
             if (iQuit) {
                 break;
-            }
-            iLastTimeUs = now;
-            if (iNextTimerDuration != 0) {
-                try {
-                    iSem.Wait(iNextTimerDuration);
-                }
-                catch (Timeout&) {}
-            }
-            iNextTimerDuration = kTimerFrequencyMs;
-            now = OsTimeInUs(iOsCtx);
-            const TUint diffMs = ((TUint)(now - iLastTimeUs + 500)) / 1000;
-
-            // assume delay caused by drop-out.  process regular amount of audio
-            if (diffMs > 100) {
-                iPendingJiffies = kTimerFrequencyMs * Jiffies::kPerMs;
-            }
-            else {
-                iPendingJiffies = diffMs * Jiffies::kPerMs;
-                iPullLock.Wait();
-                if (iPullValue != kClockPullDefault) {
-                    TInt64 pending64 = iPullValue * iPendingJiffies;
-                    pending64 /= kClockPullDefault;
-                    //Log::Print("iPendingJiffies=%08x, pull=%08x\n", iPendingJiffies, pending64); // FIXME
-                    //TInt pending = (TInt)iPendingJiffies + (TInt)pending64;
-                    //Log::Print("Pulled clock, now want %u jiffies (%ums, %d%%) extra\n", (TUint)pending, pending/Jiffies::kPerMs, (pending-(TInt)iPendingJiffies)/iPendingJiffies); // FIXME
-                    iPendingJiffies = (TUint)pending64;
-                }
-                iPullLock.Signal();
             }
         }
     }
     catch (ThreadKill&) {}
 
-    // pull until the pipeline is emptied
+    // Pull until the pipeline is emptied or we're told to quit.
     while (!iQuit) {
-        Msg* msg = iPipeline->Pull();
+        Msg* msg = iPipeline.Pull();
         msg = msg->Process(*this);
         ASSERT(msg == NULL);
         if (iPlayable != NULL) {
@@ -1118,6 +758,11 @@ void AudioDriver::Run()
 
     // Free up native resources.
     ShutdownAudioEngine();
+
+    //
+    //  Unhook from MMCSS.
+    //
+    AvRevertMmThreadCharacteristics(mmcssHandle);
 
     CoUninitialize();
 }

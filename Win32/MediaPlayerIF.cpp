@@ -208,18 +208,15 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID /*lpParam*/ )
 
     adapter->RemoveRef(cookie);
 
+    emp = new ExampleMediaPlayer(*dvStack, Brn(aUdn), aRoom, aName,
+                                  Brx::Empty()/*aUserAgent*/);
+
     // Create ExampleMediaPlayer.
-    driver = new AudioDriver(dvStack->Env());
+    driver = new AudioDriver(dvStack->Env(), emp->Pipeline());
     if (driver == nullptr)
     {
         goto cleanup;
     }
-
-    emp = new ExampleMediaPlayer(*dvStack, Brn(aUdn), aRoom, aName,
-                                  Brx::Empty()/*aUserAgent*/,
-                                 *driver);
-
-    driver->SetPipeline(emp->Pipeline());
 
     /* Run the media player. (Blocking) */
     emp->RunWithSemaphore();

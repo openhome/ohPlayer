@@ -205,6 +205,7 @@ cp $CVS_VIEWS/LitePipe/OpenHome/Media/Pipeline/Gorger.h $TEST_APP/Include/OpenHo
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/Pipeline/Router.h $TEST_APP/Include/OpenHome/Media/Pipeline
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/Pipeline/Pruner.h $TEST_APP/Include/OpenHome/Media/Pipeline
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/Pipeline/Logger.h $TEST_APP/Include/OpenHome/Media/Pipeline
+cp $CVS_VIEWS/LitePipe/OpenHome/Media/Pipeline/SampleRateValidator.h $TEST_APP/Include/OpenHome/Media/Pipeline
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/Pipeline/StarvationMonitor.h $TEST_APP/Include/OpenHome/Media/Pipeline
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/Pipeline/PreDriver.h $TEST_APP/Include/OpenHome/Media/Pipeline
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/ClockPuller.h $TEST_APP/Include/OpenHome/Media

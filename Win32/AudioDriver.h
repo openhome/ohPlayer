@@ -11,8 +11,6 @@
 #include <AudioClient.h>
 #include <AudioPolicy.h>
 
-#include "Queue.h"
-
 template <class T> void SafeRelease(T **ppT)
 {
     if (*ppT)
@@ -25,33 +23,14 @@ template <class T> void SafeRelease(T **ppT)
 namespace OpenHome {
     class Environment;
 
-// Buffer to hold audio data being transferred between the audio pipeline
-// and the native audio client.
-class DataBuffer {
-public:
-    DataBuffer(TUint bufferSize);
-    ~DataBuffer();
-
-    TUint  GetBufferLength();
-    TByte *GetBufferPtr();
-    TUint  CopyToBuffer(const TByte *srcBuffer, TUint size);
-    bool   ConsumeBufferData(TUint bytes);
-private:
-    TUint  _BufferLength;
-    TByte* _Buffer;
-    TByte* _Datap;
-};
-
 namespace Media {
 
-class AudioDriver : public Thread, private IMsgProcessor, public IPullableClock, public IPipelineDriver
+class AudioDriver : public Thread, private IMsgProcessor, public IPipelineAnimator
 {
-    static const TUint kTimerFrequencyMs = 5;
     static const TInt64 kClockPullDefault = (1 << 29) * 100LL;
 public:
-    AudioDriver(Environment& aEnv);
+    AudioDriver(Environment& aEnv, IPipeline& aPipeline);
     ~AudioDriver();
-    void SetPipeline(IPipelineElementUpstream& aPipeline);
 
 private: // from Thread
     void Run();
@@ -73,24 +52,14 @@ private: // from IMsgProcessor
     Msg* ProcessMsg(MsgSilence* aMsg) override;
     Msg* ProcessMsg(MsgPlayable* aMsg) override;
     Msg* ProcessMsg(MsgQuit* aMsg) override;
-private: // from IPullableClock
-    void PullClock(TInt32 aValue);
 private: // from IPipelineDriver
     TUint PipelineDriverDelayJiffies(TUint aSampleRateFrom, TUint aSampleRateTo) override;
 private:
-    IPipelineElementUpstream* iPipeline;
-    Semaphore iSem;
-    OsContext* iOsCtx;
+    IPipeline& iPipeline;
     TUint iSampleRate;
-    TUint iJiffiesPerSample;
     TUint iNumChannels;
     TUint iBitDepth;
-    TUint iPendingJiffies;
-    TUint64 iLastTimeUs;
-    TUint iNextTimerDuration;
     MsgPlayable* iPlayable;
-    Mutex iPullLock;
-    TInt64 iPullValue;
     TBool iQuit;
 private:
     // WASAPI Related
@@ -104,27 +73,21 @@ private:
     // Audio Client Events
     HANDLE              _AudioSamplesReadyEvent;
     HANDLE              _StreamSwitchEvent;
-    HANDLE              _StreamSwitchCompleteEvent;
     HANDLE              _ShutdownEvent;
 
     // Internal Data
 
-    // Render thread id.
-    HANDLE              _RenderThread;
     // The buffer shared with the audio engine should be at least big enough
     // to buffer enough data to cover this time frame.
     LONG                _EngineLatencyInMS;
     // Max audio Frames in Audio Client buffer.
     TUint32             _BufferSize;
-    // Render buffer size in bytes.
-    // Calculated to supply the required amoutn of data per render cycle.
-    TUint32             _RenderBufferSize;
-    // Buffer removed from queue, but pending write to render buffer.
-    DataBuffer         *_CachedDataBuffer;
-    // Queue of data, produced by pipeline, consumed by renderer.
-    Queue<DataBuffer*>  _RenderQueue;
     // Set when native audio is initialised successfully.
-    bool _AudioEngineInitialised;
+    bool                _AudioEngineInitialised;
+    // Amount of space in the render buffer this render period.
+    TUint32             _RenderBytesThisPeriod;
+    // Amount of remaining space in the render buffer this render period.
+    TUint32             _RenderBytesRemaining;
 
 private:
     // Utility functions
@@ -134,14 +97,7 @@ private:
     bool InitializeStreamSwitch();
     void StopAudioEngine();
     void ShutdownAudioEngine();
-
     TUint32 BufferSizePerPeriod();
-
-    DWORD DoRenderThread();
-    static DWORD __stdcall WASAPIRenderThread(LPVOID Context);
-private:
-    void QueueData(Media::MsgPlayable* aMsg, TUint bytes);
-    void DumpDataBuffer(TByte* buf, TUint length);
 };
 } // namespace Media
 } // namespace OpenHome

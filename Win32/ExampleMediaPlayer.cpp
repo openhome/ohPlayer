@@ -27,8 +27,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
                                        const Brx& aUdn,
                                        const TChar* aRoom,
                                        const TChar* aProductName,
-                                       const Brx& aUserAgent,
-                                       Media::IPipelineDriver& aPipelineDriver)
+                                       const Brx& aUserAgent)
     : iSemShutdown("TMPS", 0)
     , iDisabled("test", 0)
     , iUserAgent(aUserAgent)
@@ -77,12 +76,16 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
     iConfigRamStore->Write(Brn("Product.Room"), Brn(aRoom));
     iConfigRamStore->Write(Brn("Product.Name"), Brn(aProductName));
 
+    // ALDO - Set pipepline htread priority just below the pipeline animator.
+    iInitParams = PipelineInitParams::New();
+    iInitParams->SetThreadPriorityMax(kPriorityHighest);
+    iInitParams->SetStarvationMonitorMaxSize(Jiffies::kPerMs * 50 *2);
+
     // create MediaPlayer
-    iMediaPlayer = new MediaPlayer(aDvStack, *iDevice, *iRamStore,
-                                   *iConfigRamStore, PipelineInitParams::New(),
-                                   aPipelineDriver, nullptr, iVolume,
-                                   iVolume, aUdn, Brn(aRoom),
-                                   Brn("Softplayer"));
+    iMediaPlayer = new MediaPlayer( aDvStack, *iDevice, *iRamStore,
+                                   *iConfigRamStore, iInitParams,
+                                    iVolume, iVolume, aUdn, Brn(aRoom),
+                                    Brn("Softplayer"));
 
     // Register an observer, primarily to monitor the pipeline status.
     iMediaPlayer->Pipeline().AddObserver(*this);
@@ -226,6 +229,7 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
 
     iMediaPlayer->Add(SourceFactory::NewReceiver(*iMediaPlayer,
                                                   NULL,
+                                                  NULL,
                                                   kSongcastSenderIconFileName));
 }
 
@@ -290,6 +294,7 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary()
     }
 
     // Choose the first adapter.
+    //TIpAddress subnet = (*subnetList)[3]->Subnet();
     TIpAddress subnet = (*subnetList)[0]->Subnet();
     Library::DestroySubnetList(subnetList);
     lib->SetCurrentSubnet(subnet);
@@ -305,6 +310,8 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary()
 void ExampleMediaPlayer::NotifyPipelineState(Media::EPipelineState aState)
 {
     pState = aState;
+
+    //Log::Print("Pipeline State: %d\n", aState);
 }
 
 void ExampleMediaPlayer::NotifyTrack(Media::Track& /*aTrack*/, const Brx& /*aMode*/, TBool /*aStartOfStream*/)
