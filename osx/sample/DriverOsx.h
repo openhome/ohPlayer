@@ -17,7 +17,7 @@ namespace OpenHome {
     class Environment;
 namespace Media {
 
-class DriverOsx : public Thread, private IMsgProcessor, public IPullableClock, public IPipelineAnimator
+class DriverOsx : public Thread, private IMsgProcessor, public IPipelineAnimator
 {
     static const TUint kTimerFrequencyMs = 5;
     static const TInt64 kClockPullDefault = (1 << 29) * 100LL;
@@ -48,31 +48,17 @@ private: // from IMsgProcessor
     Msg* ProcessMsg(MsgSilence* aMsg) override;
     Msg* ProcessMsg(MsgPlayable* aMsg) override;
     Msg* ProcessMsg(MsgQuit* aMsg) override;
-private: // from IPullableClock
-    void PullClock(TInt32 aValue);
+
 private: // from IPipelineAnimator
     TUint PipelineDriverDelayJiffies(TUint aSampleRateFrom, TUint aSampleRateTo) override;
+    
 private:
     IPipeline& iPipeline;
-    Semaphore iSem;
     OsContext* iOsCtx;
-    TUint iJiffiesPerSample;
-    TUint iPendingJiffies;
-    TUint64 iLastTimeUs;
-    TUint iNextTimerDuration;
-    MsgPlayable* iPlayable;
-    Mutex iPullLock;
-    TInt64 iPullValue;
     TBool iQuit;
-    
-    /* Host audio manager */
+    OsxPcmProcessor  iPcmHandler;
     OsxAudio iOsxAudio;
-    
-    /* PCM processor */
-    OsxPcmProcessor iPcmHandler;
-    
-    /* Indicate whether the driver is actively playing */
-    bool iPlaying;
+    bool        iPlaying;
     
     /* Define the relative audio level of the output stream. Defaults to 1.0f. */
     Float32 iVolume;

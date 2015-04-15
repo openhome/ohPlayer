@@ -19,22 +19,25 @@ namespace Media {
 
 class OsxAudio : public Thread
 {
-    static const TInt32 kNumDataBuffers = 3;
+    static const TInt32 kNumDataBuffers = 5;
     
 public:
+    /* Initialise the OsxAudio thread with a refill semaphore
+     * which we signal when a host buffer has been consumed
+     */
     OsxAudio();
     ~OsxAudio();
     
     void fillBuffer(AudioQueueBufferRef inBuffer);
-    void fillBuffer2(AudioQueueBufferRef inBuffer);
     
-    void initialise(OsxPcmProcessor *iPcmHandler, AudioStreamBasicDescription *format);
+    void initialise(OsxPcmProcessor *aPcmHandler, AudioStreamBasicDescription *format);
     void finalise();
     void startQueue();
     void stopQueue();
     void setVolume(Float32 volume);
-    void notifyAudioAvailable();
-    
+    void Quit();
+
+
 private: // from Thread
     void Run();
     
@@ -47,8 +50,10 @@ private:
     
 private:
     OsxPcmProcessor *iPcmHandler;
-    Semaphore   iAudioAvailable;
-    bool        iPlaying;
+    Semaphore iInitialised;
+    Mutex iHostLock;
+    bool      iPlaying;
+    bool      iQuit;
     
     /* Define the relative audio level of the output stream. Defaults to 1.0f. */
     Float32 iVolume;
@@ -61,7 +66,6 @@ private:
     
     // the audio queue buffers for the playback audio queue
     AudioQueueBufferRef iAudioQueueBuffers[kNumDataBuffers];
-    
 };
 
 } // namespace Media

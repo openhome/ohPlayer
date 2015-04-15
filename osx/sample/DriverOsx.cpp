@@ -17,11 +17,7 @@ using namespace OpenHome::Media;
 DriverOsx::DriverOsx(Environment& aEnv, IPipeline& aPipeline)
     : Thread("PipelineAnimator", kPrioritySystemHighest)
     , iPipeline(aPipeline)
-    , iSem("DRVB", 0)
     , iOsCtx(aEnv.OsCtx())
-    , iPlayable(NULL)
-    , iPullLock("DBPL")
-    , iPullValue(kClockPullDefault)
     , iQuit(false)
 {
     iPipeline.SetAnimator(*this);
@@ -30,166 +26,117 @@ DriverOsx::DriverOsx(Environment& aEnv, IPipeline& aPipeline)
 
 DriverOsx::~DriverOsx()
 {
+    iOsxAudio.Quit();
     Join();
 }
 
-
 void DriverOsx::Run()
 {
-    // pull the first (assumed non-audio) msg here so that any delays populating the pipeline don't affect timing calculations below.
-    Msg* msg = iPipeline.Pull();
-    ASSERT(msg != NULL);
-    (void)msg->Process(*this);
-
-    TUint64 now = OsTimeInUs(iOsCtx);
-    iLastTimeUs = now;
-    iNextTimerDuration = kTimerFrequencyMs;
-    iPendingJiffies = kTimerFrequencyMs * Jiffies::kPerMs;
     try {
-        for (;;) {
-            while (iPendingJiffies > 0) {
-                if (iPlayable != NULL) {
-                    ProcessAudio(iPlayable);
-                }
-                else {
-                    Msg* msg = iPipeline.Pull();
-                    msg = msg->Process(*this);
-                    ASSERT(msg == NULL);
-                }
+        /* Loop round processing messages until we are explicitly stopped
+         * Note that messages such as MsgPlayable may block waiting for available host buffers 
+         */
+        while (!iQuit) {
+            Msg *msg = nil;
+            
+            try {
+                msg = iPipeline.Pull();
             }
-            if (iQuit) {
-                break;
+            catch (AssertionFailed &ex)
+            {
+                Log::Print("Failed with exception %s\n", ex.Message());
+                iQuit = true;
             }
-            iLastTimeUs = now;
-            if (iNextTimerDuration != 0) {
-                try {
-                    iSem.Wait(iNextTimerDuration);
-                }
-                catch (Timeout&) {}
-            }
-            iNextTimerDuration = kTimerFrequencyMs;
-            now = OsTimeInUs(iOsCtx);
-            const TUint diffMs = ((TUint)(now - iLastTimeUs + 500)) / 1000;
-            if (diffMs > 100) { // assume delay caused by drop-out.  process regular amount of audio
-                iPendingJiffies = kTimerFrequencyMs * Jiffies::kPerMs;
-            }
-            else {
-                iPendingJiffies = diffMs * Jiffies::kPerMs;
-                iPullLock.Wait();
-                if (iPullValue != kClockPullDefault) {
-                    TInt64 pending64 = iPullValue * iPendingJiffies;
-                    pending64 /= kClockPullDefault;
-                    //Log::Print("iPendingJiffies=%08x, pull=%08x\n", iPendingJiffies, pending64); // FIXME
-                    //TInt pending = (TInt)iPendingJiffies + (TInt)pending64;
-                    //Log::Print("Pulled clock, now want %u jiffies (%ums, %d%%) extra\n", (TUint)pending, pending/Jiffies::kPerMs, (pending-(TInt)iPendingJiffies)/iPendingJiffies); // FIXME
-                    iPendingJiffies = (TUint)pending64;
-                }
-                iPullLock.Signal();
-            }
+            
+            if((msg != nil))
+                (void)msg->Process(*this);
         }
     }
     catch (ThreadKill&) {}
+
+    Log::Print("EXIT Driver loop - iQuit = %s\n", iQuit ? "true" : "false");
 
     // pull until the pipeline is emptied
     while (!iQuit) {
         Msg* msg = iPipeline.Pull();
         msg = msg->Process(*this);
         ASSERT(msg == NULL);
-        if (iPlayable != NULL) {
-            iPlayable->RemoveRef();
-        }
     }
+    Log::Print("EXIT DriverOsx Thread\n");
 }
 
 void DriverOsx::ProcessAudio(MsgPlayable* aMsg)
 {
-    iPlayable = NULL;
-    
-    const TUint numSamples = aMsg->Bytes() / ((iAudioFormat.mBitsPerChannel/8) * iAudioFormat.mChannelsPerFrame);
-    TUint jiffies = numSamples * iJiffiesPerSample;
-    if (jiffies > iPendingJiffies) {
-        jiffies = iPendingJiffies;
-        const TUint bytes = Jiffies::BytesFromJiffies(jiffies, iJiffiesPerSample, iAudioFormat.mChannelsPerFrame, (iAudioFormat.mBitsPerChannel/8));
-        if (bytes == 0) {
-            iPendingJiffies = 0;
-            iPlayable = aMsg;
-            return;
-        }
-        
-        iPlayable = aMsg->Split(bytes);
-        Log::Print("Looking for %d bytes\n", bytes);
-        /* read the samples into our sample buffer */
-        aMsg->Read(iPcmHandler);
-        iOsxAudio.notifyAudioAvailable();
-
-    }
-    iPendingJiffies -= jiffies;
-
-    
-    aMsg->RemoveRef();
+    /* process the message - this may block */
+    iPcmHandler.enqueue(aMsg);
 }
 
 Msg* DriverOsx::ProcessMsg(MsgMode* aMsg)
 {
-    iPullLock.Wait();
-    iPullValue = kClockPullDefault;
-    iPullLock.Signal();
+    Log::Print("DriverOsx::Process MsgMode\n");
     aMsg->RemoveRef();
     return NULL;
 }
 
 Msg* DriverOsx::ProcessMsg(MsgSession* /*aMsg*/)
 {
+    Log::Print("DriverOsx::Process MsgSession\n");
     ASSERTS();
     return NULL;
 }
 
 Msg* DriverOsx::ProcessMsg(MsgTrack* /*aMsg*/)
 {
+    Log::Print("DriverOsx::Process MsgTrack\n");
     ASSERTS();
     return NULL;
 }
 
 Msg* DriverOsx::ProcessMsg(MsgDelay* /*aMsg*/)
 {
+    Log::Print("DriverOsx::Process MsgDelay\n");
     ASSERTS();
     return NULL;
 }
 
 Msg* DriverOsx::ProcessMsg(MsgEncodedStream* /*aMsg*/)
 {
+    Log::Print("DriverOsx::Process MsgEncodedStream\n");
     ASSERTS();
     return NULL;
 }
 
 Msg* DriverOsx::ProcessMsg(MsgAudioEncoded* /*aMsg*/)
 {
+    Log::Print("DriverOsx::Process MsgAudioEncoded\n");
     ASSERTS();
     return NULL;
 }
 
 Msg* DriverOsx::ProcessMsg(MsgMetaText* /*aMsg*/)
 {
+    Log::Print("DriverOsx::Process MsgMetaText\n");
     ASSERTS();
     return NULL;
 }
 
 Msg* DriverOsx::ProcessMsg(MsgHalt* aMsg)
 {
-    iPendingJiffies = 0;
-    iNextTimerDuration = 0;
+    Log::Print("DriverOsx::Process MsgHalt\n");
     aMsg->RemoveRef();
     return NULL;
 }
 
 Msg* DriverOsx::ProcessMsg(MsgFlush* /*aMsg*/)
 {
+    Log::Print("DriverOsx::Process MsgFlush\n");
     ASSERTS();
     return NULL;
 }
 
 Msg* DriverOsx::ProcessMsg(MsgWait* /*aMsg*/)
 {
+    Log::Print("DriverOsx::Process MsgWait\n");
     ASSERTS();
     return NULL;
 }
@@ -198,11 +145,11 @@ Msg* DriverOsx::ProcessMsg(MsgDecodedStream* aMsg)
 {
     const DecodedStreamInfo& stream = aMsg->StreamInfo();
     
-    iOsxAudio.stopQueue();
-    
+    Log::Print("DriverOsx::Process MsgDecodedStream\n");
     iPlaying = false;
     iVolume = 1.0;
     
+    Log::Print("DriverOSX::Process Decoded Stream\n");
     iAudioFormat.mFormatID         = kAudioFormatLinearPCM;
     iAudioFormat.mSampleRate       = stream.SampleRate();
     iAudioFormat.mChannelsPerFrame = stream.NumChannels();
@@ -214,44 +161,39 @@ Msg* DriverOsx::ProcessMsg(MsgDecodedStream* aMsg)
     
     iOsxAudio.initialise(&iPcmHandler, &iAudioFormat);
     
-    iJiffiesPerSample = Jiffies::JiffiesPerSample(iAudioFormat.mSampleRate);
     aMsg->RemoveRef();
     return NULL;
 }
 
 Msg* DriverOsx::ProcessMsg(MsgAudioPcm* aMsg)
 {
+    Log::Print("DriverOsx::Process MsgAudioPcm\n");
     ASSERTS();
     return NULL;
 }
 
 Msg* DriverOsx::ProcessMsg(MsgSilence* /*aMsg*/)
 {
+    Log::Print("DriverOsx::Process MsgSilence\n");
     ASSERTS();
     return NULL;
 }
 
 Msg* DriverOsx::ProcessMsg(MsgPlayable* aMsg)
 {
+    Log::Print("DriverOsx::Process MsgPlayable\n");
     ProcessAudio(aMsg);
     return NULL;
 }
 
 Msg* DriverOsx::ProcessMsg(MsgQuit* aMsg)
 {
+    Log::Print("DriverOsx::Process MsgQuit\n");
     iQuit = true;
-    iPendingJiffies = 0;
-    iNextTimerDuration = 0;
     aMsg->RemoveRef();
     return NULL;
 }
 
-void DriverOsx::PullClock(TInt32 aValue)
-{
-    AutoMutex _(iPullLock);
-    iPullValue += aValue;
-    Log::Print("DriverOsx::PullClock now at %u%%\n", iPullValue / (1<<29));
-}
 
 TUint DriverOsx::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/, TUint /*aSampleRateTo*/)
 {

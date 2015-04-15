@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "EB40D91C1A9B23A20043722C"
-               BuildableName = "sample.app"
-               BlueprintName = "sample"
+               BuildableName = "OpenHome LitePipe Sample.app"
+               BlueprintName = "OpenHome LitePipe Sample"
                ReferencedContainer = "container:sample.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -57,8 +57,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EB40D91C1A9B23A20043722C"
-            BuildableName = "sample.app"
-            BlueprintName = "sample"
+            BuildableName = "OpenHome LitePipe Sample.app"
+            BlueprintName = "OpenHome LitePipe Sample"
             ReferencedContainer = "container:sample.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -77,8 +77,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EB40D91C1A9B23A20043722C"
-            BuildableName = "sample.app"
-            BlueprintName = "sample"
+            BuildableName = "OpenHome LitePipe Sample.app"
+            BlueprintName = "OpenHome LitePipe Sample"
             ReferencedContainer = "container:sample.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -96,8 +96,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EB40D91C1A9B23A20043722C"
-            BuildableName = "sample.app"
-            BlueprintName = "sample"
+            BuildableName = "OpenHome LitePipe Sample.app"
+            BlueprintName = "OpenHome LitePipe Sample"
             ReferencedContainer = "container:sample.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

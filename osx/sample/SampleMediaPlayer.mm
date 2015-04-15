@@ -61,10 +61,7 @@ using namespace OpenHome::Net;
                              options.UserAgent().Value());
     
     if(mp != nil)
-    {
-        driver = new Media::DriverOsx(dvStack->Env(), mp->Pipeline());
-        mp->SetPullableClock(*driver);
-    }
+        driver = new DriverOsx(dvStack->Env(), mp->Pipeline());
     
     if (driver == nil)
     {
@@ -80,6 +77,10 @@ using namespace OpenHome::Net;
 
 - (void) shutdown {
     mp->StopPipeline();
+    
+    delete driver;
+    driver = nil;
+    
     delete mp;
     mp = nil;
     
