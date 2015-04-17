@@ -4,7 +4,6 @@
 
 #include <OpenHome/Types.h>
 #include <OpenHome/Media/Pipeline/Msg.h>
-#include <queue>
 
 #include <AudioToolbox/AudioQueue.h>
 

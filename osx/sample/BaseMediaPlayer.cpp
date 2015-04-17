@@ -1,29 +1,16 @@
 #include "BaseMediaPlayer.h"
-#include <OpenHome/Types.h>
-#include <OpenHome/Net/Private/DviStack.h>
-#include <OpenHome/Av/MediaPlayer.h>
-#include <OpenHome/Av/Product.h>
-#include <OpenHome/Net/Core/DvDevice.h>
-#include <OpenHome/Media/PipelineManager.h>
-#include <OpenHome/Private/Printer.h>
-#include <OpenHome/Private/TestFramework.h>
-#include <OpenHome/Media/Codec/CodecFactory.h>
-#include <OpenHome/Media/Protocol/ProtocolFactory.h>
-#include <OpenHome/Av/SourceFactory.h>
-#include <OpenHome/Av/KvpStore.h>
-#include "RamStore.h"
+
 #include <OpenHome/Av/UpnpAv/UpnpAv.h>
+#include <OpenHome/Media/PipelineManager.h>
+#include <OpenHome/Media/Pipeline/Pipeline.h>
+#include <OpenHome/Av/Product.h>
+#include <OpenHome/Av/MediaPlayer.h>
 #include <OpenHome/Configuration/ConfigManager.h>
+#include <OpenHome/Web/ConfigUi/ConfigUi.h>
 #include <OpenHome/Av/Utils/IconDriverSongcastSender.h>
-#include <OpenHome/Net/Private/Shell.h>
-#include <OpenHome/Net/Private/ShellCommandDebug.h>
-#include <OpenHome/Private/Parser.h>
 #include <OpenHome/Media/Debug.h>
 #include <OpenHome/Av/Debug.h>
-#include <OpenHome/Av/Credentials.h>
-#include <OpenHome/Media/Pipeline/Pipeline.h>
-#include <OpenHome/Web/WebAppFramework.h>
-#include <OpenHome/Web/ConfigUi/ConfigUi.h>
+#include <OpenHome/Net/Core/DvDevice.h>
 
 #include "ConfigRamStore.h"
 
@@ -37,6 +24,7 @@ using namespace OpenHome::TestFramework;
 using namespace OpenHome::Web;
 
 const Brn BaseMediaPlayer::kSongcastSenderIconFileName("SongcastSenderIcon");
+
 
 BaseMediaPlayer::BaseMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName,
 const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, const Brx& aUserAgent)
@@ -105,11 +93,6 @@ const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, con
     IPowerManager& powerManager = iMediaPlayer->PowerManager();
     iPowerObserver = powerManager.Register(*this, kPowerPriorityLowest);
 
-    // create a shell
-    iShell = new Shell(aDvStack.Env(), 0);
-    Log::Print("Shell running on port %u\n", iShell->Port());
-    iShellDebug = new ShellCommandDebug(*iShell);
-
     // Set up config app.
     static const TUint addr = 0;    // Bind to all addresses.
     static const TUint port = 8080;    // Bind to whatever free port the OS allocates to the framework server.
@@ -123,8 +106,6 @@ BaseMediaPlayer::~BaseMediaPlayer()
     ASSERT(!iDevice->Enabled());
     delete iMediaPlayer;
     delete iPipelineObserver;
-    delete iShellDebug;
-    delete iShell;
     delete iDevice;
     delete iDeviceUpnpAv;
     delete iRamStore;
