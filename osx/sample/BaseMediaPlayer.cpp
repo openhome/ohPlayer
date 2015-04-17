@@ -83,8 +83,12 @@ const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, con
     iConfigRamStore->Write(Brn("Product.Room"), Brn(aRoom));
     iConfigRamStore->Write(Brn("Product.Name"), Brn(aProductName));
 
+    PipelineInitParams *iInitParams = PipelineInitParams::New();
+    iInitParams->SetThreadPriorityMax(kPriorityHighest);
+    iInitParams->SetStarvationMonitorMaxSize(Jiffies::kPerMs * 50 *2);
+    
     // create MediaPlayer
-    iMediaPlayer = new MediaPlayer(aDvStack, *iDevice, *iRamStore, *iConfigRamStore, PipelineInitParams::New(),
+    iMediaPlayer = new MediaPlayer(aDvStack, *iDevice, *iRamStore, *iConfigRamStore, iInitParams,
     iVolume, iVolume, aUdn, Brn("Main Room"), Brn("Softplayer"));
     iPipelineObserver = new LoggingPipelineObserver();
     iMediaPlayer->Pipeline().AddObserver(*iPipelineObserver);
@@ -533,7 +537,6 @@ void BaseMediaPlayerInit::AppendUniqueId(Environment& aEnv, const Brx& aUserUdn,
             aOutput.Grow(aDefaultUdn.Bytes());
         }
         aOutput.Replace(aDefaultUdn);
-        RandomiseUdn(aEnv, aOutput);
     }
     else {
         if (aUserUdn.Bytes() > aOutput.MaxBytes()) {
