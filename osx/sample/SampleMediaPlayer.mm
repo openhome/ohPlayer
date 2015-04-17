@@ -25,8 +25,6 @@ using namespace OpenHome::Net;
 
 @implementation SampleMediaPlayer
 {
-
-
     Library* lib;
     const TChar* cookie;
     NetworkAdapter* adapter;
@@ -77,9 +75,6 @@ using namespace OpenHome::Net;
 
 - (void) shutdown {
     mp->StopPipeline();
-    
-    delete driver;
-    driver = nil;
     
     delete mp;
     mp = nil;
