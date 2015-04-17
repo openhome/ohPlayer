@@ -16,29 +16,45 @@ using namespace OpenHome::Media;
 #undef TEST_BUFFER
 #ifdef TEST_BUFFER
 
-/* Enable this code to circumvent the buffer filling and output
- * a test sine wave at 200Hz every time a buffer fill request
- * is received
- */
-bool isPlaying;
+// Enable this code to circumvent the buffer filling and output
+// a test sine wave at 200Hz every time a buffer fill request
+// is received
 
-double outputFrequency = 200.0;
-double sampleRate = 44100.0;
-AudioQueueRef outputQueue;
+// indicate whether we are currently playing a test tone
+bool            isPlaying;
 
+// specify the frequency of the tone (Hz)
+double          outputFrequency = 200.0;
+
+// specify the sample rate of our test tone (Hz)
+double          sampleRate = 44100.0;
+
+// the queue we use for output
+AudioQueueRef   outputQueue;
+
+// generate a buffer filled with a test tone (sine wave)
+//
+// Given an AudioQueue buffer deduce the number of samples which
+// will fill the buffer and generate a test tone of the specified
+// frequency and sample rate (200Hz 44kHz sample rate tone)
 void generateTone (AudioQueueBufferRef buffer)
 {
-    if (outputFrequency == 0.0) {
+    if (outputFrequency == 0.0)
+    {
         memset(buffer->mAudioData, 0, buffer->mAudioDataBytesCapacity);
         buffer->mAudioDataByteSize = buffer->mAudioDataBytesCapacity;
-    } else {
+    }
+    else
+    {
         // Make the buffer length a multiple of the wavelength for the output frequency.
         int sampleCount = buffer->mAudioDataBytesCapacity / sizeof (SInt16);
         sampleCount -= 500 * sizeof (SInt16);
+        
         double bufferLength = sampleCount;
         double wavelength = sampleRate / outputFrequency;
         double repetitions = floor (bufferLength / wavelength);
-        if (repetitions > 0.0) {
+        if (repetitions > 0.0)
+        {
             sampleCount = round (wavelength * repetitions);
         }
         
@@ -49,12 +65,15 @@ void generateTone (AudioQueueBufferRef buffer)
         int i;
         SInt16 *p = (SInt16 *)buffer->mAudioData;
         
-        for (i = 0; i < sampleCount; i++) {
+        // loop round for each sample generating a point on our sine wave
+        for (i = 0; i < sampleCount; i++)
+        {
             x = i * sd * outputFrequency;
             y = sin (x * 2.0 * M_PI);
             p[i] = y * max16bit * amp;
         }
         
+        // set the size of the wave data as the buffer data size
         buffer->mAudioDataByteSize = sampleCount * sizeof (SInt16);
         Log::Print("generateTone() wrote %u bytes to buffer of size %u", buffer->mAudioDataByteSize, buffer->mAudioDataBytesCapacity );
     }
@@ -64,16 +83,25 @@ void processOutputBuffer( AudioQueueBufferRef buffer, AudioQueueRef queue)
 {
     OSStatus err;
     isPlaying = true;
-    if (isPlaying) {
+    if (isPlaying)
+    {
+        // we're in play mode so fill the buffer with a test tone
         generateTone(buffer);
         
+        // enqueue the buffer with our AudioQueue
         err = AudioQueueEnqueueBuffer(queue, buffer, 0, NULL);
-        if (err == 560030580) { // Queue is not active due to Music being started or other reasons
+        if (err == 560030580)
+        { // Queue is not active due to Music being started or other reasons
             isPlaying = false;
-        } else if (err != noErr) {
+        }
+        else if (err != noErr)
+        {
             Log::Print("AudioQueueEnqueueBuffer() error %d", err);
         }
-    } else {
+    }
+    else
+    {
+        /* we're not playing so ensure we stop the hst audio queue */
         err = AudioQueueStop (queue, false);
         if (err != noErr) Log::Print("AudioQueueStop() error: %d", err);
     }
@@ -85,11 +113,12 @@ static void PlayCallback(void *inUserData, AudioQueueRef inAudioQueue, AudioQueu
     if(inUserData == nil)
         return;
     
-    Log::Print("OsxAudio::PlayCallback in\n");
     OsxAudio *hostAudio = (OsxAudio *)inUserData;
     
+    // fill the audi buffer with a 200Hz test tone
     processOutputBuffer(inBuffer, inAudioQueue);
 }
+
 #else /* TEST_BUFFER */
 
 static void PlayCallback(void *inUserData, AudioQueueRef inAudioQueue, AudioQueueBufferRef inBuffer)
@@ -97,71 +126,88 @@ static void PlayCallback(void *inUserData, AudioQueueRef inAudioQueue, AudioQueu
     if(inUserData == nil)
         return;
     
-    Log::Print("OsxAudio::PlayCallback in\n");
     OsxAudio *hostAudio = (OsxAudio *)inUserData;
 
+    // fill the host buffer with data from the pipeline
     hostAudio->fillBuffer(inBuffer);
+
+    // the buffer is full so enqueue it with the Audio subsystem
     AudioQueueEnqueueBuffer(inAudioQueue, inBuffer, 0, NULL);
 }
 #endif /* TEST_BUFFER */
 
 OsxAudio::OsxAudio() : Thread("OsxAudio", kPriorityHigher )
-    , iInitialised("TINI", 0)
+    , iStreamInitialised("TINI", 0)
+    , iStreamCompleted("TCOM", 0)
     , iHostLock("HLCK")
 {
     iQuit = false;
+    
+    // start our main thread which will wait initially for the
+    // iStreamInitialised semaphore to be signalled when we
+    // start processing a decoded stream
     Start();
 }
 
 OsxAudio::~OsxAudio()
 {
-    Quit();
-    Join();
+    // indicate to the main loop that we're done
+    quit();
+
+    // we're done here, so finalise our host audio resources
+    finalise();
 }
 
 void OsxAudio::fillBuffer(AudioQueueBufferRef inBuffer)
 {
     AutoMutex _(iHostLock);
     
-    Log::Print("OsxAudio::fillBuffer in\n");
-    
-    /* set the PcmHandler to use inBuffer for the next read requests */
+    // set the PcmHandler to use inBuffer as the target for the next read requests
     iPcmHandler->setBuffer(inBuffer);
 
-    /* copy from the litepipe cache buffer */
+    // copy from the litepipe cache buffer
     while(inBuffer->mAudioDataByteSize < inBuffer->mAudioDataBytesCapacity)
         iPcmHandler->fillBuffer(inBuffer);
-    Log::Print("OsxAudio::fillBuffer out\n");
 }
 
 void OsxAudio::initialise(OsxPcmProcessor *aPcmHandler, AudioStreamBasicDescription *aFormat)
 {
+    // we may be switching streams to a new stream; finalise the existing AudioQueue
+    finaliseAudioQueue();
+    
+    // stash the PcmHandler and audio stream format which will be used to setup and
+    // decode the new audio stream
     iPcmHandler = aPcmHandler;
     iAudioFormat = *aFormat;
     
-    Log::Print("OsxAudio::initialise in\n");
+    // indicate that we're not playing the stream yet; this will be done in startQueue
     iPlaying = false;
+    
+    // set up a new AudioQueue object in the format specified by aFormat
     initAudioQueue();
+    
+    // allocate a set of buffers of an appropriate size to handle the new stream
     initAudioBuffers();
     
-    iInitialised.Signal();
-    Log::Print("OsxAudio::initialise out\n");
+    // signal to the main loop that we have initialised the AudioQueue
+    iStreamInitialised.Signal();
 
 }
 
 
 void OsxAudio::finalise()
 {
-    /* iPcmHandler is owned by someone else - just null our reference */
+    // iPcmHandler is owned by someone else - just null our reference
     iPcmHandler = NULL;
     
+    // we're leaving now, so finalise the previaling AudioQueue
     finaliseAudioQueue();
 }
 
 void OsxAudio::initAudioQueue()
 {
 #ifdef TEST_BUFFER
-    // Set up stream format fields
+    // Set up stream format fields fro a 16-bit mono LPCM stream
     AudioStreamBasicDescription streamFormat;
     streamFormat.mSampleRate = sampleRate;
     streamFormat.mFormatID = kAudioFormatLinearPCM;
@@ -173,6 +219,8 @@ void OsxAudio::initAudioQueue()
     streamFormat.mFramesPerPacket = 1;
     streamFormat.mReserved = 0;
     
+    // create a new AudioQueue output stream and supply our PlayCallback
+    // function to fill the buffer with a 200Hz sine wave
     AudioQueueNewOutput(
                         &streamFormat,
                         PlayCallback,
@@ -183,6 +231,8 @@ void OsxAudio::initAudioQueue()
                         &iAudioQueue);
 #else /* TEST_BUFFER */
     
+    // create a new AudioQueue output stream and supply our PlayCallback
+    // to fill the host buffers with PCM data from the LitePipe pipeline
     AudioQueueNewOutput(
                         &iAudioFormat,
                         PlayCallback,
@@ -201,50 +251,62 @@ void OsxAudio::initAudioQueue()
 
 void OsxAudio::finaliseAudioQueue()
 {
+    // dispose of the prevailing AudioQueue, terminating immediately
     AudioQueueDispose(iAudioQueue, true);
     iAudioQueue = NULL;
     iPlaying = false;
+    
+    // indicate to the main loop that we're finished with this stream
+    iStreamCompleted.Signal();
 }
 
 void OsxAudio::initAudioBuffers()
 {
+    // We allocate a number of buffers for the host AudioQueue.
+    // Allocate the number of buffers required, and figure out a size for them
+    // based on buffering 0.2 seconds of audio per buffer
     for (int t = 0; t < kNumDataBuffers; ++t)
     {
         AudioQueueAllocateBuffer(iAudioQueue,
-                                 iAudioFormat.mBytesPerFrame * (iAudioFormat.mSampleRate / 5),  // 24-bit stereo 44kHz 0.2s
+                                 iAudioFormat.mBytesPerFrame * (iAudioFormat.mSampleRate) / 5,  // approximately 0.2s
                                  &iAudioQueueBuffers[t]);
     }
 }
 
 void OsxAudio::primeAudioBuffers()
 {
-    Log::Print("OsxAudio::prime in\n");
+    // normally the audio buffers will be filled based on callbacks from a host
+    // audio thread managing the AudioQueue.
+    // When we initialise our AudioQueue we attempt to provide a clean start by priming
+    // the host audio buffers with data from the pipeline prior to calling AudioQueueStart()
+    // We iterate through the buffer list filling and enqueueing each one in turn
     for (int index = 0; index < kNumDataBuffers; ++index)
-    {
-        Log::Print("OsxAudio::prime buffer %u\n", index);
-
         PlayCallback(this, iAudioQueue, iAudioQueueBuffers[index]);
-    }
-    Log::Print("OsxAudio::prime out\n");
 }
 
 void OsxAudio::startQueue()
 {
-    Log::Print("OsxAudio::startQueue in\n");
+    // we want to strat the audio queue so prime the buffers for a smooth start
     primeAudioBuffers();
+    
+    // start the host AudioQueue. this will play audio from the buffers then start callbacks
+    // to PlayCallback to refill the buffers.
     AudioQueueStart(iAudioQueue, NULL);
+
+    // indicate that we're now playing
     iPlaying = true;
-    Log::Print("OsxAudio::startQueue out\n");
 }
 
 void OsxAudio::stopQueue()
 {
+    // stop host AudioQueue playback immediately and indicate that we have stopped
     AudioQueueStop(iAudioQueue, TRUE);
     iPlaying = false;
 }
 
 void OsxAudio::setVolume(Float32 volume)
 {
+    // if the voluem has changed then inform our AudioQueue
     if (iVolume != volume)
     {
         iVolume = volume;
@@ -252,22 +314,31 @@ void OsxAudio::setVolume(Float32 volume)
     }
 }
 
-void OsxAudio::Quit()
+void OsxAudio::quit()
 {
+    // we are done here, so set the iQuit flag and signal the main loop
+    // that we wish to exit
     iQuit = true;
+    iStreamCompleted.Signal();
 }
 
 void OsxAudio::Run()
 {
     try {
-        /* wait for audio available signal */
+        // run until we're terminated explicitly or by thread shutdown
         while(!iQuit)
         {
-            iInitialised.Wait();
-            if(!iPlaying)
-            {
-                startQueue();
-            }
+            // wait for a start signal
+            iStreamInitialised.Wait();
+            iStreamInitialised.Clear();
+            
+            // start the host audio queue
+            startQueue();
+            
+            // wait until our stream is terminated
+            // this can happen due to a halt or when we switch audio formats
+            iStreamCompleted.Wait();
+            iStreamCompleted.Clear();
         }
     }
     catch (ThreadKill &e) {}
