@@ -14,19 +14,14 @@ OsxPcmProcessor::OsxPcmProcessor() : IPcmProcessor()
 
 void OsxPcmProcessor::enqueue(MsgPlayable *msg)
 {
-    Log::Print("waiting to enqueue msg=%p\n", msg);
     iSemHostReady.Wait();
     iSemHostReady.Clear();
-    Log::Print("enqueuing msg=%p\n", msg);
     queue.Enqueue(msg);
-    Log::Print("enqueued msg=%p\n", msg);
 }
 
 MsgPlayable * OsxPcmProcessor::dequeue()
 {
-    Log::Print("waiting to dequeue msg\n");
     MsgPlayable *msg = static_cast<MsgPlayable *>(queue.Dequeue());
-    Log::Print("dequeued msg=%p\n", msg);
     
     return msg;
 }
@@ -36,7 +31,6 @@ MsgPlayable * OsxPcmProcessor::dequeue()
  */
 void OsxPcmProcessor::setBuffer(AudioQueueBufferRef buf)
 {
-    Log::Print("setBuffer()\n");
     iBuff = buf;
     iBuffsize = buf->mAudioDataBytesCapacity;
     buf->mAudioDataByteSize = 0;
@@ -46,31 +40,23 @@ void OsxPcmProcessor::setBuffer(AudioQueueBufferRef buf)
 
 void OsxPcmProcessor::fillBuffer(AudioQueueBufferRef inBuffer)
 {
-    
+    // if no data is available then signal the animator to provide some
     if(queue.NumMsgs() == 0)
-    {
-        Log::Print("fillBuffer - signalling host ready\n");
         iSemHostReady.Signal();
-    }
-    else
-    {
-        Log::Print("fillBuffer - %u queued entries available\n", queue.NumMsgs());
-    }
     
     MsgPlayable *msg = dequeue();
     
     Msg *remains = nil;
-    /* read the packet, release and remove */
+    // read the packet, release and remove
     if(msg->Bytes() > iBytesToRead)
         remains = msg->Split(iBytesToRead);
     msg->Read(*this);
     msg->RemoveRef();
 
-    /* requeue the remaining bytes */
+    // requeue the remaining bytes
     if(remains != nil)
         queue.EnqueueAtHead(remains);
     
-    Log::Print("fillBuffer - size of host buffer %u\n", size());
     inBuffer->mAudioDataByteSize = size();
 }
 
@@ -94,9 +80,6 @@ TBool OsxPcmProcessor::ProcessFragment(const Brx& aData, TByte aSampleSize, TUin
     
     /* figure out how much data we can copy between the current start point and the end of the buffer */
     TUint32 blocksize = fmin(aData.Bytes(), iBuffsize - iWriteIndex);
-    Log::Print("ProcessFragment - data buffer has : %d bytes\n", aData.Bytes());
-    Log::Print("Processing : %d bytes starting with %.2x%.2x%.2x%.2x\n", blocksize,
-               aData.Ptr()[0],aData.Ptr()[1],aData.Ptr()[2],aData.Ptr()[3]);
     
     memcpy(&(((char *)iBuff->mAudioData)[iWriteIndex]), aData.Ptr(), blocksize);
     iBytesToRead -= blocksize;
@@ -148,7 +131,6 @@ void OsxPcmProcessor::ProcessSample(const TByte* aSample, const TUint8 aSampleSi
     
     /* figure out how much data we can copy between the current start point and the end of the buffer */
     TUint32 dataSize = iFrameSize;
-    Log::Print("Processing sample: %d bytes\n", dataSize);
     
     TUint32 blocksize = fmin(dataSize, iBuffsize - iWriteIndex);
     memcpy(&(((char *)iBuff->mAudioData)[iWriteIndex]), aSample, blocksize);
