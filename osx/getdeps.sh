@@ -23,6 +23,7 @@ echo "Copying Include Files into project ....."
 
 rsync -av --include "*/" --include "*.h" --include "*.inl" --exclude "*" $OPENHOME/OhNet/Build/Include/OpenHome $TEST_APP/Include/
 rsync -av --include "*/" --include "*.h" --include "*.inl" --exclude "*" $OPENHOME/OhNet/OpenHome $TEST_APP/Include/
+rsync -av --include "*/" --include "*.h" --include "*.cpp" --include "*.inl" --exclude "*" $OPENHOME/LitePipe/build/Generated $TEST_APP/Include/
 rsync -av --include "*/" --include "*.h" --include "*.inl" --exclude "*" $OPENHOME/LitePipe/OpenHome $TEST_APP/Include/
 
 

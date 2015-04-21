@@ -6,7 +6,8 @@
 //
 
 #import "AppDelegate.h"
-#import "SampleMediaPlayer.h"
+
+#include "SampleMediaPlayer.h"
 
 @interface AppDelegate ()
 
@@ -16,7 +17,7 @@
 
 @implementation AppDelegate
 
-SampleMediaPlayer *samplePlayer;
+OpenHome::Av::Sample::SampleMediaPlayer *samplePlayer;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     // we have finished launching the app so create our status menu
@@ -25,12 +26,11 @@ SampleMediaPlayer *samplePlayer;
     // and not having a main window or view controller
     [self setupStatusItem];
     
-    samplePlayer = [[SampleMediaPlayer alloc] init];
-    [samplePlayer setup];
+    samplePlayer = new OpenHome::Av::Sample::SampleMediaPlayer();
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
-    [samplePlayer shutdown];
+    delete samplePlayer;
 }
 
 
@@ -70,19 +70,19 @@ SampleMediaPlayer *samplePlayer;
 - (void)lp_play:(id)sender
 {
     if(samplePlayer != nil)
-        [samplePlayer play];
+        samplePlayer->play();
 }
 
 - (void)lp_pause:(id)sender
 {
     if(samplePlayer != nil)
-        [samplePlayer pause];
+        samplePlayer->pause();
 }
 
 - (void)lp_stop:(id)sender
 {
     if(samplePlayer != nil)
-        [samplePlayer stop];
+        samplePlayer->stop();
 }
 
 - (void)about:(id) sender
