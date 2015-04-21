@@ -9,7 +9,7 @@
 #include <OpenHome/Net/Private/DviStack.h>
 #include <Generated/CpAvOpenhomeOrgVolume1.h>
 #include <Generated/CpAvOpenhomeOrgPlaylist1.h>
-#include <OpenHome/Net/C/CpDeviceDv.h>
+#include <OpenHome/Net/Core/CpDeviceDv.h>
 #include <OpenHome/Functor.h>
 
 #include "DriverOsx.h"
@@ -61,7 +61,7 @@ private:
     NetworkAdapter* adapter;
     Net::DvStack* dvStack;
     Net::CpStack* cpStack;
-    CpDeviceC cpPlayer;
+    Net::CpDeviceDv* cpPlayer;
     BaseMediaPlayerOptions options;
     BaseMediaPlayer* mp;
     Media::DriverOsx* driver;

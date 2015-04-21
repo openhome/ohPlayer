@@ -33,8 +33,8 @@ SampleMediaPlayer::~SampleMediaPlayer()
 
 void SampleMediaPlayer::initialiseProxies()
 {
-    _volumeProxy = new CpProxyAvOpenhomeOrgVolume1((CpDevice&)*cpPlayer);
-    _playlistProxy = new CpProxyAvOpenhomeOrgPlaylist1((CpDevice&)*cpPlayer);
+    _volumeProxy = new CpProxyAvOpenhomeOrgVolume1(*cpPlayer);
+    _playlistProxy = new CpProxyAvOpenhomeOrgPlaylist1(*cpPlayer);
 
     funcVolumeInitialEvent = MakeFunctor(*this, &SampleMediaPlayer::ohNetVolumeInitialEvent);
     _volumeProxy->SetPropertyInitialEvent(funcVolumeInitialEvent);
@@ -147,13 +147,13 @@ TBool SampleMediaPlayer::setup ()
         return false;
     }
   
+    mp->Run();
+    
     // create a CpDeviceC for our internal player
-    cpPlayer = CpDeviceDvCreate(mp->Device());
+    cpPlayer = CpDeviceDv::New(*cpStack, *(mp->Device()));
     
     // initialise ohNet Proxies for Volume, playlist
     initialiseProxies();
-    
-    mp->Run();
     
     return true;
 }
