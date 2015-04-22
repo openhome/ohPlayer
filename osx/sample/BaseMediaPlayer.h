@@ -65,13 +65,8 @@ namespace OpenHome {
                 BaseMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName,
                                 const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, const Brx& aUserAgent);
                 virtual ~BaseMediaPlayer();
-                void SetPullableClock(Media::IPullableClock& aPullableClock);
-                void PlayPipeline();
-                void PausePipeline();
-                void StopPipeline();
                 void AddAttribute(const TChar* aAttribute); // FIXME - only required by Songcasting driver
                 virtual void Run();
-                virtual void RunWithSemaphore();
                 Media::PipelineManager& Pipeline();
                 Net::DvDeviceStandard* Device();
             protected:
@@ -111,7 +106,6 @@ namespace OpenHome {
                 const Brx& iTidalId;
                 const Brx& iQobuzIdSecret;
                 const Brx& iUserAgent;
-                Media::IPullableClock* iPullableClock;
                 ObservableBrx iObservableFriendlyName;
                 Web::ConfigAppMediaPlayer* iConfigApp;
             };

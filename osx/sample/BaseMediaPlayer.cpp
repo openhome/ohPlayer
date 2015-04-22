@@ -34,7 +34,6 @@ const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, con
 , iTidalId(aTidalId)
 , iQobuzIdSecret(aQobuzIdSecret)
 , iUserAgent(aUserAgent)
-, iPullableClock(NULL)
 , iObservableFriendlyName(new Bws<RaopDevice::kMaxNameBytes>())
 {
     Bws<256> friendlyName;
@@ -116,39 +115,6 @@ BaseMediaPlayer::~BaseMediaPlayer()
     delete iConfigRamStore;
 }
 
-void BaseMediaPlayer::SetPullableClock(IPullableClock& aPullableClock)
-{
-    iPullableClock = &aPullableClock;
-}
-
-void BaseMediaPlayer::PausePipeline()
-{
-    Pipeline().Pause();
-}
-
-void BaseMediaPlayer::PlayPipeline()
-{
-    Pipeline().Play();
-}
-
-void BaseMediaPlayer::StopPipeline()
-{
-    Pipeline().Stop();
-    TUint waitCount = 0;
-    if (TryDisable(*iDevice)) {
-        waitCount++;
-    }
-    if (TryDisable(*iDeviceUpnpAv)) {
-        waitCount++;
-    }
-    while (waitCount > 0) {
-        iDisabled.Wait();
-        waitCount--;
-    }
-    iMediaPlayer->Quit();
-    iSemShutdown.Signal();
-}
-
 void BaseMediaPlayer::AddAttribute(const TChar* aAttribute)
 {
     iMediaPlayer->AddAttribute(aAttribute);
@@ -181,23 +147,6 @@ void BaseMediaPlayer::Run()
     iDevice->SetEnabled();
     iDeviceUpnpAv->SetEnabled();
 
-}
-
-void BaseMediaPlayer::RunWithSemaphore()
-{
-    RegisterPlugins(iMediaPlayer->Env());
-    iMediaPlayer->Start();
-    iAppFramework->Start();
-    iDevice->SetEnabled();
-    iDeviceUpnpAv->SetEnabled();
-
-    iConfigRamStore->Print();
-
-    iSemShutdown.Wait();    // FIXME - can Run() and RunWithSemaphore() be refactored out? only difference is how they wait for termination signal
-
-    //IPowerManager& powerManager = iMediaPlayer->PowerManager();
-    //powerManager.PowerDown(); // FIXME - this should probably be replaced by a normal shutdown procedure
-    iConfigRamStore->Print();
 }
 
 PipelineManager& BaseMediaPlayer::Pipeline()
@@ -274,10 +223,10 @@ void BaseMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSupported
     // Add sources
     iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer, aSupportedProtocols));
     if (iTuneInPartnerId.Bytes() == 0) {
-    iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer, iPullableClock, aSupportedProtocols));
+    iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer, NULL, aSupportedProtocols));
     }
     else {
-    iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer, iPullableClock, aSupportedProtocols, iTuneInPartnerId));
+    iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer, NULL, aSupportedProtocols, iTuneInPartnerId));
     }
     iMediaPlayer->Add(SourceFactory::NewUpnpAv(*iMediaPlayer, *iDeviceUpnpAv, aSupportedProtocols));
 
@@ -290,7 +239,7 @@ void BaseMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSupported
     iObservableFriendlyName.Replace(Brn(friendlyName));
     iMediaPlayer->Add(SourceFactory::NewRaop(*iMediaPlayer, hostName.PtrZ(), iObservableFriendlyName, macAddr));
 
-    iMediaPlayer->Add(SourceFactory::NewReceiver(*iMediaPlayer, iPullableClock, NULL, kSongcastSenderIconFileName)); // FIXME - will want to replace timestamper with access to a driver on embedded platforms
+    iMediaPlayer->Add(SourceFactory::NewReceiver(*iMediaPlayer, NULL, NULL, kSongcastSenderIconFileName)); // FIXME - will want to replace timestamper with access to a driver on embedded platforms
 }
 
 
