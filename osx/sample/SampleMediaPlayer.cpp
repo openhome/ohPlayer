@@ -16,11 +16,14 @@ using namespace OpenHome::Net;
 
 SampleMediaPlayer::SampleMediaPlayer()
 {
+    // set up our media player
     setup();
 }
 
 SampleMediaPlayer::~SampleMediaPlayer()
 {
+    // if we have a control point initialised then delete
+    // the proxies if they haven't been already
     if (cpPlayer != NULL)
     {
         delete _volumeProxy;
@@ -33,21 +36,28 @@ SampleMediaPlayer::~SampleMediaPlayer()
 
 void SampleMediaPlayer::initialiseProxies()
 {
+    // create proxies for the Volume and Playlist services on our
+    // player device
     _volumeProxy = new CpProxyAvOpenhomeOrgVolume1(*cpPlayer);
     _playlistProxy = new CpProxyAvOpenhomeOrgPlaylist1(*cpPlayer);
 
+    // create callbacks for all of the notifications we're interested in.
     funcVolumeInitialEvent = MakeFunctor(*this, &SampleMediaPlayer::ohNetVolumeInitialEvent);
     _volumeProxy->SetPropertyInitialEvent(funcVolumeInitialEvent);
     funcVolumeChanged = MakeFunctor(*this, &SampleMediaPlayer::ohNetVolumeChanged);
+    // register for notifications about various volume properties
     _volumeProxy->SetPropertyVolumeChanged(funcVolumeChanged);
     _volumeProxy->SetPropertyVolumeLimitChanged(funcVolumeChanged);
     _volumeProxy->SetPropertyMuteChanged(funcVolumeChanged);
+    // subscribe to the volume change service
     _volumeProxy->Subscribe();
     
+    // create callbacks for playlist notifications we're interested in.
     funcGenericInitialEvent = MakeFunctor(*this, &SampleMediaPlayer::ohNetGenericInitialEvent);
     _playlistProxy->SetPropertyInitialEvent(funcGenericInitialEvent);
     funcIdChanged = MakeFunctor(*this, &SampleMediaPlayer::ohNetPlaylistIdChangedEvent);
     _playlistProxy->SetPropertyIdChanged(funcIdChanged);
+    // subscribe to the playlist service
     _playlistProxy->Subscribe();
 }
 
@@ -80,6 +90,8 @@ void SampleMediaPlayer::volumeChanged()
     _volumeProxy->PropertyVolume(newVolume);
     _volumeProxy->PropertyVolumeLimit(newLimit);
     _volumeProxy->PropertyMute(newMute);
+    
+    // set the OS volume
 }
 
 void SampleMediaPlayer::initialEventVolume()
@@ -161,6 +173,9 @@ TBool SampleMediaPlayer::setup ()
 
 void SampleMediaPlayer::shutdown() {
     playlistStop();
+    
+    _volumeProxy->Unsubscribe();
+    _playlistProxy->Unsubscribe();
     
     delete mp;
     mp = nil;
