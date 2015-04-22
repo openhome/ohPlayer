@@ -8,6 +8,16 @@
 #include <Shobjidl.h>
 #include <string.h>
 
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+#ifdef _DEBUG
+   #ifndef DBG_NEW
+      #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
+      #define new DBG_NEW
+   #endif
+#endif  // _DEBUG
+
 using namespace OpenHome;
 using namespace OpenHome::Av;
 using namespace OpenHome::Media;
@@ -228,7 +238,6 @@ cleanup:
 
     if (driver != nullptr)
     {
-        // FIXME - Deleting this object causes shutdown on crash.
         delete driver;
     }
 

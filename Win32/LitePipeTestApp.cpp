@@ -11,6 +11,17 @@
 
 #include "MediaPlayerIF.h"
 
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+
+#ifdef _DEBUG
+   #ifndef DBG_NEW
+      #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
+      #define new DBG_NEW
+   #endif
+#endif  // _DEBUG
+
 // System tray icon identifier.
 #define ICON_ID 1
 
@@ -39,6 +50,8 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR /*lpCmdLine*/, int /
     g_hInst = hInstance;
     RegisterWindowClass(szWindowClass, WndProc);
 
+    //_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
+
     // Create the main (hidden) window.
     WCHAR szTitle[100];
     LoadString(hInstance, IDS_APP_TITLE, szTitle, ARRAYSIZE(szTitle));
@@ -57,6 +70,11 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR /*lpCmdLine*/, int /
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
+    }
+
+    if (! _CrtDumpMemoryLeaks())
+    {
+        printf_s("No Memory Leaks Detected\n");
     }
 
     return 0;

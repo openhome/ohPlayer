@@ -66,14 +66,12 @@ private:
     IMMDevice            *_AudioEndpoint;
     IAudioClient         *_AudioClient;
     IAudioRenderClient   *_RenderClient;
-    IMMDeviceEnumerator  *_DeviceEnumerator;
     WAVEFORMATEX         *_MixFormat;
 
 private:
     // Audio Client Events
     HANDLE              _AudioSamplesReadyEvent;
     HANDLE              _StreamSwitchEvent;
-    HANDLE              _ShutdownEvent;
 
     // Internal Data
 
@@ -82,22 +80,31 @@ private:
     LONG                _EngineLatencyInMS;
     // Max audio Frames in Audio Client buffer.
     TUint32             _BufferSize;
-    // Set when native audio is initialised successfully.
+    // Set when the audio stream has benn verified as playable
+    bool                _StreamFormatSupported;
+    // Set when native audio is initialised successfully to the stream format.
     bool                _AudioEngineInitialised;
+    // Set when native audio client has been started successfully.
+    bool                _AudioClientStarted;
     // Amount of space in the render buffer this render period.
     TUint32             _RenderBytesThisPeriod;
     // Amount of remaining space in the render buffer this render period.
     TUint32             _RenderBytesRemaining;
+    // Audio renderer frame size.
+    TUint32             _FrameSize;
+    // Duplicate a chaneel when rendering (mono->stereo).
+    bool             _DuplicateChannel;
 
 private:
     // Utility functions
     bool GetMultimediaDevice(IMMDevice **DeviceToUse);
+    bool CheckMixFormat(TUint iSampleRate, TUint iNumChannels, TUint iBitDepth);
     bool InitializeAudioClient();
     bool InitializeAudioEngine();
+    bool RestartAudioEngine();
     bool InitializeStreamSwitch();
     void StopAudioEngine();
     void ShutdownAudioEngine();
-    TUint32 BufferSizePerPeriod();
 };
 } // namespace Media
 } // namespace OpenHome

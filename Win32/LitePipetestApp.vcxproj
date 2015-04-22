@@ -188,6 +188,7 @@
     <ClCompile Include="LitePipeTestApp.cpp" />
     <ClCompile Include="ExampleMediaPlayer.cpp" />
     <ClCompile Include="MediaPlayerIF.cpp" />
+    <ClCompile Include="ProcessorPcmWASAPI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="LitePipeTestApp.ico" />
