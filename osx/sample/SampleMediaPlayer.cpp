@@ -22,15 +22,16 @@ SampleMediaPlayer::SampleMediaPlayer()
 
 SampleMediaPlayer::~SampleMediaPlayer()
 {
-    // if we have a control point initialised then delete
-    // the proxies if they haven't been already
-    if (cpPlayer != NULL)
+    // delete the proxies if they haven't been already
+    if (_volumeProxy != NULL)
     {
         delete _volumeProxy;
         _volumeProxy = NULL;
-        
+    }
+    if (_playlistProxy != NULL)
+    {
         delete _playlistProxy;
-        _playlistProxy = nil;
+        _playlistProxy = NULL;
     }
 }
 
@@ -38,8 +39,8 @@ void SampleMediaPlayer::initialiseProxies()
 {
     // create proxies for the Volume and Playlist services on our
     // player device
-    _volumeProxy = new CpProxyAvOpenhomeOrgVolume1(*cpPlayer);
-    _playlistProxy = new CpProxyAvOpenhomeOrgPlaylist1(*cpPlayer);
+    _volumeProxy = new CpProxyAvOpenhomeOrgVolume1(*cpPlayerVol);
+    _playlistProxy = new CpProxyAvOpenhomeOrgPlaylist1(*cpPlayerPlaylist);
 
     // create callbacks for all of the notifications we're interested in.
     funcVolumeInitialEvent = MakeFunctor(*this, &SampleMediaPlayer::ohNetVolumeInitialEvent);
@@ -162,7 +163,9 @@ TBool SampleMediaPlayer::setup ()
     mp->Run();
     
     // create a CpDeviceC for our internal player
-    cpPlayer = CpDeviceDv::New(*cpStack, *(mp->Device()));
+    // we create 2 temporarily as CpDeviceDv only allows one subscription
+    cpPlayerVol = CpDeviceDv::New(*cpStack, *(mp->Device()));
+    cpPlayerPlaylist = CpDeviceDv::New(*cpStack, *(mp->Device()));
     
     // initialise ohNet Proxies for Volume, playlist
     initialiseProxies();

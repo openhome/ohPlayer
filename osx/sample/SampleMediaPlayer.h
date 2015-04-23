@@ -61,7 +61,8 @@ private:
     NetworkAdapter* adapter;
     Net::DvStack* dvStack;
     Net::CpStack* cpStack;
-    Net::CpDeviceDv* cpPlayer;
+    Net::CpDeviceDv* cpPlayerVol;
+    Net::CpDeviceDv* cpPlayerPlaylist;
     BaseMediaPlayerOptions options;
     BaseMediaPlayer* mp;
     Media::DriverOsx* driver;
