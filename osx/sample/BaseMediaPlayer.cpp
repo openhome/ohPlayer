@@ -40,7 +40,7 @@ const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, con
     friendlyName.Append(aRoom);
     friendlyName.Append(':');
     friendlyName.Append(aProductName);
-
+    
     // create UPnP device
     iDevice = new DvDeviceStandard(aDvStack, aUdn, *this);
     iDevice->SetAttribute("Upnp.Domain", "av.openhome.org");
@@ -89,8 +89,6 @@ const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, con
     // create MediaPlayer
     iMediaPlayer = new MediaPlayer(aDvStack, *iDevice, *iRamStore, *iConfigRamStore, iInitParams,
     iVolume, iVolume, aUdn, Brn("Main Room"), Brn("Softplayer"));
-    iPipelineObserver = new LoggingPipelineObserver();
-    iMediaPlayer->Pipeline().AddObserver(*iPipelineObserver);
 
     // Set up config app.
     static const TUint addr = 0;    // Bind to all addresses.

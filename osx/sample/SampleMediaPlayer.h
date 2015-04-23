@@ -19,7 +19,8 @@ namespace OpenHome {
 namespace Av {
 namespace Sample {
 
-class SampleMediaPlayer 
+    class SampleMediaPlayer : private Media::IPipelineObserver
+
 {
 public:
     SampleMediaPlayer();
@@ -43,10 +44,20 @@ public:
     void setVolumeLimit(TUint limit);
     void setMute(TBool muted);
 
-    void playlistStop();
-    void playlistPause();
     void playlistPlay();
+    void playlistPause();
+    void playlistStop();
+    TBool canPlay();
+    TBool canPause();
+    TBool canStop();
 
+private: // from Media::IPipelineObserver
+    void NotifyPipelineState(Media::EPipelineState aState) override;
+    void NotifyTrack(Media::Track& aTrack, const Brx& aMode, TBool aStartOfStream) override;
+    void NotifyMetaText(const Brx& aText) override;
+    void NotifyTime(TUint aSeconds, TUint aTrackDurationSeconds) override;
+    void NotifyStreamInfo(const Media::DecodedStreamInfo& aStreamInfo) override;
+    
 private:
     
     void volumeChanged();
@@ -55,6 +66,8 @@ private:
     TUint volume;
     TUint volumeLimit;
     TUint playlistTrackId;
+    TBool iLive;
+    Media::EPipelineState iState;
     
     Net::Library* lib;
     const TChar* cookie;

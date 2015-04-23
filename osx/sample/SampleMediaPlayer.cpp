@@ -160,6 +160,9 @@ TBool SampleMediaPlayer::setup ()
         return false;
     }
   
+    mp->Pipeline().AddObserver(*this);
+    iState = EPipelineStopped;
+
     mp->Run();
     
     // create a CpDeviceC for our internal player
@@ -189,19 +192,66 @@ void SampleMediaPlayer::shutdown() {
 }
 
 TBool SampleMediaPlayer::play() {
-    playlistPlay();
-    return true;
+    if (canPlay())
+    {
+        playlistPlay();
+        return true;
+    }
+    return false;
 }
 
 TBool SampleMediaPlayer::pause() {
-    playlistPause();
-    return true;
+    if (canPause())
+    {
+        playlistPause();
+        return true;
+    }
+    return false;
 }
 
 TBool SampleMediaPlayer::stop() {
-    playlistStop();
-    return true;
+    if (canStop())
+    {
+        playlistStop();
+        return true;
+    }
+    return false;
 }
 
+TBool SampleMediaPlayer::canPlay() {
+    return (iState == EPipelinePaused || iState == EPipelineStopped);
+}
 
+TBool SampleMediaPlayer::canPause() {
+    return (!iLive && iState == EPipelinePlaying);
+}
+
+TBool SampleMediaPlayer::canStop() {
+    return (iState == EPipelinePlaying || iState == EPipelinePaused);
+}
+
+// Pipeline Observer callbacks.
+void SampleMediaPlayer::NotifyPipelineState(Media::EPipelineState aState)
+{
+    iState = aState;
+    
+    //Log::Print("Pipeline State: %d\n", aState);
+}
+
+void SampleMediaPlayer::NotifyTrack(Media::Track& /*aTrack*/, const Brx& /*aMode*/, TBool /*aStartOfStream*/)
+{
+}
+
+void SampleMediaPlayer::NotifyMetaText(const Brx& /*aText*/)
+{
+}
+
+void SampleMediaPlayer::NotifyTime(TUint /*aSeconds*/, TUint /*aTrackDurationSeconds*/)
+{
+}
+
+void SampleMediaPlayer::NotifyStreamInfo(const Media::DecodedStreamInfo& aStreamInfo)
+{
+    iLive = aStreamInfo.Live();
+}
 
