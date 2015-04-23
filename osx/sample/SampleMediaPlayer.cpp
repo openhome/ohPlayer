@@ -46,10 +46,12 @@ void SampleMediaPlayer::initialiseProxies()
     funcVolumeInitialEvent = MakeFunctor(*this, &SampleMediaPlayer::ohNetVolumeInitialEvent);
     _volumeProxy->SetPropertyInitialEvent(funcVolumeInitialEvent);
     funcVolumeChanged = MakeFunctor(*this, &SampleMediaPlayer::ohNetVolumeChanged);
+    
     // register for notifications about various volume properties
     _volumeProxy->SetPropertyVolumeChanged(funcVolumeChanged);
     _volumeProxy->SetPropertyVolumeLimitChanged(funcVolumeChanged);
     _volumeProxy->SetPropertyMuteChanged(funcVolumeChanged);
+    
     // subscribe to the volume change service
     _volumeProxy->Subscribe();
     
@@ -58,6 +60,7 @@ void SampleMediaPlayer::initialiseProxies()
     _playlistProxy->SetPropertyInitialEvent(funcGenericInitialEvent);
     funcIdChanged = MakeFunctor(*this, &SampleMediaPlayer::ohNetPlaylistIdChangedEvent);
     _playlistProxy->SetPropertyIdChanged(funcIdChanged);
+    
     // subscribe to the playlist service
     _playlistProxy->Subscribe();
 }
@@ -178,14 +181,18 @@ TBool SampleMediaPlayer::setup ()
 
 
 void SampleMediaPlayer::shutdown() {
+    // we're shutting down so stop the current playlist if required
     playlistStop();
     
+    // unsubscribe to volume and playlist services
     _volumeProxy->Unsubscribe();
     _playlistProxy->Unsubscribe();
     
+    // delete our media player
     delete mp;
     mp = nil;
     
+    // and free our library
     delete lib;
     lib = nil;
     

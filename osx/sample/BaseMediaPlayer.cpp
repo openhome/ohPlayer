@@ -81,28 +81,24 @@ const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, con
     // FIXME - available store keys should be listed somewhere
     iConfigRamStore->Write(Brn("Product.Room"), Brn(aRoom));
     iConfigRamStore->Write(Brn("Product.Name"), Brn(aProductName));
-
-    PipelineInitParams *iInitParams = PipelineInitParams::New();
-    iInitParams->SetThreadPriorityMax(kPriorityHighest);
-    iInitParams->SetStarvationMonitorMaxSize(Jiffies::kPerMs * 50 *2);
     
     // create MediaPlayer
-    iMediaPlayer = new MediaPlayer(aDvStack, *iDevice, *iRamStore, *iConfigRamStore, iInitParams,
-    iVolume, iVolume, aUdn, Brn("Main Room"), Brn("Softplayer"));
-
-    // Set up config app.
-    static const TUint addr = 0;    // Bind to all addresses.
-    static const TUint port = 8080;    // Bind to whatever free port the OS allocates to the framework server.
-    iAppFramework = new WebAppFramework(aDvStack.Env(), addr, port, kMaxUiTabs, kUiSendQueueSize);
+    iMediaPlayer = new MediaPlayer( aDvStack,
+                                   *iDevice,
+                                   *iRamStore,
+                                   *iConfigRamStore,
+                                   PipelineInitParams::New(),
+                                   iVolume,
+                                   iVolume,
+                                   aUdn,
+                                   Brn("Main Room"),
+                                   Brn("Softplayer"));
 }
 
 BaseMediaPlayer::~BaseMediaPlayer()
 {
-    delete iAppFramework;
-    delete iPowerObserver;
     ASSERT(!iDevice->Enabled());
     delete iMediaPlayer;
-    delete iPipelineObserver;
     delete iDevice;
     delete iDeviceUpnpAv;
     delete iRamStore;
@@ -116,28 +112,13 @@ void BaseMediaPlayer::AddAttribute(const TChar* aAttribute)
 
 void BaseMediaPlayer::Run()
 {
+    // Register all of our supported plugin formats
     RegisterPlugins(iMediaPlayer->Env());
+    
+    // now we are ready to start our mediaplayer
     iMediaPlayer->Start();
-
-    std::vector<const Brx*> sourcesBufs;
-    Product& product = iMediaPlayer->Product();
-    for (TUint i=0; i<product.SourceCount(); i++) {
-        Bws<ISource::kMaxSystemNameBytes> systemName;
-        Bws<ISource::kMaxSourceNameBytes> name;
-        Bws<ISource::kMaxSourceTypeBytes> type;
-        TBool visible;
-        product.GetSourceDetails(i, systemName, type, name, visible);
-        sourcesBufs.push_back(new Brh(systemName));
-    }
-    // FIXME - take resource dir as param or copy res dir to build dir
-    iConfigApp = new ConfigAppMediaPlayer(iMediaPlayer->ConfigManager(), sourcesBufs, Brn("Softplayer"), Brn("res/"), kMaxUiTabs, kUiSendQueueSize);
-    iAppFramework->Add(iConfigApp, MakeFunctorGeneric(*this, &BaseMediaPlayer::PresentationUrlChanged));
-
-    for (TUint i=0;i<sourcesBufs.size(); i++) {
-        delete sourcesBufs[i];
-    }
-
-    iAppFramework->Start();
+    
+    // now enable our UPNP devices
     iDevice->SetEnabled();
     iDeviceUpnpAv->SetEnabled();
 

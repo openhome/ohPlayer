@@ -86,25 +86,19 @@ namespace OpenHome {
                 
             protected:
                 MediaPlayer* iMediaPlayer;
-                Media::LoggingPipelineObserver* iPipelineObserver;
                 Net::DvDeviceStandard* iDevice;
                 Net::DvDevice* iDeviceUpnpAv;
                 RamStore* iRamStore;
                 Configuration::ConfigRamStore* iConfigRamStore;
                 Semaphore iSemShutdown;
-                Net::Shell* iShell;
-                Web::WebAppFramework* iAppFramework;
             private:
                 Semaphore iDisabled;
                 Media::VolumePrinter iVolume;
-                IPowerManagerObserver* iPowerObserver;
-                Net::ShellCommandDebug* iShellDebug;
                 const Brx& iTuneInPartnerId;
                 const Brx& iTidalId;
                 const Brx& iQobuzIdSecret;
                 const Brx& iUserAgent;
                 ObservableBrx iObservableFriendlyName;
-                Web::ConfigAppMediaPlayer* iConfigApp;
             };
             
             class BaseMediaPlayerOptions
