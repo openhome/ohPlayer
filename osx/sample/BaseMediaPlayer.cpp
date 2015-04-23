@@ -92,10 +92,6 @@ const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, con
     iPipelineObserver = new LoggingPipelineObserver();
     iMediaPlayer->Pipeline().AddObserver(*iPipelineObserver);
 
-    // register our PowerDownUpnp function with the PowerManager
-    IPowerManager& powerManager = iMediaPlayer->PowerManager();
-    iPowerObserver = powerManager.Register(*this, kPowerPriorityLowest);
-
     // Set up config app.
     static const TUint addr = 0;    // Bind to all addresses.
     static const TUint port = 8080;    // Bind to whatever free port the OS allocates to the framework server.
@@ -253,24 +249,6 @@ void BaseMediaPlayer::WriteResource(const Brx& aUriTail, TIpAddress /*aInterface
     }
 }
 
-void BaseMediaPlayer::PowerUp()
-{
-    // FIXME - enable UPnP devices here?
-    // - would need to account for two-stage create->run process either by
-    //  - setting a flag here which is checked in Run() OR
-    //  - registering with IPowerManager in Run() call
-    //iDevice->SetEnabled();
-    //iDeviceUpnpAv->SetEnabled();
-}
-
-void BaseMediaPlayer::PowerDown()
-{
-    Log::Print("BaseMediaPlayer::PowerDown\n");
-    PowerDownDisable(*iDevice);
-    PowerDownDisable(*iDeviceUpnpAv);
-}
-
-
 TUint BaseMediaPlayer::Hash(const Brx& aBuf)
 {
     TUint hash = 0;
@@ -312,18 +290,6 @@ void BaseMediaPlayer::PresentationUrlChanged(const Brx& aUrl)
 {
     Bws<Uri::kMaxUriBytes+1> url(aUrl);   // +1 for '\0'
     iDevice->SetAttribute("Upnp.PresentationUrl", url.PtrZ());
-}
-
-void BaseMediaPlayer::PowerDownDisable(DvDevice& aDevice)
-{
-    if (aDevice.Enabled()) {
-    aDevice.SetDisabled(MakeFunctor(*this, &BaseMediaPlayer::PowerDownUpnpCallback));
-    }
-}
-
-void BaseMediaPlayer::PowerDownUpnpCallback()
-{
-// do nothing; only exists to avoid lengthy Upnp shutdown waits during power fail
 }
 
 TBool BaseMediaPlayer::TryDisable(DvDevice& aDevice)

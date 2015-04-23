@@ -53,7 +53,7 @@ namespace OpenHome {
         class RamStore;
         namespace Sample {
             
-            class BaseMediaPlayer : private Net::IResourceManager, public IPowerHandler
+            class BaseMediaPlayer : private Net::IResourceManager
             {
             private:
                 static const Brn kSongcastSenderIconFileName;
@@ -72,21 +72,18 @@ namespace OpenHome {
             protected:
                 virtual void RegisterPlugins(Environment& aEnv);
                 void DoRegisterPlugins(Environment& aEnv, const Brx& aSupportedProtocols);
+                
             private: // from Net::IResourceManager
                 void WriteResource(const Brx& aUriTail, TIpAddress aInterface, std::vector<char*>& aLanguageList, Net::IResourceWriter& aResourceWriter) override;
-            private: // from IPowerHandler
-                void PowerUp() override;
-                void PowerDown() override;
+
             private:
                 static TUint Hash(const Brx& aBuf);
                 static void GenerateMacAddr(Environment& aEnv, TUint aSeed, Bwx& aMacAddr);
                 void MacAddrFromUdn(Environment& aEnv, Bwx& aMacAddr);
                 void PresentationUrlChanged(const Brx& aUrl);
-                void PowerDownUpnp();
-                void PowerDownDisable(Net::DvDevice& aDevice);
-                void PowerDownUpnpCallback();
                 TBool TryDisable(Net::DvDevice& aDevice);
                 void Disabled();
+                
             protected:
                 MediaPlayer* iMediaPlayer;
                 Media::LoggingPipelineObserver* iPipelineObserver;
