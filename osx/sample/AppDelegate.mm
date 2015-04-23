@@ -63,6 +63,29 @@ OpenHome::Av::Sample::SampleMediaPlayer *samplePlayer;
     self.statusItem.menu = menu;
 }
 
+- (BOOL)validateUserInterfaceItem:(id <NSValidatedUserInterfaceItem>)anItem
+{
+    SEL theAction = [anItem action];
+    
+    // enable our player menu items based on the current mediaplayer state
+    // note that we must check with the player as it may have been paused/played
+    // by external controlpoints, and the mediaplayer monitors the playback
+    // state directly so should always be up to date
+    if (theAction == @selector(lp_pause:)) {
+        return( samplePlayer->canPause() ? YES : NO );
+    }
+    else if (theAction == @selector(lp_play:)) {
+        return( samplePlayer->canPlay() ? YES : NO );
+    }
+    else if (theAction == @selector(lp_stop:)) {
+        return( samplePlayer->canStop() ? YES : NO );
+    }
+    
+    // all our other menu items should always be enabled
+    return YES;
+}
+
+
 - (void)checkUpdates:(id)sender
 {
 }
