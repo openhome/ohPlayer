@@ -58,6 +58,9 @@ public:
     // Start playing the Host Audio
     void startQueue();
     
+    // Pause the Host Audio playback
+    void pauseQueue();
+    
     // Stop playing the Host Audio
     void stopQueue();
     

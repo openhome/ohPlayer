@@ -297,6 +297,13 @@ void OsxAudio::startQueue()
     iPlaying = true;
 }
 
+void OsxAudio::pauseQueue()
+{
+    // stop host AudioQueue playback immediately and indicate that we have stopped
+    AudioQueuePause(iAudioQueue);
+    iPlaying = false;
+}
+
 void OsxAudio::stopQueue()
 {
     // stop host AudioQueue playback immediately and indicate that we have stopped
