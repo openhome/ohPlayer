@@ -7,6 +7,10 @@
 #define IDS_TOOLTIP                     104
 #define IDS_UPDATE_TITLE                105
 #define IDS_UPDATE_TEXT                 106
+#define IDS_AUDIO_DISCONNECT_TITLE      107
+#define IDS_AUDIO_DISCONNECT_TEXT       108
+#define IDS_AUDIO_INIT_ERROR_TITLE      109
+#define IDS_AUDIO_INIT_ERROR_TEXT       110
 #define IDM_PLAY                        124
 #define IDM_PAUSE                       125
 #define IDM_STOP                        126

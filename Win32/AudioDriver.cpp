@@ -9,6 +9,7 @@
 #include <OpenHome/OsWrapper.h>
 
 #include "AudioDriver.h"
+#include "CustomMessages.h"
 #include "ProcessorPcmWASAPI.h"
 
 #include <avrt.h>
@@ -28,16 +29,20 @@
 using namespace OpenHome;
 using namespace OpenHome::Media;
 
-AudioDriver::AudioDriver(Environment& /*aEnv*/, IPipeline& aPipeline) :
+AudioDriver::AudioDriver(Environment& /*aEnv*/, IPipeline& aPipeline, LPVOID lpParam) :
+    _Hwnd(HWND(lpParam)),
     _AudioEndpoint(NULL),
     _AudioClient(NULL),
     _RenderClient(NULL),
     _MixFormat(NULL),
+    _AudioSessionControl(NULL),
+    _AudioSessionEvents(NULL),
     _AudioSamplesReadyEvent(NULL),
-    _StreamSwitchEvent(NULL),
+    _AudioSessionDisconnectedEvent(NULL),
     _EngineLatencyInMS(25),
     _BufferSize(0),
     _StreamFormatSupported(false),
+    _AudioSessionDisconnected(false),
     _AudioEngineInitialised(false),
     _AudioClientStarted(false),
     _RenderBytesThisPeriod(0),
@@ -296,11 +301,11 @@ Msg* AudioDriver::ProcessMsg(MsgDecodedStream* aMsg)
     Log::Print("\tNumber Of Channels: %6u\n", iNumChannels);
     Log::Print("\tBit Depth:          %6u\n", iBitDepth);
 
+    _StreamFormatSupported = false;
+    _FrameSize             = 0;
+
     if (CheckMixFormat(iSampleRate, iNumChannels, iBitDepth))
     {
-        _StreamFormatSupported = true;
-        _FrameSize             = _MixFormat->nBlockAlign;
-
         //
         // Now that we know the stream format and that it is viable
         // fire up the Audio Engine with the stream specifics.
@@ -321,12 +326,19 @@ Msg* AudioDriver::ProcessMsg(MsgDecodedStream* aMsg)
                 _AudioEngineInitialised = true;
             }
         }
+
+        if (_AudioEngineInitialised)
+        {
+            _StreamFormatSupported = true;
+            _FrameSize             = _MixFormat->nBlockAlign;
+        }
+        else
+        {
+            PostMessage(_Hwnd, WM_APP_AUDIO_INIT_ERROR, NULL, NULL);
+        }
     }
     else
     {
-        _StreamFormatSupported = false;
-        _FrameSize             = 0;
-
         //
         // We can't play the audio stream, most likely due to the number
         // of channels changing, as a sample rate change would have been
@@ -360,7 +372,7 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
 
     // If the native audio system is not available yet just throw
     // the data away.
-    if (! _StreamFormatSupported)
+    if (! _StreamFormatSupported || _AudioSessionDisconnected)
     {
         aMsg->RemoveRef();
         return;
@@ -434,9 +446,6 @@ Msg* AudioDriver::ProcessMsg(MsgHalt* aMsg)
 {
     Log::Print("Pipeline Halt Msg\n");
 
-    // TBD: Not sure if anything needs done here for Audio Engine/Client
-    //
-    // Halt input audio processing from the pipeline.
     aMsg->RemoveRef();
     return NULL;
 }
@@ -508,6 +517,7 @@ bool AudioDriver::RestartAudioEngine()
 
     SafeRelease(&_AudioClient);
     SafeRelease(&_RenderClient);
+    SafeRelease(&_AudioSessionControl);
 
     // Restart the audio client with latest mix format.
     hr = _AudioEndpoint->Activate(__uuidof(IAudioClient),
@@ -562,6 +572,30 @@ bool AudioDriver::RestartAudioEngine()
     if (FAILED(hr))
     {
         Log::Print("Unable to get new render client: %x.\n", hr);
+        return false;
+    }
+
+    // Get Audio Session Control
+    hr = _AudioClient->GetService(IID_PPV_ARGS(&_AudioSessionControl));
+    if (FAILED(hr))
+    {
+        Log::Print("Unable to retrieve session control: %x\n", hr);
+        return false;
+    }
+
+    //
+    //  Register for session change notifications.
+    //
+    //  A stream switch is initiated when we receive a session disconnect
+    //  notification or we receive a default device changed notification.
+    //
+    hr = _AudioSessionControl->RegisterAudioSessionNotification(_AudioSessionEvents);
+
+    if (FAILED(hr))
+    {
+        Log::Print("Unable to register for audio session notifications: %x\n",
+                   hr);
+
         return false;
     }
 
@@ -640,6 +674,33 @@ bool AudioDriver::InitializeAudioEngine()
         return false;
     }
 
+    // Get Audio Session Control
+    hr = _AudioClient->GetService(IID_PPV_ARGS(&_AudioSessionControl));
+    if (FAILED(hr))
+    {
+        Log::Print("Unable to retrieve session control: %x\n", hr);
+        return false;
+    }
+
+    _AudioSessionEvents = new AudioSessionEvents(_Hwnd,
+                                                 _AudioSessionDisconnectedEvent);
+
+    //
+    //  Register for session change notifications.
+    //
+    //  A stream switch is initiated when we receive a session disconnect
+    //  notification or we receive a default device changed notification.
+    //
+    hr = _AudioSessionControl->RegisterAudioSessionNotification(_AudioSessionEvents);
+
+    if (FAILED(hr))
+    {
+        Log::Print("Unable to register for audio session notifications: %x\n",
+                   hr);
+
+        return false;
+    }
+
     return true;
 }
 
@@ -657,18 +718,12 @@ bool AudioDriver::InitializeAudioClient()
         goto Exit;
     }
 
+    // Create our session disconnected event.
     //
-    //  Create our stream switch event- we want auto reset events that start
-    //  in the not-signaled state.
-    //  Note that we create this event even if we're not going to stream
-    //  switch - that's because the event is used in the main loop of the
-    //  renderer and thus it has to be set.
-    //
-    //
-    //  FIXME - We don't intend to support stream switching.
-    _StreamSwitchEvent = CreateEventEx(NULL, NULL, 0,
+    // This will be triggered when the audio session is disconnected.
+    _AudioSessionDisconnectedEvent = CreateEventEx(NULL, NULL, 0,
                                        EVENT_MODIFY_STATE | SYNCHRONIZE);
-    if (_StreamSwitchEvent == NULL)
+    if (_AudioSessionDisconnectedEvent == NULL)
     {
         Log::Print("Unable to create stream switch event: %d.\n",
                    GetLastError());
@@ -713,15 +768,18 @@ void AudioDriver::ShutdownAudioEngine()
         _AudioSamplesReadyEvent = NULL;
     }
 
-    if (_StreamSwitchEvent)
+    if (_AudioSessionDisconnectedEvent)
     {
-        CloseHandle(_StreamSwitchEvent);
-        _StreamSwitchEvent = NULL;
+        CloseHandle(_AudioSessionDisconnectedEvent);
+        _AudioSessionDisconnectedEvent = NULL;
     }
 
     SafeRelease(&_AudioEndpoint);
     SafeRelease(&_AudioClient);
     SafeRelease(&_RenderClient);
+    SafeRelease(&_AudioSessionControl);
+
+    delete (_AudioSessionEvents);
 
     if (_MixFormat)
     {
@@ -781,7 +839,8 @@ void AudioDriver::Run()
     }
 
     // Native events waited on in this thread.
-    HANDLE waitArray[2] = {_StreamSwitchEvent, _AudioSamplesReadyEvent};
+    HANDLE waitArray[2] = {_AudioSessionDisconnectedEvent,
+                           _AudioSamplesReadyEvent};
 
     // Pipeline processing loop.
     try {
@@ -794,7 +853,7 @@ void AudioDriver::Run()
             QueryPerformanceCounter(&StartingTime);
 #endif /* _TIMINGS_DEBUG */
 
-            TUint32 padding = 0;
+            TUint32 padding                  = 0;
 
             //
             //  Calculate the number of bytes in the render buffer
@@ -805,7 +864,7 @@ void AudioDriver::Run()
             //  If the Audio Engine has not been initialized yet stick with
             //  the default value.
             //
-            if (_AudioEngineInitialised)
+            if (_AudioEngineInitialised && ! _AudioSessionDisconnected)
             {
                 hr = _AudioClient->GetCurrentPadding(&padding);
                 if (SUCCEEDED(hr))
@@ -920,6 +979,13 @@ void AudioDriver::Run()
                 continue;
             }
 
+            // The audio session has been disconnected.
+            // Continue to pull from pipeline until we are instructed to quit.
+            if (_AudioSessionDisconnected)
+            {
+                continue;
+            }
+
             //
             // Start the Audio client once we have pre-loaded some
             // data to the render buffer.
@@ -949,8 +1015,14 @@ void AudioDriver::Run()
                 WaitForMultipleObjects(2, waitArray, FALSE, INFINITE);
 
             switch (waitResult) {
-                case WAIT_OBJECT_0 + 0:     // _StreamSwitchEvent
-                    // FIXME - Not supported.
+                case WAIT_OBJECT_0 + 0:     // _AudioSessionDisconnectedEvent
+
+                    // Stop the audio client
+                    _AudioClient->Stop();
+                    _AudioClient->Reset();
+                    _AudioClientStarted = false;
+
+                    _AudioSessionDisconnected = true;
                     break;
                 case WAIT_OBJECT_0 + 1:     // _AudioSamplesReadyEvent
                     break;

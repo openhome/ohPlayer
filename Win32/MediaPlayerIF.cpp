@@ -148,7 +148,7 @@ TChar *GetPropertyValue(PCWSTR pszFilename, PCWSTR pszCanonicalName)
     return NULL;
 }
 
-DWORD WINAPI InitAndRunMediaPlayer( LPVOID /*lpParam*/ )
+DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
 {
     /* Pipeline configuration. */
     TChar *aRoom     = "ExampleTestRoom";
@@ -222,7 +222,7 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID /*lpParam*/ )
                                   Brx::Empty()/*aUserAgent*/);
 
     // Create ExampleMediaPlayer.
-    driver = new AudioDriver(dvStack->Env(), emp->Pipeline());
+    driver = new AudioDriver(dvStack->Env(), emp->Pipeline(), lpParam);
     if (driver == nullptr)
     {
         goto cleanup;

@@ -3,6 +3,7 @@
 #pragma comment(lib, "comctl32.lib")
 
 #include "resource.h"
+#include "CustomMessages.h"
 #include <windows.h>
 #include <shellapi.h>
 #include <commctrl.h>
@@ -23,14 +24,12 @@
 #endif  // _DEBUG
 
 // System tray icon identifier.
-#define ICON_ID 1
+#define ICON_ID 100
 
 HINSTANCE g_hInst            = NULL;
 HMENU     g_hSubMenu         = NULL;
 BOOL      g_updatesAvailable = false;
 HANDLE    _MplayerThread     = NULL;
-
-UINT const WMAPP_NOTIFYCALLBACK = WM_APP + 1;
 
 UINT_PTR const UPDATE_TIMER_ID  = 1;
 
@@ -42,7 +41,7 @@ LRESULT CALLBACK  WndProc(HWND, UINT, WPARAM, LPARAM);
 void              ShowContextMenu(HWND hwnd, POINT pt);
 BOOL              AddNotificationIcon(HWND hwnd);
 BOOL              DeleteNotificationIcon(HWND hwnd);
-BOOL              ShowUpdateBalloon(HWND hwnd);
+BOOL              ShowUpdateBalloon(HWND hwnd, UINT title, UINT msg);
 BOOL              RestoreTooltip(HWND hwnd);
 
 int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR /*lpCmdLine*/, int /*nCmdShow*/)
@@ -61,7 +60,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR /*lpCmdLine*/, int /
     if (hwnd)
     {
         // Pretend to get an update notification, in 10 seconds ....
-        SetTimer(hwnd, UPDATE_TIMER_ID, 10000, NULL);
+        //SetTimer(hwnd, UPDATE_TIMER_ID, 10000, NULL);
 
         // Main message loop:
         MSG msg;
@@ -102,7 +101,7 @@ BOOL AddNotificationIcon(HWND hwnd)
     nid.uID    = ICON_ID;
     nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP;
 
-    nid.uCallbackMessage = WMAPP_NOTIFYCALLBACK;
+    nid.uCallbackMessage = WM_APP_NOTIFY;
     LoadIconMetric(g_hInst, MAKEINTRESOURCE(IDI_NOTIFICATIONICON),
                    LIM_SMALL, &nid.hIcon);
     LoadString(g_hInst, IDS_TOOLTIP, nid.szTip, ARRAYSIZE(nid.szTip));
@@ -121,7 +120,7 @@ BOOL DeleteNotificationIcon(HWND hwnd)
     return Shell_NotifyIcon(NIM_DELETE, &nid);
 }
 
-BOOL ShowUpdateBalloon(HWND hwnd)
+BOOL ShowUpdateBalloon(HWND hwnd, UINT title, UINT msg )
 {
     // Display an "update available" message.
     NOTIFYICONDATA nid = {sizeof(nid)};
@@ -131,12 +130,9 @@ BOOL ShowUpdateBalloon(HWND hwnd)
     // Show an informational icon.
     nid.uFlags = NIF_INFO;
 
-    // Respect quiet time since this balloon did not come from a direct user
-    // action.
-    nid.dwInfoFlags = NIIF_WARNING | NIIF_RESPECT_QUIET_TIME;
-    LoadString(g_hInst, IDS_UPDATE_TITLE, nid.szInfoTitle,
-               ARRAYSIZE(nid.szInfoTitle));
-    LoadString(g_hInst, IDS_UPDATE_TEXT, nid.szInfo, ARRAYSIZE(nid.szInfo));
+    nid.dwInfoFlags = NIIF_WARNING;
+    LoadString(g_hInst, title, nid.szInfoTitle, ARRAYSIZE(nid.szInfoTitle));
+    LoadString(g_hInst, msg, nid.szInfo, ARRAYSIZE(nid.szInfo));
 
     return Shell_NotifyIcon(NIM_MODIFY, &nid);
 }
@@ -219,7 +215,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             /* Register UPnP/OhMedia devices. */
             _MplayerThread = CreateThread(NULL, 0, &InitAndRunMediaPlayer,
-                                          NULL, 0, NULL);
+                                          (LPVOID)hwnd, 0, NULL);
 
             break;
         }
@@ -282,7 +278,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;
         }
 
-        case WMAPP_NOTIFYCALLBACK:
+        case WM_APP_NOTIFY:
         {
             switch (LOWORD(lParam))
             {
@@ -292,7 +288,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 case NIN_BALLOONUSERCLICK:
                     RestoreTooltip(hwnd);
-                    ShowUpdateUI(hwnd);
+                    //ShowUpdateUI(hwnd);
                     break;
 
                 case WM_CONTEXTMENU:
@@ -316,9 +312,43 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                     EnableMenuItem(g_hSubMenu, 4, MF_ENABLED|MF_BYPOSITION);
                 }
 
-                ShowUpdateBalloon(hwnd);
+                ShowUpdateBalloon(hwnd, IDS_UPDATE_TITLE, IDS_UPDATE_TEXT);
                 KillTimer(hwnd, UPDATE_TIMER_ID);
             }
+
+            break;
+        }
+
+        case WM_APP_AUDIO_DISCONNECTED:
+        {
+            // The audio endpoint has been disconnected.
+            // Notify the user that a restart is required.
+            ShowUpdateBalloon(hwnd,
+                              IDS_AUDIO_DISCONNECT_TITLE,
+                              IDS_AUDIO_DISCONNECT_TEXT);
+
+            // Close down the media player.
+            ExitMediaPlayer();
+
+            WaitForSingleObject(_MplayerThread, INFINITE);
+            CloseHandle(_MplayerThread);
+
+            break;
+        }
+
+        case WM_APP_AUDIO_INIT_ERROR:
+        {
+            // The audio engine has failed to initialise.
+            // Notify the user that a restart is required.
+            ShowUpdateBalloon(hwnd,
+                              IDS_AUDIO_INIT_ERROR_TITLE,
+                              IDS_AUDIO_INIT_ERROR_TEXT);
+
+            // Close down the media player.
+            ExitMediaPlayer();
+
+            WaitForSingleObject(_MplayerThread, INFINITE);
+            CloseHandle(_MplayerThread);
 
             break;
         }

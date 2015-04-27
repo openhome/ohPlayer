@@ -11,6 +11,9 @@
 #include <AudioClient.h>
 #include <AudioPolicy.h>
 
+
+#include "AudioSessionEvents.h"
+
 template <class T> void SafeRelease(T **ppT)
 {
     if (*ppT)
@@ -29,7 +32,7 @@ class AudioDriver : public Thread, private IMsgProcessor, public IPipelineAnimat
 {
     static const TInt64 kClockPullDefault = (1 << 29) * 100LL;
 public:
-    AudioDriver(Environment& aEnv, IPipeline& aPipeline);
+    AudioDriver(Environment& aEnv, IPipeline& aPipeline, LPVOID lpParam);
     ~AudioDriver();
 
 private: // from Thread
@@ -67,14 +70,18 @@ private:
     IAudioClient         *_AudioClient;
     IAudioRenderClient   *_RenderClient;
     WAVEFORMATEX         *_MixFormat;
+    IAudioSessionControl * _AudioSessionControl;
+    AudioSessionEvents   *_AudioSessionEvents;
 
 private:
     // Audio Client Events
     HANDLE              _AudioSamplesReadyEvent;
-    HANDLE              _StreamSwitchEvent;
+    HANDLE              _AudioSessionDisconnectedEvent;
 
     // Internal Data
 
+    // Main window handle.
+    HWND                _Hwnd;
     // The buffer shared with the audio engine should be at least big enough
     // to buffer enough data to cover this time frame.
     LONG                _EngineLatencyInMS;
@@ -82,6 +89,8 @@ private:
     TUint32             _BufferSize;
     // Set when the audio stream has benn verified as playable
     bool                _StreamFormatSupported;
+    // Set when the audio session has been disconnected.
+    bool                _AudioSessionDisconnected;
     // Set when native audio is initialised successfully to the stream format.
     bool                _AudioEngineInitialised;
     // Set when native audio client has been started successfully.
@@ -93,7 +102,7 @@ private:
     // Audio renderer frame size.
     TUint32             _FrameSize;
     // Duplicate a chaneel when rendering (mono->stereo).
-    bool             _DuplicateChannel;
+    bool                _DuplicateChannel;
 
 private:
     // Utility functions
@@ -102,7 +111,6 @@ private:
     bool InitializeAudioClient();
     bool InitializeAudioEngine();
     bool RestartAudioEngine();
-    bool InitializeStreamSwitch();
     void StopAudioEngine();
     void ShutdownAudioEngine();
 };

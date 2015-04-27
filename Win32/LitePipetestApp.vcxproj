@@ -185,6 +185,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AudioDriver.cpp" />
+    <ClCompile Include="AudioSessionEvents.cpp" />
     <ClCompile Include="LitePipeTestApp.cpp" />
     <ClCompile Include="ExampleMediaPlayer.cpp" />
     <ClCompile Include="MediaPlayerIF.cpp" />
