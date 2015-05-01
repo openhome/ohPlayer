@@ -3,6 +3,9 @@
 
 #include <Audiopolicy.h>
 
+namespace OpenHome {
+namespace Media {
+
 class AudioSessionEvents : public IAudioSessionEvents
 {
 public:
@@ -27,5 +30,8 @@ private:
     HWND   _Hwnd;
     HANDLE _DisconnectedEvent;
 };
+
+} // Media
+} // Openhome
 
 #endif // HEADER_AUDIO_SESSION_EVENTS

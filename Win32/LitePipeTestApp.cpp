@@ -26,12 +26,11 @@
 // System tray icon identifier.
 #define ICON_ID 100
 
-HINSTANCE g_hInst            = NULL;
-HMENU     g_hSubMenu         = NULL;
-BOOL      g_updatesAvailable = false;
-HANDLE    _MplayerThread     = NULL;
-
-UINT_PTR const UPDATE_TIMER_ID  = 1;
+HINSTANCE  g_hInst            = NULL;
+HMENU      g_hSubMenu         = NULL;
+BOOL       g_updatesAvailable = false;
+CHAR      *g_updateLocation   = NULL;
+HANDLE     g_mplayerThread    = NULL;
 
 wchar_t const szWindowClass[] = L"LitePipe";
 
@@ -41,7 +40,7 @@ LRESULT CALLBACK  WndProc(HWND, UINT, WPARAM, LPARAM);
 void              ShowContextMenu(HWND hwnd, POINT pt);
 BOOL              AddNotificationIcon(HWND hwnd);
 BOOL              DeleteNotificationIcon(HWND hwnd);
-BOOL              ShowUpdateBalloon(HWND hwnd, UINT title, UINT msg);
+BOOL              ShowInfoBalloon(HWND hwnd, UINT title, UINT msg);
 BOOL              RestoreTooltip(HWND hwnd);
 
 int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR /*lpCmdLine*/, int /*nCmdShow*/)
@@ -59,9 +58,6 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR /*lpCmdLine*/, int /
 
     if (hwnd)
     {
-        // Pretend to get an update notification, in 10 seconds ....
-        //SetTimer(hwnd, UPDATE_TIMER_ID, 10000, NULL);
-
         // Main message loop:
         MSG msg;
         while (GetMessage(&msg, NULL, 0, 0))
@@ -92,8 +88,9 @@ void RegisterWindowClass(PCWSTR pszClassName, WNDPROC lpfnWndProc)
 
 BOOL AddNotificationIcon(HWND hwnd)
 {
-    NOTIFYICONDATA nid = {sizeof(nid)};
+    NOTIFYICONDATA nid = {};
 
+    nid.cbSize = sizeof(NOTIFYICONDATA);
     nid.hWnd = hwnd;
 
     // Add the icon, setting the icon, tooltip, and callback message.
@@ -113,17 +110,21 @@ BOOL AddNotificationIcon(HWND hwnd)
 
 BOOL DeleteNotificationIcon(HWND hwnd)
 {
-    NOTIFYICONDATA nid = {sizeof(nid)};
+    NOTIFYICONDATA nid = {};
+
+    nid.cbSize = sizeof(NOTIFYICONDATA);
     nid.hWnd           = hwnd;
     nid.uID            = ICON_ID;
 
     return Shell_NotifyIcon(NIM_DELETE, &nid);
 }
 
-BOOL ShowUpdateBalloon(HWND hwnd, UINT title, UINT msg )
+BOOL ShowInfoBalloon(HWND hwnd, UINT title, UINT msg )
 {
     // Display an "update available" message.
-    NOTIFYICONDATA nid = {sizeof(nid)};
+    NOTIFYICONDATA nid = {};
+
+    nid.cbSize = sizeof(NOTIFYICONDATA);
     nid.hWnd   = hwnd;
     nid.uID    = ICON_ID;
 
@@ -140,7 +141,9 @@ BOOL ShowUpdateBalloon(HWND hwnd, UINT title, UINT msg )
 BOOL RestoreTooltip(HWND hwnd)
 {
     // After the balloon is dismissed, restore the tooltip.
-    NOTIFYICONDATA nid = {sizeof(nid)};
+    NOTIFYICONDATA nid = {};
+
+    nid.cbSize = sizeof(NOTIFYICONDATA);
     nid.hWnd   = hwnd;
     nid.uID    = ICON_ID;
     nid.uFlags = NIF_SHOWTIP;
@@ -187,7 +190,7 @@ void ShowContextMenu(HWND hwnd, POINT pt)
             }
             else
             {
-                // Disable update button, until our dummy update timer fires.
+                // Disable update button, until one becomes available.
                 EnableMenuItem(g_hSubMenu, 4,
                                MF_DISABLED|MF_GRAYED|MF_BYPOSITION);
             }
@@ -214,7 +217,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
 
             /* Register UPnP/OhMedia devices. */
-            _MplayerThread = CreateThread(NULL, 0, &InitAndRunMediaPlayer,
+            g_mplayerThread = CreateThread(NULL, 0, &InitAndRunMediaPlayer,
                                           (LPVOID)hwnd, 0, NULL);
 
             break;
@@ -264,8 +267,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                 {
                     ExitMediaPlayer();
 
-                    WaitForSingleObject(_MplayerThread, INFINITE);
-                    CloseHandle(_MplayerThread);
+                    WaitForSingleObject(g_mplayerThread, INFINITE);
+                    CloseHandle(g_mplayerThread);
 
                     DestroyWindow(hwnd);
                     break;
@@ -288,7 +291,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 case NIN_BALLOONUSERCLICK:
                     RestoreTooltip(hwnd);
-                    //ShowUpdateUI(hwnd);
                     break;
 
                 case WM_CONTEXTMENU:
@@ -302,19 +304,23 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;
         }
 
-        case WM_TIMER:
+        case WM_APP_UPDATE_AVAILABLE:
         {
-            if (wParam == UPDATE_TIMER_ID)
-            {
-                g_updatesAvailable = true;
-                if (g_hSubMenu != NULL)
-                {
-                    EnableMenuItem(g_hSubMenu, 4, MF_ENABLED|MF_BYPOSITION);
-                }
+            g_updatesAvailable = true;
 
-                ShowUpdateBalloon(hwnd, IDS_UPDATE_TITLE, IDS_UPDATE_TEXT);
-                KillTimer(hwnd, UPDATE_TIMER_ID);
+            // Alert the user to availability of an application update.
+            ShowInfoBalloon(hwnd, IDS_UPDATE_TITLE, IDS_UPDATE_TEXT);
+
+            // Enable the update optionionin the system tray menu.
+            if (g_hSubMenu != NULL)
+            {
+                EnableMenuItem(g_hSubMenu, 4, MF_ENABLED|MF_BYPOSITION);
             }
+
+            // Note the location of the update installer.
+            delete g_updateLocation;
+
+            g_updateLocation = (char *)lParam;
 
             break;
         }
@@ -323,15 +329,15 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             // The audio endpoint has been disconnected.
             // Notify the user that a restart is required.
-            ShowUpdateBalloon(hwnd,
+            ShowInfoBalloon(hwnd,
                               IDS_AUDIO_DISCONNECT_TITLE,
                               IDS_AUDIO_DISCONNECT_TEXT);
 
             // Close down the media player.
             ExitMediaPlayer();
 
-            WaitForSingleObject(_MplayerThread, INFINITE);
-            CloseHandle(_MplayerThread);
+            WaitForSingleObject(g_mplayerThread, INFINITE);
+            CloseHandle(g_mplayerThread);
 
             break;
         }
@@ -340,21 +346,23 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             // The audio engine has failed to initialise.
             // Notify the user that a restart is required.
-            ShowUpdateBalloon(hwnd,
+            ShowInfoBalloon(hwnd,
                               IDS_AUDIO_INIT_ERROR_TITLE,
                               IDS_AUDIO_INIT_ERROR_TEXT);
 
             // Close down the media player.
             ExitMediaPlayer();
 
-            WaitForSingleObject(_MplayerThread, INFINITE);
-            CloseHandle(_MplayerThread);
+            WaitForSingleObject(g_mplayerThread, INFINITE);
+            CloseHandle(g_mplayerThread);
 
             break;
         }
 
         case WM_DESTROY:
         {
+            delete g_updateLocation;
+
             DeleteNotificationIcon(hwnd);
             PostQuitMessage(0);
             break;

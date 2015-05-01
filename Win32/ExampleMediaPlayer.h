@@ -32,6 +32,7 @@ public:
                        const TChar* aRoom, const TChar* aProductName,
                        const Brx& aUserAgent);
     virtual ~ExampleMediaPlayer();
+    Environment&  Env();
     void StopPipeline();
     void PlayPipeline();
     void PausePipeline();

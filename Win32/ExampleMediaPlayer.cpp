@@ -111,6 +111,11 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
     delete iConfigRamStore;
 }
 
+Environment& ExampleMediaPlayer::Env()
+{
+    return iMediaPlayer->Env();
+}
+
 void ExampleMediaPlayer::StopPipeline()
 {
     TUint waitCount = 0;

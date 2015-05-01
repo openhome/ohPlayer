@@ -147,6 +147,7 @@ cp $CVS_VIEWS/LitePipe/OpenHome/Av/Songcast/OhmSenderDriver.h $TEST_APP/Include/
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/PipelineManager.h $TEST_APP/Include/OpenHome/Media
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/PipelineObserver.h $TEST_APP/Include/OpenHome/Media
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/Pipeline/SpotifyReporter.h $TEST_APP/Include/OpenHome/Media/Pipeline
+cp $CVS_VIEWS/LitePipe/OpenHome/Media/Pipeline/RampValidator.h  $TEST_APP/Include/OpenHome/Media/Pipeline
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/Pipeline/AudioReservoir.h $TEST_APP/Include/OpenHome/Media/Pipeline
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/Pipeline/Reporter.h $TEST_APP/Include/OpenHome/Media/Pipeline
 cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Private/Printer.h $TEST_APP/Include/OpenHome/Private

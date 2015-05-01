@@ -24,6 +24,7 @@
 #endif  // _DEBUG
 
 using namespace OpenHome;
+using namespace OpenHome::Media;
 
 AudioSessionEvents::AudioSessionEvents(HWND hwnd,
                                        HANDLE audioSessionDisconnectedEvent) :

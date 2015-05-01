@@ -1,5 +1,7 @@
 #include "ExampleMediaPlayer.h"
 #include "AudioDriver.h"
+#include "CustomMessages.h"
+#include "UpdateCheck.h"
 #include <OpenHome/Net/Private/DviStack.h>
 #include <OpenHome/Private/Printer.h>
 
@@ -23,7 +25,30 @@ using namespace OpenHome::Av;
 using namespace OpenHome::Media;
 using namespace OpenHome::Net;
 
-static ExampleMediaPlayer* emp = nullptr; /* Test media player instance. */
+static ExampleMediaPlayer* emp = nullptr; // Test media player instance.
+
+// Timed callback to initiate application update chack.
+static VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN /*TimerOrWaitFired*/)
+{
+    HWND hwnd = (HWND)(lpParam);
+
+    Bws<1024> urlBuf;
+    if (UpdateChecker::updateAvailable(emp->Env(),
+                                       "http://elmo/~alans/application.json",
+                                       urlBuf))
+    {
+        // There is an update available. Obtain the URL of the download
+        // and notify the user via a system tray notification.
+        TChar *urlString = new TChar[urlBuf.Bytes() + 1];
+        if (urlString)
+        {
+            CopyMemory(urlString, urlBuf.Ptr(), urlBuf.Bytes());
+            urlString[urlBuf.Bytes()] = '\0';
+        }
+
+        PostMessage(hwnd, WM_APP_UPDATE_AVAILABLE, NULL, (LPARAM)urlString);
+    }
+}
 
 // Register a custom property schema.
 static bool RegisterSchema(PCWSTR pszFileName)
@@ -163,6 +188,9 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
     AudioDriver        *driver  = nullptr;
     Bwh udn;
 
+    HANDLE hTimer = NULL;
+    HANDLE hTimerQueue = NULL;
+
     if(!SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS))
     {
         Log::Print("Can't up the process priority of InitAndRunMediaPlayer "
@@ -218,14 +246,32 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
 
     adapter->RemoveRef(cookie);
 
+    // Create ExampleMediaPlayer.
     emp = new ExampleMediaPlayer(*dvStack, Brn(aUdn), aRoom, aName,
                                   Brx::Empty()/*aUserAgent*/);
 
-    // Create ExampleMediaPlayer.
     driver = new AudioDriver(dvStack->Env(), emp->Pipeline(), lpParam);
     if (driver == nullptr)
     {
         goto cleanup;
+    }
+
+    // Create the timer queue for update checking.
+    hTimerQueue = CreateTimerQueue();
+    if (NULL == hTimerQueue)
+    {
+        Log::Print("CreateTimerQueue failed (%d)\n", GetLastError());
+    }
+    else
+    {
+        // Set a timer to call the timer routine in 10 seconds then at
+        // 4 hour intervals..
+        if (!CreateTimerQueueTimer( &hTimer, hTimerQueue,
+                (WAITORTIMERCALLBACK)TimerRoutine, lpParam,
+                10 * 1000,  4 * 60 * 60 * 1000, 0))
+        {
+            Log::Print("CreateTimerQueueTimer failed (%d)\n", GetLastError());
+        }
     }
 
     /* Run the media player. (Blocking) */
@@ -235,6 +281,12 @@ cleanup:
     /* Tidy up on exit. */
 
     free(aUdn);
+
+    if (hTimerQueue != NULL)
+    {
+        // Delete all timers in the timer queue.
+        DeleteTimerQueue(hTimerQueue);
+    }
 
     if (driver != nullptr)
     {
