@@ -29,6 +29,11 @@
 using namespace OpenHome;
 using namespace OpenHome::Media;
 
+// Static data
+TBool AudioDriver::_volumeChanged = false;
+float AudioDriver::_volumeLevel   = 100.0f;
+TBool AudioDriver::_volumeMute    = false;
+
 AudioDriver::AudioDriver(Environment& /*aEnv*/, IPipeline& aPipeline, LPVOID lpParam) :
     _Hwnd(HWND(lpParam)),
     _AudioEndpoint(NULL),
@@ -36,6 +41,7 @@ AudioDriver::AudioDriver(Environment& /*aEnv*/, IPipeline& aPipeline, LPVOID lpP
     _RenderClient(NULL),
     _MixFormat(NULL),
     _AudioSessionControl(NULL),
+    _AudioSessionVolume(NULL),
     _AudioSessionEvents(NULL),
     _AudioSamplesReadyEvent(NULL),
     _AudioSessionDisconnectedEvent(NULL),
@@ -62,6 +68,13 @@ AudioDriver::AudioDriver(Environment& /*aEnv*/, IPipeline& aPipeline, LPVOID lpP
 AudioDriver::~AudioDriver()
 {
     Join();
+}
+
+void AudioDriver::SetVolume(float level, TBool mute)
+{
+    _volumeChanged = true;
+    _volumeLevel   = level;
+    _volumeMute    = mute;
 }
 
 Msg* AudioDriver::ProcessMsg(MsgMode* aMsg)
@@ -518,6 +531,7 @@ bool AudioDriver::RestartAudioEngine()
     SafeRelease(&_AudioClient);
     SafeRelease(&_RenderClient);
     SafeRelease(&_AudioSessionControl);
+    SafeRelease(&_AudioSessionVolume);
 
     // Restart the audio client with latest mix format.
     hr = _AudioEndpoint->Activate(__uuidof(IAudioClient),
@@ -596,6 +610,14 @@ bool AudioDriver::RestartAudioEngine()
         Log::Print("Unable to register for audio session notifications: %x\n",
                    hr);
 
+        return false;
+    }
+
+    // Get Volume Control
+    hr = _AudioClient->GetService(IID_PPV_ARGS(&_AudioSessionVolume));
+    if (FAILED(hr))
+    {
+        Log::Print("Unable to retrieve volume control: %x\n", hr);
         return false;
     }
 
@@ -701,6 +723,14 @@ bool AudioDriver::InitializeAudioEngine()
         return false;
     }
 
+    // Get Volume Control
+    hr = _AudioClient->GetService(IID_PPV_ARGS(&_AudioSessionVolume));
+    if (FAILED(hr))
+    {
+        Log::Print("Unable to retrieve volume control: %x\n", hr);
+        return false;
+    }
+
     return true;
 }
 
@@ -778,6 +808,7 @@ void AudioDriver::ShutdownAudioEngine()
     SafeRelease(&_AudioClient);
     SafeRelease(&_RenderClient);
     SafeRelease(&_AudioSessionControl);
+    SafeRelease(&_AudioSessionVolume);
 
     delete (_AudioSessionEvents);
 
@@ -1008,6 +1039,15 @@ void AudioDriver::Run()
                 }
 
                 _AudioClientStarted = true;
+            }
+
+            // Apply any volume changes
+            if (_AudioClientStarted && _volumeChanged)
+            {
+                _AudioSessionVolume->SetMasterVolume(_volumeLevel, NULL);
+                _AudioSessionVolume->SetMute(_volumeMute, NULL);
+
+                _volumeChanged = false;
             }
 
             // Wait for a kick from the native audio engine.

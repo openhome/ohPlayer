@@ -1,10 +1,14 @@
 #ifndef HEADER_EXAMPLEMEDIAPLAYER
 #define HEADER_EXAMPLEMEDIAPLAYER
 
+#include "ControlPointProxy.h"
+
 #include <OpenHome/Av/MediaPlayer.h>
 #include <OpenHome/Av/Utils/DriverSongcastSender.h>
 #include <OpenHome/Media/PipelineManager.h>
 #include <OpenHome/Media/Tests/VolumeUtils.h>
+
+#include <Windows.h>
 
 namespace OpenHome {
 namespace Net {
@@ -28,17 +32,20 @@ class ExampleMediaPlayer : private Net::IResourceManager,
 {
     static const Brn kSongcastSenderIconFileName;
 public:
-    ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn,
+    ExampleMediaPlayer(LPVOID lpParam, Net::DvStack& aDvStack, const Brx& aUdn,
                        const TChar* aRoom, const TChar* aProductName,
                        const Brx& aUserAgent);
     virtual ~ExampleMediaPlayer();
     Environment&  Env();
     void StopPipeline();
+    TBool CanPlay();
     void PlayPipeline();
+    TBool CanPause();
     void PausePipeline();
+    TBool CanHalt();
     void HaltPipeline();
     void AddAttribute(const TChar* aAttribute); // FIXME - only required by Songcasting driver
-    virtual void RunWithSemaphore();
+    virtual void RunWithSemaphore(Net::CpStack& aCpStack);
     Media::PipelineManager& Pipeline();
     Net::DvDeviceStandard* Device();
 protected:
@@ -62,9 +69,12 @@ protected:
     Semaphore iSemShutdown;
 private:
     Semaphore iDisabled;
-    Media::VolumePrinter iVolume;
-    Media::EPipelineState pState;
+    Media::VolumePrinter   iVolume;
+    Media::EPipelineState  pState;
+    TBool                  iLive;
+    ControlPointProxy     *cpProxy;
     const Brx& iUserAgent;
+    HWND                   _Hwnd; // Main window handle
 
 private: // from Media::IPipelineObserver
     void NotifyPipelineState(Media::EPipelineState aState) override;

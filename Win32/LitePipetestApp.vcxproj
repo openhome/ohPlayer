@@ -186,6 +186,8 @@
   <ItemGroup>
     <ClCompile Include="AudioDriver.cpp" />
     <ClCompile Include="AudioSessionEvents.cpp" />
+    <ClCompile Include="ControlPointProxy.cpp" />
+    <ClCompile Include="Generated\CpAvOpenhomeOrgVolume1.cpp" />
     <ClCompile Include="LitePipeTestApp.cpp" />
     <ClCompile Include="ExampleMediaPlayer.cpp" />
     <ClCompile Include="MediaPlayerIF.cpp" />

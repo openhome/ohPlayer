@@ -182,10 +182,12 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
 
     const TChar* cookie ="ExampleMediaPlayer";
 
-    Library            *lib     = nullptr;
-    NetworkAdapter     *adapter = nullptr;
-    Net::DvStack       *dvStack = nullptr;
-    AudioDriver        *driver  = nullptr;
+    Library            *lib         = nullptr;
+    NetworkAdapter     *adapter     = nullptr;
+    Net::CpStack       *cpStack     = nullptr;
+    Net::DvStack       *dvStack     = nullptr;
+    AudioDriver        *driver      = nullptr;
+
     Bwh udn;
 
     HANDLE hTimer = NULL;
@@ -238,16 +240,13 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
         goto cleanup;
     }
 
-    dvStack = lib->StartDv();
-    if (dvStack == nullptr)
-    {
-        goto cleanup;
-    }
+
+    lib->StartCombined(adapter->Subnet(), cpStack, dvStack);
 
     adapter->RemoveRef(cookie);
 
     // Create ExampleMediaPlayer.
-    emp = new ExampleMediaPlayer(*dvStack, Brn(aUdn), aRoom, aName,
+    emp = new ExampleMediaPlayer(lpParam, *dvStack, Brn(aUdn), aRoom, aName,
                                   Brx::Empty()/*aUserAgent*/);
 
     driver = new AudioDriver(dvStack->Env(), emp->Pipeline(), lpParam);
@@ -275,7 +274,7 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
     }
 
     /* Run the media player. (Blocking) */
-    emp->RunWithSemaphore();
+    emp->RunWithSemaphore(*cpStack);
 
 cleanup:
     /* Tidy up on exit. */
@@ -291,13 +290,6 @@ cleanup:
     if (driver != nullptr)
     {
         delete driver;
-    }
-
-    if (dvStack == nullptr)
-    {
-        /* Freeing dvStack causes compiler error. Maybe one to mention to
-         * the customer. */
-        //delete dvStack;
     }
 
     if (emp != nullptr)

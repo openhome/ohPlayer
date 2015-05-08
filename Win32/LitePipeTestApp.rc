@@ -42,14 +42,14 @@ IDC_CONTEXTMENU MENU
 BEGIN
     POPUP ""
     BEGIN
-        MENUITEM "Play",                        IDM_PLAY
-        MENUITEM "Pause",                       IDM_PAUSE
-        MENUITEM "Stop",                        IDM_STOP
+        MENUITEM "Play",      IDM_PLAY,    GRAYED
+        MENUITEM "Pause",     IDM_PAUSE,   GRAYED
+        MENUITEM "Stop",      IDM_STOP,    GRAYED
         MENUITEM SEPARATOR
-        MENUITEM "Update",                      IDM_UPDATE
-        MENUITEM "About",                       IDM_ABOUT
+        MENUITEM "Update",    IDM_UPDATE,  GRAYED
+        MENUITEM "About",     IDM_ABOUT
         MENUITEM SEPARATOR
-        MENUITEM "E&xit",                       IDM_EXIT
+        MENUITEM "E&xit",     IDM_EXIT
     END
 END
 

@@ -35,6 +35,12 @@ public:
     AudioDriver(Environment& aEnv, IPipeline& aPipeline, LPVOID lpParam);
     ~AudioDriver();
 
+    static void SetVolume(float level, TBool mute);
+
+private: // Data set by SetVolume()
+    static TBool _volumeChanged;
+    static float _volumeLevel;
+    static TBool _volumeMute;
 private: // from Thread
     void Run();
 private:
@@ -70,8 +76,9 @@ private:
     IAudioClient         *_AudioClient;
     IAudioRenderClient   *_RenderClient;
     WAVEFORMATEX         *_MixFormat;
-    IAudioSessionControl * _AudioSessionControl;
+    IAudioSessionControl *_AudioSessionControl;
     AudioSessionEvents   *_AudioSessionEvents;
+    ISimpleAudioVolume   *_AudioSessionVolume;
 
 private:
     // Audio Client Events

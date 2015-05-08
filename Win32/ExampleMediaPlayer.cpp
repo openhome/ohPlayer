@@ -10,6 +10,7 @@
 #include <OpenHome/Private/Printer.h>
 
 #include <Windows.h>
+#include "CustomMessages.h"
 #include "ExampleMediaPlayer.h"
 #include "RamStore.h"
 
@@ -34,13 +35,18 @@ using namespace OpenHome::Net;
 
 const Brn ExampleMediaPlayer::kSongcastSenderIconFileName("SongcastSenderIcon");
 
-ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
+ExampleMediaPlayer::ExampleMediaPlayer(LPVOID lpParam,
+                                       Net::DvStack& aDvStack,
                                        const Brx& aUdn,
                                        const TChar* aRoom,
                                        const TChar* aProductName,
                                        const Brx& aUserAgent)
     : iSemShutdown("TMPS", 0)
     , iDisabled("test", 0)
+    , _Hwnd(HWND(lpParam))
+    , cpProxy(NULL)
+    , pState(EPipelineStopped)
+    , iLive(false)
     , iUserAgent(aUserAgent)
 {
     Bws<256> friendlyName;
@@ -104,6 +110,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
 ExampleMediaPlayer::~ExampleMediaPlayer()
 {
     ASSERT(!iDevice->Enabled());
+    delete cpProxy;
     delete iMediaPlayer;
     delete iDevice;
     delete iDeviceUpnpAv;
@@ -134,27 +141,43 @@ void ExampleMediaPlayer::StopPipeline()
     iSemShutdown.Signal();
 }
 
+TBool ExampleMediaPlayer::CanPlay()
+{
+    return ((pState == EPipelineStopped) || (pState == EPipelinePaused));
+}
+
+TBool ExampleMediaPlayer::CanPause()
+{
+    return (!iLive &&
+            (pState == EPipelinePlaying) || (pState == EPipelineBuffering));
+}
+
+TBool ExampleMediaPlayer::CanHalt()
+{
+    return ((pState == EPipelinePlaying) || (pState == EPipelinePaused));
+}
+
 void ExampleMediaPlayer::PlayPipeline()
 {
-    if (pState != EPipelinePlaying)
+    if (CanPlay())
     {
-        iMediaPlayer->Pipeline().Play();
+        cpProxy->playlistPlay();
     }
 }
 
 void ExampleMediaPlayer::PausePipeline()
 {
-    if (pState == EPipelinePlaying)
+    if (CanPause())
     {
-        iMediaPlayer->Pipeline().Pause();
+        cpProxy->playlistPause();
     }
 }
 
 void ExampleMediaPlayer::HaltPipeline()
 {
-    if (pState == EPipelinePlaying || pState == EPipelinePaused)
+    if (CanHalt())
     {
-        iMediaPlayer->Pipeline().Stop();
+        cpProxy->playlistStop();
     }
 }
 
@@ -163,12 +186,14 @@ void ExampleMediaPlayer::AddAttribute(const TChar* aAttribute)
     iMediaPlayer->AddAttribute(aAttribute);
 }
 
-void ExampleMediaPlayer::RunWithSemaphore()
+void ExampleMediaPlayer::RunWithSemaphore(Net::CpStack& aCpStack)
 {
     RegisterPlugins(iMediaPlayer->Env());
     iMediaPlayer->Start();
     iDevice->SetEnabled();
     iDeviceUpnpAv->SetEnabled();
+
+    cpProxy = new ControlPointProxy(aCpStack, *(Device()));
 
     iSemShutdown.Wait();
 }
@@ -324,9 +349,49 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary()
 // Pipeline Observer callbacks.
 void ExampleMediaPlayer::NotifyPipelineState(Media::EPipelineState aState)
 {
+    int mediaOptions = 0;
+
     pState = aState;
 
-    //Log::Print("Pipeline State: %d\n", aState);
+    // Update the playback options available i the UI.
+    if (CanPlay())
+    {
+        mediaOptions |= MEDIAPLAYER_PLAY_OPTION;
+    }
+
+    if (CanPause())
+    {
+        mediaOptions |= MEDIAPLAYER_PAUSE_OPTION;
+    }
+
+    if (CanHalt())
+    {
+        mediaOptions |= MEDIAPLAYER_STOP_OPTION;
+    }
+
+    PostMessage(_Hwnd, WM_APP_PLAYBACK_OPTIONS, NULL, (LPARAM)mediaOptions);
+
+    switch (pState)
+    {
+        case EPipelineStopped:
+            Log::Print("Pipeline State: Stopped\n");
+            break;
+        case EPipelinePaused:
+            Log::Print("Pipeline State: Paused\n");
+            break;
+        case EPipelinePlaying:
+            Log::Print("Pipeline State: Playing\n");
+            break;
+        case EPipelineBuffering:
+            Log::Print("Pipeline State: Buffering\n");
+            break;
+        case EPipelineWaiting:
+            Log::Print("Pipeline State: Waiting\n");
+            break;
+        default:
+            Log::Print("Pipeline State: UNKNOWN\n");
+            break;
+    }
 }
 
 void ExampleMediaPlayer::NotifyTrack(Media::Track& /*aTrack*/, const Brx& /*aMode*/, TBool /*aStartOfStream*/)
@@ -341,6 +406,7 @@ void ExampleMediaPlayer::NotifyTime(TUint /*aSeconds*/, TUint /*aTrackDurationSe
 {
 }
 
-void ExampleMediaPlayer::NotifyStreamInfo(const Media::DecodedStreamInfo& /*aStreamInfo*/)
+void ExampleMediaPlayer::NotifyStreamInfo(const Media::DecodedStreamInfo& aStreamInfo)
 {
+    iLive = aStreamInfo.Live();
 }

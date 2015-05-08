@@ -42,7 +42,8 @@ Include/OpenHome/Net
 Include/OpenHome/Net/C
 Include/OpenHome/Net/Core
 Include/OpenHome/Net/Private
-Include/OpenHome/Private"
+Include/OpenHome/Private
+Generated"
 
 pushd $TEST_APP
 
@@ -117,12 +118,21 @@ cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Functor.h $TEST_APP/Include/OpenHome
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/VolumeManager.h $TEST_APP/Include/OpenHome/Media
 cp $CVS_VIEWS/LitePipe/OpenHome/PowerManager.h $TEST_APP/Include/OpenHome
 cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Net/Core/DvDevice.h $TEST_APP/Include/OpenHome/Net/Core
+cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Net/Core/CpDevice.h $TEST_APP/Include/OpenHome/Net/Core
+cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Net/Core/CpDeviceDv.h $TEST_APP/Include/OpenHome/Net/Core
+cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Net/Core/FunctorCpDevice.h $TEST_APP/Include/OpenHome/Net/Core
 cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Net/Core/DvResourceWriter.h $TEST_APP/Include/OpenHome/Net/Core
 cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Net/Core/OhNet.h $TEST_APP/Include/OpenHome/Net/Core
 cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Net/Core/FunctorAsync.h $TEST_APP/Include/OpenHome/Net/Core
 cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/FunctorMsg.h $TEST_APP/Include/OpenHome
 cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/FunctorNetworkAdapter.h $TEST_APP/Include/OpenHome
 cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Net/C/OhNet.h $TEST_APP/Include/OpenHome/Net/C
+cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Net/Private/CpiService.h $TEST_APP/Include/OpenHome/Net/Private
+cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Net/Private/CpiStack.h $TEST_APP/Include/OpenHome/Net/Private
+cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Net/Private/FunctorCpiDevice.h $TEST_APP/Include/OpenHome/Net/Private
+cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Net/Private/AsyncPrivate.h $TEST_APP/Include/OpenHome/Net/Private
+cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Net/Private/CpiDevice.h $TEST_APP/Include/OpenHome/Net/Private
+cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Net/Private/Error.h $TEST_APP/Include/OpenHome/Net/Private
 cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Net/C/Async.h $TEST_APP/Include/OpenHome/Net/C
 cp $CVS_VIEWS/LitePipe/OpenHome/Av/Utils/DriverSongcastSender.h $TEST_APP/Include/OpenHome/Av/Utils
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/Pipeline/Msg.h $TEST_APP/Include/OpenHome/Media/Pipeline
@@ -210,6 +220,9 @@ cp $CVS_VIEWS/LitePipe/OpenHome/Media/Pipeline/SampleRateValidator.h $TEST_APP/I
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/Pipeline/StarvationMonitor.h $TEST_APP/Include/OpenHome/Media/Pipeline
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/Pipeline/PreDriver.h $TEST_APP/Include/OpenHome/Media/Pipeline
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/ClockPuller.h $TEST_APP/Include/OpenHome/Media
+cp $CVS_VIEWS/LitePipe/build/Generated/CpAvOpenhomeOrgVolume1.h $TEST_APP/Include
+cp $CVS_VIEWS/LitePipe/build/Generated/CpAvOpenhomeOrgPlaylist1.h $TEST_APP/Include
+cp $CVS_VIEWS/OhNet/OpenHome/Net/ControlPoint/CpProxy.h $TEST_APP/Include/OpenHome/Net/Core
 #cp $CVS_VIEWS/OhNet/Build/Include/OpenHome/Private/OptionParser.h $TEST_APP/Include/OpenHome/Private
 #cp $CVS_VIEWS/LitePipe/OpenHome/Media/UriProviderSingleTrack.h $TEST_APP/Include/OpenHome/Media
 #cp $CVS_VIEWS/LitePipe/OpenHome/Media/Filler.h $TEST_APP/Include/OpenHome/Media
@@ -225,3 +238,6 @@ echo "Copying Extra Include Files (for TestMediaPlayerMain.cpp)  ....."
 cp $CVS_VIEWS/LitePipe/OpenHome/Media/Utils/DriverBasic.h $TEST_APP/Include/OpenHome/Media/Utils
 
 echo "NO Extra Libraries Required (for TestMediaPlayerMain.cpp)"
+
+echo "Copying cpp source files"
+cp $CVS_VIEWS/LitePipe/build/Generated/CpAvOpenhomeOrgVolume1.cpp $TEST_APP/Generated

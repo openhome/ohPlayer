@@ -16,4 +16,5 @@ tags
 Include/
 Libs/
 Win32/
+Generated/
 

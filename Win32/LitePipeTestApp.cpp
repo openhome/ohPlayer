@@ -26,9 +26,16 @@
 // System tray icon identifier.
 #define ICON_ID 100
 
+// Application menu item positions
+#define MENU_PLAY       0
+#define MENU_PAUSE      1
+#define MENU_STOP       2
+#define MENU_UPDATE     4
+
 HINSTANCE  g_hInst            = NULL;
 HMENU      g_hSubMenu         = NULL;
 BOOL       g_updatesAvailable = false;
+int        g_mediaOptions     = 0;
 CHAR      *g_updateLocation   = NULL;
 HANDLE     g_mplayerThread    = NULL;
 
@@ -151,6 +158,39 @@ BOOL RestoreTooltip(HWND hwnd)
     return Shell_NotifyIcon(NIM_MODIFY, &nid);
 }
 
+void UpdatePlaybackOptions()
+{
+    if ((g_mediaOptions & MEDIAPLAYER_PLAY_OPTION) != 0)
+    {
+        EnableMenuItem(g_hSubMenu, MENU_PLAY, MF_ENABLED|MF_BYPOSITION);
+    }
+    else
+    {
+        EnableMenuItem(g_hSubMenu, MENU_PLAY,
+                       MF_DISABLED|MF_GRAYED|MF_BYPOSITION);
+    }
+
+    if ((g_mediaOptions & MEDIAPLAYER_PAUSE_OPTION) != 0)
+    {
+        EnableMenuItem(g_hSubMenu, MENU_PAUSE, MF_ENABLED|MF_BYPOSITION);
+    }
+    else
+    {
+        EnableMenuItem(g_hSubMenu, MENU_PAUSE,
+                       MF_DISABLED|MF_GRAYED|MF_BYPOSITION);
+    }
+
+    if ((g_mediaOptions & MEDIAPLAYER_STOP_OPTION) != 0)
+    {
+        EnableMenuItem(g_hSubMenu, MENU_STOP, MF_ENABLED|MF_BYPOSITION);
+    }
+    else
+    {
+        EnableMenuItem(g_hSubMenu, MENU_STOP,
+                       MF_DISABLED|MF_GRAYED|MF_BYPOSITION);
+    }
+}
+
 void ShowUpdateUI(HWND hwnd)
 {
     // TBD. Update UI.
@@ -186,14 +226,19 @@ void ShowContextMenu(HWND hwnd, POINT pt)
             if (g_updatesAvailable)
             {
                 // Ensure the update button is available.
-                EnableMenuItem(g_hSubMenu, 4, MF_ENABLED|MF_BYPOSITION);
+                EnableMenuItem(g_hSubMenu, MENU_UPDATE,
+                               MF_ENABLED|MF_BYPOSITION);
             }
             else
             {
                 // Disable update button, until one becomes available.
-                EnableMenuItem(g_hSubMenu, 4,
+                EnableMenuItem(g_hSubMenu, MENU_UPDATE,
                                MF_DISABLED|MF_GRAYED|MF_BYPOSITION);
             }
+
+            // Bring the playback options into line with the current
+            // pipeline state.
+            UpdatePlaybackOptions();
 
             TrackPopupMenuEx(g_hSubMenu, uFlags, pt.x, pt.y, hwnd, NULL);
             g_hSubMenu = NULL;
@@ -233,21 +278,18 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                 case IDM_PLAY:
                 {
                     PipeLinePlay();
-                    MessageBox(hwnd,  L"PLAY", L"TBD", MB_OK);
                     break;
                 }
 
                 case IDM_PAUSE:
                 {
                     PipeLinePause();
-                    MessageBox(hwnd,  L"PAUSE", L"TBD", MB_OK);
                     break;
                 }
 
                 case IDM_STOP:
                 {
                     PipeLineStop();
-                    MessageBox(hwnd,  L"STOP", L"TBD", MB_OK);
                     break;
                 }
 
@@ -311,10 +353,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
             // Alert the user to availability of an application update.
             ShowInfoBalloon(hwnd, IDS_UPDATE_TITLE, IDS_UPDATE_TEXT);
 
-            // Enable the update optionionin the system tray menu.
+            // Enable the update option in the system tray menu.
             if (g_hSubMenu != NULL)
             {
-                EnableMenuItem(g_hSubMenu, 4, MF_ENABLED|MF_BYPOSITION);
+                EnableMenuItem(g_hSubMenu, MENU_UPDATE,
+                               MF_ENABLED|MF_BYPOSITION);
             }
 
             // Note the location of the update installer.
@@ -355,6 +398,25 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             WaitForSingleObject(g_mplayerThread, INFINITE);
             CloseHandle(g_mplayerThread);
+
+            break;
+        }
+
+        case WM_APP_PLAYBACK_OPTIONS:
+        {
+            // The audio pipeline state has changed. Update the available
+            // menu options in line with the current state.
+            g_mediaOptions = LOWORD(lParam);
+
+            // If the sub menu isn't currently being displayed there's
+            // nothing to update for the moment.
+            if (g_hSubMenu == NULL)
+            {
+                break;
+            }
+
+            // Update the playback options in the displayed sub-menu.
+            UpdatePlaybackOptions();
 
             break;
         }
