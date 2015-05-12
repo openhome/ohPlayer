@@ -1,8 +1,5 @@
-#ifndef HEADER_PROCESSOR_PCM_FOR_WASAPI
-#define HEADER_PROCESSOR_PCM_FOR_WASAPI
+#pragma once
 
-#include <OpenHome/Types.h>
-#include <OpenHome/Buffer.h>
 #include <OpenHome/Media/PipelineObserver.h>
 
 namespace OpenHome {
@@ -48,5 +45,3 @@ private:
 
 } // namespace Av
 } // namespace OpenHome
-
-#endif // HEADER_PROCESSOR_PCM_FOR_WASAPI

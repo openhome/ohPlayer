@@ -1,5 +1,4 @@
-#ifndef HEADER_EXAMPLEMEDIAPLAYER
-#define HEADER_EXAMPLEMEDIAPLAYER
+#pragma once
 
 #include "ControlPointProxy.h"
 
@@ -92,5 +91,3 @@ public:
 
 } // namespace Av
 } // namespace OpenHome
-
-#endif // HEADER_EXAMPLEMEDIAPLAYER

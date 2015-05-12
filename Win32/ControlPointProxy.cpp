@@ -1,4 +1,3 @@
-#include <OpenHome/Types.h>
 #include <OpenHome/Av/Source.h>
 #include <OpenHome/Media/Pipeline/Msg.h>
 #include <OpenHome/Net/Core/CpDeviceDv.h>

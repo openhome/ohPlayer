@@ -1,7 +1,9 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
 // Used by LitePipeTestApp.rc
-//
+
+#pragma once
+
 #define IDC_MYICON                      2
 #define IDS_APP_TITLE                   103
 #define IDS_TOOLTIP                     104

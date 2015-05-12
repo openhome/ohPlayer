@@ -1,16 +1,6 @@
-#include <OpenHome/Types.h>
-#include <OpenHome/Private/Thread.h>
-#include <OpenHome/Media/Pipeline/Msg.h>
-#include <OpenHome/Media/ClockPuller.h>
-#include <OpenHome/Media/Utils/ProcessorPcmUtils.h>
-#include <OpenHome/Net/Core/DvDevice.h>
-#include <OpenHome/Media/Pipeline/Pipeline.h>
+#pragma once
 
-// WASAPI headers
 #include <Mmdeviceapi.h>
-#include <AudioClient.h>
-#include <AudioPolicy.h>
-
 
 #include "AudioSessionEvents.h"
 

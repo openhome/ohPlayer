@@ -1,5 +1,4 @@
-#ifndef HEADER_AUDIO_SESSION_EVENTS
-#define HEADER_AUDIO_SESSION_EVENTS
+#pragma once
 
 #include <Audiopolicy.h>
 
@@ -33,5 +32,3 @@ private:
 
 } // Media
 } // Openhome
-
-#endif // HEADER_AUDIO_SESSION_EVENTS

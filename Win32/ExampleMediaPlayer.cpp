@@ -10,6 +10,7 @@
 #include <OpenHome/Private/Printer.h>
 
 #include <Windows.h>
+
 #include "CustomMessages.h"
 #include "ExampleMediaPlayer.h"
 #include "RamStore.h"

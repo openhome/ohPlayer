@@ -5,8 +5,6 @@
 // multimedia endpoint.
 //
 
-#include <Audiopolicy.h>
-
 #include <OpenHome/Private/Printer.h>
 
 #include "AudioSessionEvents.h"

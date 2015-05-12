@@ -1,9 +1,4 @@
-#ifndef HEADER_PROCESSOR_PCM_FOR_WASAPI
-#define HEADER_PROCESSOR_PCM_FOR_WASAPI
-
-#include <OpenHome/Types.h>
-#include <OpenHome/Buffer.h>
-#include <OpenHome/Media/Pipeline/Msg.h>
+#pragma once
 
 namespace OpenHome {
 namespace Media {
@@ -25,5 +20,3 @@ private: // from IPcmProcessor
 
 } // namespace Media
 } // namespace OpenHome
-
-#endif // HEADER_PROCESSOR_PCM_FOR_WASAPI
