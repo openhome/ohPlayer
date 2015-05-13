@@ -6,9 +6,8 @@
 #include <OpenHome/Private/Printer.h>
 
 #include <process.h>
-#include <propsys.h>
-#include <Shobjidl.h>
-#include <string.h>
+
+#include <Windows.h>
 
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
@@ -27,7 +26,7 @@ using namespace OpenHome::Net;
 
 static ExampleMediaPlayer* emp = nullptr; // Test media player instance.
 
-// Timed callback to initiate application update chack.
+// Timed callback to initiate application update check.
 static VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN /*TimerOrWaitFired*/)
 {
     HWND hwnd = (HWND)(lpParam);
@@ -50,135 +49,119 @@ static VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN /*TimerOrWaitFired*/)
     }
 }
 
-// Register a custom property schema.
-static bool RegisterSchema(PCWSTR pszFileName)
+// Read the string associated with the supplied registry key.
+//
+// If the key doesn't exists it will be created and initialised to the default
+// value.
+//
+// On success the key value is returned as a narrow string, on failure NULL
+// is returned.
+TChar * GetRegistryString(HKEY    hk,
+                          LPCWSTR keyName,
+                          LPCWSTR defVal,
+                          size_t  defBufSize)
 {
-    HRESULT hr = PSRegisterPropertySchema(pszFileName);
-    if (SUCCEEDED(hr))
+    LONG   retVal;
+    DWORD  lpType;
+    DWORD  tmpBufSize;
+    TByte  tmpBuf[256];
+    TChar *retBuf;
+    size_t retBufSize;
+    size_t cnt;
+
+    tmpBufSize = sizeof(tmpBuf);
+
+    // Attempt to read the required key value.
+    retVal = RegQueryValueEx(hk,
+                             keyName,
+                             NULL,
+                             (LPDWORD)&lpType,
+                             (LPBYTE)tmpBuf,
+                             (LPDWORD)&tmpBufSize);
+
+    // For the query to be valid it must succeed and the returned data
+    // be of the expected type.
+    if ((retVal != ERROR_SUCCESS) || (lpType != REG_SZ))
     {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
+        TBool unhandldedErr = false;
 
-// Remove a custom property schema.
-static void UnregisterSchema(PCWSTR pszFileName)
-{
-    PSUnregisterPropertySchema(pszFileName);
-}
-
-// Get the property store for a specified file.
-HRESULT GetPropertyStore(PCWSTR pszFilename,
-                         GETPROPERTYSTOREFLAGS gpsFlags,
-                         IPropertyStore** ppps)
-{
-    WCHAR szExpanded[MAX_PATH];
-    HRESULT hr = ExpandEnvironmentStrings(pszFilename,
-                                          szExpanded,
-                                          ARRAYSIZE(szExpanded)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
-
-    if (SUCCEEDED(hr))
-    {
-        WCHAR szAbsPath[MAX_PATH];
-        hr = _wfullpath(szAbsPath,
-                        szExpanded,
-                        ARRAYSIZE(szAbsPath)) ? S_OK : E_FAIL;
-
-        if (SUCCEEDED(hr))
+        // Check for non-existent key
+        if (retVal == ERROR_FILE_NOT_FOUND)
         {
-            hr = SHGetPropertyStoreFromParsingName(szAbsPath,
-                                                   NULL,
-                                                   gpsFlags,
-                                                   IID_PPV_ARGS(ppps));
+            // Create the key, setting it to the supplied default value.
+            RegSetValueEx(hk,
+                          keyName,
+                          0,
+                          REG_SZ,
+                          (LPBYTE)defVal,
+                          defBufSize);
         }
-    }
-
-    return hr;
-}
-
-// Return the required property value as a string.
-TChar *GetPropertyString(IPropertyStore *pps, REFPROPERTYKEY key)
-{
-    TChar *retVal            = NULL;
-    PROPVARIANT propvarValue = {0};
-    HRESULT hr               = pps->GetValue(key, &propvarValue);
-
-    if (SUCCEEDED(hr))
-    {
-        const size_t bufferLen = 256;
-        PWSTR pszStringValue   = NULL;
-
-        hr = PSFormatForDisplayAlloc(key,
-                                     propvarValue,
-                                     PDFF_DEFAULT,
-                                     &pszStringValue);
-
-        if (SUCCEEDED(hr))
+        else
         {
-            size_t theSize;
-
-            // Allocate a buffer to hold the property.
-            retVal = (TChar *)malloc(bufferLen);
-
-            if (retVal != NULL)
-            {
-                if (wcstombs_s(&theSize,
-                               retVal,
-                               bufferLen,
-                               pszStringValue,
-                               bufferLen-1) != 0)
-                {
-                    free(retVal);
-                    retVal = NULL;
-                }
-            }
-
-            CoTaskMemFree(pszStringValue);
+            unhandldedErr = true;
         }
 
-        PropVariantClear(&propvarValue);
+        // Convert the default value to a narrow string and return it.
+        retBufSize = wcslen(defVal)+1;
+        retBuf     = new TChar[retBufSize];
 
-        return retVal;
-    }
-
-    return NULL;
-}
-
-TChar *GetPropertyValue(PCWSTR pszFilename, PCWSTR pszCanonicalName)
-{
-    TChar *retVal = NULL;
-
-    // Convert the Canonical name of the property to PROPERTYKEY
-    PROPERTYKEY key;
-    HRESULT hr = PSGetPropertyKeyFromName(pszCanonicalName, &key);
-
-    if (SUCCEEDED(hr))
-    {
-        IPropertyStore* pps = NULL;
-
-        // Call the helper to get the property store for the initialized item
-        hr = GetPropertyStore(pszFilename, GPS_DEFAULT, &pps);
-        if (SUCCEEDED(hr))
+        if (retBuf == NULL)
         {
-            retVal = GetPropertyString(pps, key);
-            pps->Release();
-
-            return retVal;
+            return NULL;
         }
+
+        LONG retVal1 = wcstombs_s(&cnt, retBuf, retBufSize,
+                                  defVal, wcslen(defVal));
+
+        if (retVal1 != 0)
+        {
+            delete retBuf;
+            return NULL;
+        }
+
+        if (unhandldedErr)
+        {
+            Log::Print("[GetRegistryString]: Cannot obtain value of '%s' "
+                       "registry key. Error [%d]\n", retBuf, retVal);
+        }
+
+        Log::Print("ALDO: UDN: %s\n", retBuf);
+
+        return retBuf;
     }
 
-    return NULL;
+    // Convert the wide string retrieved from the registry to a narrow string.
+    //
+    // We have already verified the value type is REG_SZ, so we can rely
+    // on the data being a null terminated string.
+    retBufSize = wcslen((LPWSTR)tmpBuf) + 1;
+    retBuf     = new TChar[retBufSize];
+
+    if (retBuf == NULL)
+    {
+        return NULL;
+    }
+
+    retVal = wcstombs_s(&cnt, retBuf, retBufSize,
+                        (LPWSTR)tmpBuf, wcslen((LPWSTR)tmpBuf));
+
+    if (retVal != 0)
+    {
+        delete retBuf;
+        return NULL;
+    }
+
+    Log::Print("ALDO: UDN: %s\n", retBuf);
+
+    return retBuf;
 }
 
 DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
 {
     /* Pipeline configuration. */
     TChar *aRoom     = "ExampleTestRoom";
-    TChar *aUdn      = NULL;
     TChar *aName     = "";
+    TChar *aUdn      = NULL;
 
     const TChar* cookie ="ExampleMediaPlayer";
 
@@ -199,32 +182,40 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
                    "\n");
     }
 
-    // Read persistent configuration from the application property store,
+    // Initialise UDN.
 
-    // Initialise COM
-    HRESULT hr = CoInitializeEx(NULL,
-                                COINIT_MULTITHREADED | COINIT_DISABLE_OLE1DDE);
+    HKEY hk;
 
-    if (SUCCEEDED(hr))
+    // Obtain a handle to our application key.
+    //
+    // This will be created if one doesn't already exist.
+    if (RegCreateKeyEx(HKEY_CURRENT_USER,
+                       L"Software\\Linn\\LitePipeTestApp",
+                               0,
+                               NULL,
+                               REG_OPTION_NON_VOLATILE,
+                               KEY_ALL_ACCESS,
+                               NULL,
+                               &hk,
+                               NULL) == ERROR_SUCCESS)
     {
-        // Register the custom property schema used for persistent data purposes.
-        if (RegisterSchema(L"LitePipeTestApp.propdesc"))
+        WCHAR defaultUdn[] = L"ExampleDevice";
+
+        // Read configuration key data from the registry.
+        aUdn = GetRegistryString(hk, L"UDN",
+                                 defaultUdn, sizeof(defaultUdn));
+
+        RegCloseKey(hk);
+
+        if (aUdn == NULL)
         {
-            // Read configuration.
-            aUdn = GetPropertyValue(L"Config.docx", L"Linn.LitePipeTestApp.UDN");
-
-            // Unregister schema
-            UnregisterSchema(L"LitePipeTestApp.propdesc");
+            return 1;
         }
-
-        // Close COM
-        CoUninitialize();
     }
-
-    // Allocate a dummy UDN if none populated from the property store
-    if (aUdn == NULL)
+    else
     {
-        aUdn = _strdup("ExampleDevice");
+        Log::Print("ERROR: Cannot obtain registry key\n");
+        return 1;
     }
 
     // Create lib.
@@ -279,7 +270,7 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
 cleanup:
     /* Tidy up on exit. */
 
-    free(aUdn);
+    delete aUdn;
 
     if (hTimerQueue != NULL)
     {
