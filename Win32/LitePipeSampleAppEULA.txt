@@ -1,0 +1,4 @@
+End-User License Agreement for the LitePipe Win32 Sample Application
+--------------------------------------------------------------------
+
+TBD

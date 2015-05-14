@@ -55,8 +55,6 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR /*lpCmdLine*/, int /
     g_hInst = hInstance;
     RegisterWindowClass(szWindowClass, WndProc);
 
-    //_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
-
     // Create the main (hidden) window.
     WCHAR szTitle[100];
     LoadString(hInstance, IDS_APP_TITLE, szTitle, ARRAYSIZE(szTitle));
@@ -74,10 +72,12 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR /*lpCmdLine*/, int /
         }
     }
 
+#ifdef _DEBUG
     if (! _CrtDumpMemoryLeaks())
     {
         printf_s("No Memory Leaks Detected\n");
     }
+#endif /* _DEBUG */
 
     return 0;
 }

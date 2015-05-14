@@ -75,7 +75,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
-    <LinkIncremental>false</LinkIncremental>
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>Include/OpenHome/Av/Tests;Include;$(IncludePath)</IncludePath>
+    <LibraryPath>Libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
@@ -122,6 +124,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
+      <AdditionalDependencies>comctl32.lib;Ws2_32.lib;IPHLPAPI.lib;Dbghelp.lib;Avrt.lib;ohNetCore.lib;ohPipeline.lib;ohNetMon.lib;libeay32.lib;ssleay32.lib;ohMediaPlayer.lib;CodecAacBase.lib;CodecAac.lib;CodecAifc.lib;CodecAlacBase.lib;CodecAlac.lib;CodecPcm.lib;CodecAiffBase.lib;CodecAiff.lib;libOgg.lib;CodecVorbis.lib;CodecAdts.lib;CodecFlac.lib;CodecWav.lib;SourcePlaylist.lib;SourceUpnpAv.lib;SourceSongcast.lib;ohMediaPlayerTestUtils.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>

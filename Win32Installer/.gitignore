@@ -1,0 +1,10 @@
+# Editor related files.
+*~
+.*.swp
+
+# Generated installer
+*.exe
+
+# "tags" files are caches created by ctags for quick navigation in
+# various text editors.
+tags
