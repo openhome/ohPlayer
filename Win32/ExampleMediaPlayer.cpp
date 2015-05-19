@@ -2,7 +2,6 @@
 #include <OpenHome/Media/Protocol/ProtocolFactory.h>
 #include <OpenHome/Av/SourceFactory.h>
 #include <OpenHome/Av/UpnpAv/UpnpAv.h>
-#include <OpenHome/Configuration/Tests/ConfigRamStore.h>
 #include <OpenHome/Av/Utils/IconDriverSongcastSender.h>
 #include <OpenHome/Media/Debug.h>
 #include <OpenHome/Av/Debug.h>
@@ -12,8 +11,10 @@
 #include <Windows.h>
 
 #include "CustomMessages.h"
+#include "ControlPointProxy.h"
 #include "ExampleMediaPlayer.h"
 #include "RamStore.h"
+#include "ConfigRegStore.h"
 
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
@@ -88,11 +89,11 @@ ExampleMediaPlayer::ExampleMediaPlayer(LPVOID lpParam,
     iRamStore = new RamStore();
 
     // create a read/write store using the new config framework
-    iConfigRamStore = new ConfigRamStore();
+    iConfigRegStore = new ConfigRegStore();
 
     // FIXME - available store keys should be listed somewhere
-    iConfigRamStore->Write(Brn("Product.Room"), Brn(aRoom));
-    iConfigRamStore->Write(Brn("Product.Name"), Brn(aProductName));
+    iConfigRegStore->Write(Brn("Product.Room"), Brn(aRoom));
+    iConfigRegStore->Write(Brn("Product.Name"), Brn(aProductName));
 
     // Set pipeline thread priority just below the pipeline animator.
     iInitParams = PipelineInitParams::New();
@@ -100,9 +101,9 @@ ExampleMediaPlayer::ExampleMediaPlayer(LPVOID lpParam,
 
     // create MediaPlayer
     iMediaPlayer = new MediaPlayer( aDvStack, *iDevice, *iRamStore,
-                                   *iConfigRamStore, iInitParams,
+                                   *iConfigRegStore, iInitParams,
                                     iVolume, iVolume, aUdn, Brn(aRoom),
-                                    Brn("Softplayer"));
+                                    Brn(aProductName));
 
     // Register an observer, primarily to monitor the pipeline status.
     iMediaPlayer->Pipeline().AddObserver(*this);
@@ -116,7 +117,7 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
     delete iDevice;
     delete iDeviceUpnpAv;
     delete iRamStore;
-    delete iConfigRamStore;
+    delete iConfigRegStore;
 }
 
 Environment& ExampleMediaPlayer::Env()

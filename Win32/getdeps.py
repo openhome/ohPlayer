@@ -47,6 +47,7 @@ depList = [
     [ 'OhNet/OpenHome/Ascii.h', 'Include/OpenHome/Private' ],
     [ 'OhNet/OpenHome/Buffer.h', 'Include/OpenHome' ],
     [ 'OhNet/OpenHome/Buffer.inl', 'Include/OpenHome' ],
+    [ 'OhNet/OpenHome/Converter.h', 'Include/OpenHome/Private' ],
     [ 'OhNet/OpenHome/Debug.h', 'Include/OpenHome/Private' ],
     [ 'OhNet/OpenHome/Defines.h', 'Include/OpenHome' ],
     [ 'OhNet/OpenHome/Env.h', 'Include/OpenHome/Private' ],

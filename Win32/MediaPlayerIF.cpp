@@ -49,119 +49,12 @@ static VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN /*TimerOrWaitFired*/)
     }
 }
 
-// Read the string associated with the supplied registry key.
-//
-// If the key doesn't exists it will be created and initialised to the default
-// value.
-//
-// On success the key value is returned as a narrow string, on failure NULL
-// is returned.
-TChar * GetRegistryString(HKEY    hk,
-                          LPCWSTR keyName,
-                          LPCWSTR defVal,
-                          size_t  defBufSize)
-{
-    LONG   retVal;
-    DWORD  lpType;
-    DWORD  tmpBufSize;
-    TByte  tmpBuf[256];
-    TChar *retBuf;
-    size_t retBufSize;
-    size_t cnt;
-
-    tmpBufSize = sizeof(tmpBuf);
-
-    // Attempt to read the required key value.
-    retVal = RegQueryValueEx(hk,
-                             keyName,
-                             NULL,
-                             (LPDWORD)&lpType,
-                             (LPBYTE)tmpBuf,
-                             (LPDWORD)&tmpBufSize);
-
-    // For the query to be valid it must succeed and the returned data
-    // be of the expected type.
-    if ((retVal != ERROR_SUCCESS) || (lpType != REG_SZ))
-    {
-        TBool unhandldedErr = false;
-
-        // Check for non-existent key
-        if (retVal == ERROR_FILE_NOT_FOUND)
-        {
-            // Create the key, setting it to the supplied default value.
-            RegSetValueEx(hk,
-                          keyName,
-                          0,
-                          REG_SZ,
-                          (LPBYTE)defVal,
-                          defBufSize);
-        }
-        else
-        {
-            unhandldedErr = true;
-        }
-
-        // Convert the default value to a narrow string and return it.
-        retBufSize = wcslen(defVal)+1;
-        retBuf     = new TChar[retBufSize];
-
-        if (retBuf == NULL)
-        {
-            return NULL;
-        }
-
-        LONG retVal1 = wcstombs_s(&cnt, retBuf, retBufSize,
-                                  defVal, wcslen(defVal));
-
-        if (retVal1 != 0)
-        {
-            delete retBuf;
-            return NULL;
-        }
-
-        if (unhandldedErr)
-        {
-            Log::Print("[GetRegistryString]: Cannot obtain value of '%s' "
-                       "registry key. Error [%d]\n", retBuf, retVal);
-        }
-
-        Log::Print("ALDO: UDN: %s\n", retBuf);
-
-        return retBuf;
-    }
-
-    // Convert the wide string retrieved from the registry to a narrow string.
-    //
-    // We have already verified the value type is REG_SZ, so we can rely
-    // on the data being a null terminated string.
-    retBufSize = wcslen((LPWSTR)tmpBuf) + 1;
-    retBuf     = new TChar[retBufSize];
-
-    if (retBuf == NULL)
-    {
-        return NULL;
-    }
-
-    retVal = wcstombs_s(&cnt, retBuf, retBufSize,
-                        (LPWSTR)tmpBuf, wcslen((LPWSTR)tmpBuf));
-
-    if (retVal != 0)
-    {
-        delete retBuf;
-        return NULL;
-    }
-
-    Log::Print("ALDO: UDN: %s\n", retBuf);
-
-    return retBuf;
-}
-
 DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
 {
     /* Pipeline configuration. */
     TChar *aRoom     = "ExampleTestRoom";
-    TChar *aName     = "";
-    TChar *aUdn      = NULL;
+    TChar *aName     = "ExamplePlayer";
+    TChar *aUdn      = "ExampleDevice";
 
     const TChar* cookie ="ExampleMediaPlayer";
 
@@ -180,42 +73,6 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
     {
         Log::Print("Can't up the process priority of InitAndRunMediaPlayer "
                    "\n");
-    }
-
-    // Initialise UDN.
-
-    HKEY hk;
-
-    // Obtain a handle to our application key.
-    //
-    // This will be created if one doesn't already exist.
-    if (RegCreateKeyEx(HKEY_CURRENT_USER,
-                       L"Software\\Linn\\LitePipeTestApp",
-                               0,
-                               NULL,
-                               REG_OPTION_NON_VOLATILE,
-                               KEY_ALL_ACCESS,
-                               NULL,
-                               &hk,
-                               NULL) == ERROR_SUCCESS)
-    {
-        WCHAR defaultUdn[] = L"ExampleDevice";
-
-        // Read configuration key data from the registry.
-        aUdn = GetRegistryString(hk, L"UDN",
-                                 defaultUdn, sizeof(defaultUdn));
-
-        RegCloseKey(hk);
-
-        if (aUdn == NULL)
-        {
-            return 1;
-        }
-    }
-    else
-    {
-        Log::Print("ERROR: Cannot obtain registry key\n");
-        return 1;
     }
 
     // Create lib.
@@ -238,7 +95,7 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
 
     // Create ExampleMediaPlayer.
     emp = new ExampleMediaPlayer(lpParam, *dvStack, Brn(aUdn), aRoom, aName,
-                                  Brx::Empty()/*aUserAgent*/);
+                                 Brx::Empty()/*aUserAgent*/);
 
     driver = new AudioDriver(dvStack->Env(), emp->Pipeline(), lpParam);
     if (driver == nullptr)
@@ -269,8 +126,6 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
 
 cleanup:
     /* Tidy up on exit. */
-
-    delete aUdn;
 
     if (hTimerQueue != NULL)
     {

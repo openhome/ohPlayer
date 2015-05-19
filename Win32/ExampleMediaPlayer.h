@@ -1,7 +1,5 @@
 #pragma once
 
-#include "ControlPointProxy.h"
-
 #include <OpenHome/Av/MediaPlayer.h>
 #include <OpenHome/Av/Utils/DriverSongcastSender.h>
 #include <OpenHome/Media/PipelineManager.h>
@@ -20,11 +18,12 @@ namespace Media {
     class DriverSongcastSender;
 }
 namespace Configuration {
-    class ConfigRamStore;
+    class ConfigRegStore;
     class ConfigManager;
 }
 namespace Av {
     class RamStore;
+    class ControlPointProxy;
 
 class ExampleMediaPlayer : private Net::IResourceManager,
                            private Media::IPipelineObserver
@@ -64,7 +63,7 @@ protected:
     Net::DvDeviceStandard* iDevice;
     Net::DvDevice* iDeviceUpnpAv;
     RamStore* iRamStore;
-    Configuration::ConfigRamStore* iConfigRamStore;
+    Configuration::ConfigRegStore* iConfigRegStore;
     Semaphore iSemShutdown;
 private:
     Semaphore iDisabled;
