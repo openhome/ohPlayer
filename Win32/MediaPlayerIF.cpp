@@ -2,6 +2,7 @@
 #include "AudioDriver.h"
 #include "CustomMessages.h"
 #include "UpdateCheck.h"
+#include "MediaPlayerIF.h"
 #include <OpenHome/Net/Private/DviStack.h>
 #include <OpenHome/Private/Printer.h>
 
@@ -25,6 +26,7 @@ using namespace OpenHome::Media;
 using namespace OpenHome::Net;
 
 static ExampleMediaPlayer* emp = nullptr; // Test media player instance.
+static Library*            lib = nullptr;
 
 // Timed callback to initiate application update check.
 static VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN /*TimerOrWaitFired*/)
@@ -51,14 +53,18 @@ static VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN /*TimerOrWaitFired*/)
 
 DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
 {
-    /* Pipeline configuration. */
+    // Handle supplied arguements.
+    InitArgs   *args   = (InitArgs *)lpParam;
+    HWND        hwnd   = args->hwnd;
+    TIpAddress  subnet = args->subnet;
+
+    // Pipeline configuration.
     TChar *aRoom     = "ExampleTestRoom";
     TChar *aName     = "ExamplePlayer";
     TChar *aUdn      = "ExampleDevice";
 
     const TChar* cookie ="ExampleMediaPlayer";
 
-    Library            *lib         = nullptr;
     NetworkAdapter     *adapter     = nullptr;
     Net::CpStack       *cpStack     = nullptr;
     Net::DvStack       *dvStack     = nullptr;
@@ -75,8 +81,8 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
                    "\n");
     }
 
-    // Create lib.
-    lib  = ExampleMediaPlayerInit::CreateLibrary();
+    // Create lib on the supplied subnet.
+    lib  = ExampleMediaPlayerInit::CreateLibrary(subnet);
     if (lib == nullptr)
     {
         return 1;
@@ -88,16 +94,15 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
         goto cleanup;
     }
 
-
     lib->StartCombined(adapter->Subnet(), cpStack, dvStack);
 
     adapter->RemoveRef(cookie);
 
     // Create ExampleMediaPlayer.
-    emp = new ExampleMediaPlayer(lpParam, *dvStack, Brn(aUdn), aRoom, aName,
+    emp = new ExampleMediaPlayer(hwnd, *dvStack, Brn(aUdn), aRoom, aName,
                                  Brx::Empty()/*aUserAgent*/);
 
-    driver = new AudioDriver(dvStack->Env(), emp->Pipeline(), lpParam);
+    driver = new AudioDriver(dvStack->Env(), emp->Pipeline(), hwnd);
     if (driver == nullptr)
     {
         goto cleanup;
@@ -111,11 +116,22 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
     }
     else
     {
-        // Set a timer to call the timer routine in 10 seconds then at
-        // 4 hour intervals..
-        if (!CreateTimerQueueTimer( &hTimer, hTimerQueue,
-                (WAITORTIMERCALLBACK)TimerRoutine, lpParam,
-                10 * 1000,  4 * 60 * 60 * 1000, 0))
+        static const DWORD TenSeconds = 10 * 1000;
+        static const DWORD FourHours  = 4 * 60 * 60 * 1000;
+
+        DWORD initialTimeout = TenSeconds;
+
+        if (subnet != InitArgs::NO_SUBNET)
+        {
+            // If we are restarting due to a user instigated subnet change we
+            // don't want to recheck for updates so set the initial check to be
+            // the timer period.
+            initialTimeout = FourHours;
+        }
+
+        if (!CreateTimerQueueTimer(&hTimer, hTimerQueue,
+                (WAITORTIMERCALLBACK)TimerRoutine, hwnd,
+                initialTimeout, FourHours, 0))
         {
             Log::Print("CreateTimerQueueTimer failed (%d)\n", GetLastError());
         }
@@ -181,4 +197,90 @@ void PipeLineStop()
     {
         emp->HaltPipeline();
     }
+}
+
+// Free up resources allocated to a subnet menu vector.
+void FreeSubnets(std::vector<SubnetRecord*> *subnetVector)
+{
+    std::vector<SubnetRecord*>::iterator it;
+
+    for (it=subnetVector->begin(); it < subnetVector->end(); it++)
+    {
+        delete (*it)->menuString;
+        delete *it;
+    }
+
+    delete subnetVector;
+}
+
+// Cerate a subnet menu vector.
+std::vector<SubnetRecord*> *GetSubnets()
+{
+    if (emp != nullptr)
+    {
+        // Obtain a refernce to the current active network adapter.
+        const TChar    *cookie  = "GetSubnets";
+        NetworkAdapter *adapter = nullptr;
+
+        adapter = lib->CurrentSubnetAdapter(cookie);
+
+        // Obtain a list of available network adapters.
+        std::vector<NetworkAdapter*>* subnetList = lib->CreateSubnetList();
+
+        if (subnetList->size() == 0) {
+            return NULL;
+        }
+
+        std::vector<SubnetRecord*> *subnetVector =
+            new std::vector<SubnetRecord*>;
+
+        for (unsigned i=0; i<subnetList->size(); ++i) {
+            SubnetRecord *subnetEntry = new SubnetRecord;
+
+            if (subnetEntry == NULL)
+            {
+                break;
+            }
+
+            // Get a string containing ip address and adapter name and store
+            // it in our vectoe element.
+            TChar *fullName = (*subnetList)[i]->FullName();
+
+            subnetEntry->menuString = new std::string(fullName);
+
+            delete fullName;
+
+            if (subnetEntry->menuString == NULL)
+            {
+                delete subnetEntry;
+                break;
+            }
+
+            // Store the subnet address the adapter attaches to in our vector
+            // element.
+            subnetEntry->subnet = (*subnetList)[i]->Subnet();
+
+            // Note if this is the current active subnet.
+            if ((*subnetList)[i] == adapter)
+            {
+                subnetEntry->isCurrent = true;
+            }
+            else
+            {
+                subnetEntry->isCurrent = false;
+            }
+
+            subnetVector->push_back(subnetEntry);
+        }
+
+        Library::DestroySubnetList(subnetList);
+
+        if (adapter != NULL) {
+            adapter->RemoveRef(cookie);
+        }
+
+        return subnetVector;
+    }
+
+    return NULL;
 }

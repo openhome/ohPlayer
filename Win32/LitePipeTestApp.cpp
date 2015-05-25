@@ -9,6 +9,7 @@
 #include <commctrl.h>
 #include <strsafe.h>
 #include <process.h>
+#include <vector>
 
 #include "MediaPlayerIF.h"
 
@@ -24,13 +25,18 @@
 #endif  // _DEBUG
 
 // System tray icon identifier.
-#define ICON_ID 100
+static const INT ICON_ID = 100;
 
 // Application menu item positions
 #define MENU_PLAY       0
 #define MENU_PAUSE      1
 #define MENU_STOP       2
-#define MENU_UPDATE     4
+#define MENU_SEP_1      3
+#define MENU_NETWORK    4
+#define MENU_SEP_2      5
+#define MENU_UPDATE     6
+#define MENU_ABOUT      7
+#define MENU_EXIT       8
 
 HINSTANCE  g_hInst            = NULL;
 HMENU      g_hSubMenu         = NULL;
@@ -38,6 +44,8 @@ BOOL       g_updatesAvailable = false;
 int        g_mediaOptions     = 0;
 CHAR      *g_updateLocation   = NULL;
 HANDLE     g_mplayerThread    = NULL;
+
+std::vector<SubnetRecord*> *g_subnetList = NULL;;
 
 wchar_t const szWindowClass[] = L"LitePipe";
 
@@ -199,6 +207,64 @@ void ShowUpdateUI(HWND hwnd)
                L"Update", MB_OK);
 }
 
+HMENU CreateNetworkAdapterPopup()
+{
+    HMENU pMenu;
+
+    pMenu = CreatePopupMenu();
+
+    if (pMenu != NULL)
+    {
+        // Release any existing subnet list resources.
+        if (g_subnetList != NULL)
+        {
+            FreeSubnets(g_subnetList);
+            g_subnetList = NULL;
+        }
+
+        // Get a list of available subnets.
+        g_subnetList = GetSubnets();
+
+        UINT index = 0;
+        std::vector<SubnetRecord*>::iterator it;
+
+        // Put each subnet in our popup menu.
+        for (it=g_subnetList->begin(); it < g_subnetList->end(); it++)
+        {
+            WCHAR  *wcstring;
+            size_t  convertedChars;
+            size_t  itemSize;;
+            UINT    uFlags = MF_STRING;
+
+            // If this is the subnet we are currently disable it's selection.
+            if ((*it)->isCurrent)
+            {
+                uFlags |= MF_GRAYED;
+            }
+
+            // Convert the item narrow string to a wide character string.
+            itemSize = (*it)->menuString->length();
+            wcstring = new WCHAR[itemSize+1];
+
+            mbstowcs_s(&convertedChars, wcstring, itemSize+1,
+                       (*it)->menuString->c_str() ,itemSize );
+
+            // Add the menu item.
+            if (! AppendMenu(pMenu, uFlags,
+                             (UINT_PTR)(IDM_NETWORK_BASE+index), wcstring))
+            {
+                delete wcstring;
+                return pMenu;
+            }
+
+            delete wcstring;
+            index++;
+        }
+    }
+
+    return pMenu;
+}
+
 void ShowContextMenu(HWND hwnd, POINT pt)
 {
     HMENU hMenu = LoadMenu(g_hInst, MAKEINTRESOURCE(IDC_CONTEXTMENU));
@@ -208,6 +274,8 @@ void ShowContextMenu(HWND hwnd, POINT pt)
 
         if (g_hSubMenu)
         {
+            HMENU networkPopup;
+
             // Our window must be foreground before calling TrackPopupMenu
             // or the menu will not disappear when the user clicks away
             SetForegroundWindow(hwnd);
@@ -221,6 +289,25 @@ void ShowContextMenu(HWND hwnd, POINT pt)
             else
             {
                 uFlags |= TPM_LEFTALIGN;
+            }
+
+            // Insert a Network popup menu to allow selection of the required
+            // subnet.
+            //
+            // This is done prior to any menu item configuration as the insert
+            // operation causes menu item indices to be altered.
+            networkPopup = CreateNetworkAdapterPopup();
+
+            if (networkPopup != NULL)
+            {
+                if (!InsertMenu(g_hSubMenu,
+                                MENU_NETWORK,
+                                MF_BYPOSITION | MF_POPUP | MF_STRING,
+                                (UINT_PTR)networkPopup,
+                                L"Network"))
+                {
+                    networkPopup = NULL;
+                }
             }
 
             if (g_updatesAvailable)
@@ -261,9 +348,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return -1;
             }
 
+            InitArgs args = {hwnd, InitArgs::NO_SUBNET};
+
             /* Register UPnP/OhMedia devices. */
             g_mplayerThread = CreateThread(NULL, 0, &InitAndRunMediaPlayer,
-                                          (LPVOID)hwnd, 0, NULL);
+                                          (LPVOID)&args, 0, NULL);
 
             break;
         }
@@ -317,7 +406,45 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
 
                 default:
+                {
+                    // Check our dynamic Network subnet selection popup.
+                    if (wmId >= IDM_NETWORK_BASE)
+                    {
+                        UINT index = wmId - IDM_NETWORK_BASE;
+
+                        try {
+                            SubnetRecord* subnetEntry = g_subnetList->at(index);
+
+                            TIpAddress subnet = subnetEntry->subnet;
+
+                            // Release subnet list resources.
+                            FreeSubnets(g_subnetList);
+                            g_subnetList = NULL;
+
+                            // Restart the media player on the selected subnet.
+                            ExitMediaPlayer();
+
+                            WaitForSingleObject(g_mplayerThread, INFINITE);
+                            CloseHandle(g_mplayerThread);
+
+                            InitArgs args = {hwnd, subnet};
+
+                            /* Re-Register UPnP/OhMedia devices. */
+                            g_mplayerThread = CreateThread(NULL,
+                                                           0,
+                                                           &InitAndRunMediaPlayer,
+                                                           (LPVOID)&args,
+                                                           0,
+                                                           NULL);
+                        }
+                        catch (const std::out_of_range& /*e*/) {
+                        }
+
+                        break;
+                    }
+
                     return DefWindowProc(hwnd, message, wParam, lParam);
+                }
             }
 
             break;
@@ -424,6 +551,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         case WM_DESTROY:
         {
             delete g_updateLocation;
+            g_updateLocation = NULL;
+
+            if (g_subnetList != NULL)
+            {
+                FreeSubnets(g_subnetList);
+                g_subnetList = NULL;
+            }
 
             DeleteNotificationIcon(hwnd);
             PostQuitMessage(0);

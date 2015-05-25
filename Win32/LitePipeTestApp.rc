@@ -46,6 +46,7 @@ BEGIN
         MENUITEM "Pause",     IDM_PAUSE,   GRAYED
         MENUITEM "Stop",      IDM_STOP,    GRAYED
         MENUITEM SEPARATOR
+        MENUITEM SEPARATOR
         MENUITEM "Update",    IDM_UPDATE,  GRAYED
         MENUITEM "About",     IDM_ABOUT
         MENUITEM SEPARATOR

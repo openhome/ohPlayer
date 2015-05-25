@@ -85,7 +85,7 @@ private: // from Media::IPipelineObserver
 class ExampleMediaPlayerInit
 {
 public:
-    static OpenHome::Net::Library* CreateLibrary();
+    static OpenHome::Net::Library* CreateLibrary(TIpAddress preferredSubnet);
 };
 
 } // namespace Av

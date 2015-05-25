@@ -55,7 +55,7 @@ TBool ConfigRegStore::GetAppRegistryKey()
     //
     // This will be created if one doesn't already exist.
     if (RegCreateKeyEx(HKEY_CURRENT_USER,
-                       L"Software\\Linn\\LitePipeTestApp",
+                       L"Software\\OpenHome\\LitePipeTestApp",
                                0,
                                NULL,
                                REG_OPTION_NON_VOLATILE,

@@ -13,6 +13,7 @@
 #include "CustomMessages.h"
 #include "ControlPointProxy.h"
 #include "ExampleMediaPlayer.h"
+#include "MediaPlayerIF.h"
 #include "RamStore.h"
 #include "ConfigRegStore.h"
 
@@ -314,9 +315,13 @@ void ExampleMediaPlayer::Disabled()
 
 // ExampleMediaPlayerInit
 
-OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary()
+OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredSubnet)
 {
-    InitialisationParams* initParams = InitialisationParams::Create();
+    TUint                 index         = 0;
+    InitialisationParams *initParams    = InitialisationParams::Create();
+    TIpAddress            lastSubnet    = InitArgs::NO_SUBNET;;
+    const char           *lastSubnetStr = "Subnet.LastUsed";
+
     initParams->SetDvEnableBonjour();
 
     Net::Library* lib = new Net::Library(initParams);
@@ -328,18 +333,50 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary()
         ASSERTS();
     }
 
-    Log::Print ("Adapter List:\n");
-    for (unsigned i=0; i<subnetList->size(); ++i) {
-        TIpAddress addr = (*subnetList)[i]->Address();
-        Log::Print ("  %d: %d.%d.%d.%d\n", i, addr&0xff, (addr>>8)&0xff,
-                                           (addr>>16)&0xff, (addr>>24)&0xff);
+    Configuration::ConfigRegStore iConfigRegStore;
+
+    // Check the configuration store for the last subnet joined.
+    try {
+        Bwn lastSubnetBuf = Bwn((TByte *)&lastSubnet, sizeof(lastSubnet));
+
+        iConfigRegStore.Read(Brn(lastSubnetStr), lastSubnetBuf);
+    }
+    catch (StoreKeyNotFound&) {
+        // No previous subnet stored.
+    }
+    catch (StoreReadBufferUndersized&) {
+        // This shouldn't happen.
+        Log::Print("ERROR: Invalid 'Subnet.LastUsed' property in Config "
+                   "Store\n");
     }
 
-    // Choose the first adapter.
-    //TIpAddress subnet = (*subnetList)[3]->Subnet();
-    TIpAddress subnet = (*subnetList)[0]->Subnet();
+    for (TUint i=0; i<subnetList->size(); ++i)
+    {
+        TIpAddress subnet = (*subnetList)[i]->Subnet();
+
+        // If the requested subnet is available, choose it.
+        if (subnet == preferredSubnet)
+        {
+            index = i;
+            break;
+        }
+
+        // If the last used subnet is available, note it.
+        // We'll fallback to it if the requested subnet is not available.
+        if (subnet == lastSubnet)
+        {
+            index = i;
+        }
+    }
+
+    // Choose the required adapter.
+    TIpAddress subnet = (*subnetList)[index]->Subnet();
     Library::DestroySubnetList(subnetList);
     lib->SetCurrentSubnet(subnet);
+
+    // Store the selected subnet in persistent storage.
+    iConfigRegStore.Write(Brn(lastSubnetStr),
+                          Brn((TByte *)&subnet, sizeof(subnet)));
 
     Log::Print("Using Subnet %d.%d.%d.%d\n", subnet&0xff, (subnet>>8)&0xff,
                                              (subnet>>16)&0xff,

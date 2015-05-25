@@ -23,6 +23,7 @@
 #define IDI_NOTIFICATIONICON            207
 #define IDC_NOTIFICATIONICON            208
 #define IDC_CONTEXTMENU                 209
+#define IDM_NETWORK_BASE                9000
 #define ID_Menu                         32771
 #define IDC_STATIC                      -1
 
