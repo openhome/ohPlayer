@@ -1,0 +1,14 @@
+Sample apps for LitePipe (https://github.com/openhome/LitePipe) for Mac, Windows, Linux.
+
+Before building, clone ohdevtools (git@github.com:openhome/ohdevtools.git) then run
+    'go fetch --all'
+or
+    'go fetch --all --debug'
+
+To build, run
+    waf configure
+or
+    waf configure --debug
+
+followed by
+    waf build
