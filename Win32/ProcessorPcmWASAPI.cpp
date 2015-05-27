@@ -1,31 +1,25 @@
 #include <OpenHome/Media/Utils/ProcessorPcmUtils.h>
 
+#include "MemoryCheck.h"
 #include "ProcessorPcmWASAPI.h"
-
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
-
-#ifdef _DEBUG
-   #ifndef DBG_NEW
-      #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
-      #define new DBG_NEW
-   #endif
-#endif  // _DEBUG
 
 using namespace OpenHome;
 using namespace OpenHome::Media;
 
-// ProcessorPcmBufWASAP
+// WASAPI based implementation of the ProcessorPcmBuf interface
+//
+// Takes PCM data fromteh pipeline and formats it for the WASAPI
+// audio subsystem.
 
 ProcessorPcmBufWASAPI::ProcessorPcmBufWASAPI(bool duplicateChannel) :
-    _DuplicateChannel(duplicateChannel)
+    iDuplicateChannel(duplicateChannel)
 {
 }
 
-TBool ProcessorPcmBufWASAPI::ProcessFragment8(const Brx& aData, TUint /*aNumChannels*/)
+TBool ProcessorPcmBufWASAPI::ProcessFragment8(const Brx& aData,
+                                              TUint /*aNumChannels*/)
 {
-    if (!_DuplicateChannel)
+    if (!iDuplicateChannel)
     {
         ProcessFragment(aData);
         return true;
@@ -33,7 +27,7 @@ TBool ProcessorPcmBufWASAPI::ProcessFragment8(const Brx& aData, TUint /*aNumChan
     else
     {
         TByte *nData;
-        TUint bytes;
+        TUint  bytes;
 
         bytes = aData.Bytes() * 2;
 
@@ -65,14 +59,15 @@ TBool ProcessorPcmBufWASAPI::ProcessFragment8(const Brx& aData, TUint /*aNumChan
     }
 }
 
-TBool ProcessorPcmBufWASAPI::ProcessFragment16(const Brx& aData, TUint /*aNumChannels*/)
+TBool ProcessorPcmBufWASAPI::ProcessFragment16(const Brx& aData,
+                                               TUint      /*aNumChannels*/)
 {
     TByte *nData;
-    TUint bytes;
+    TUint  bytes;
 
     bytes = aData.Bytes();
 
-    if (_DuplicateChannel)
+    if (iDuplicateChannel)
     {
         bytes *= 2;
     }
@@ -96,7 +91,7 @@ TBool ProcessorPcmBufWASAPI::ProcessFragment16(const Brx& aData, TUint /*aNumCha
         *ptr1++ = *(ptr+1);
         *ptr1++ = *(ptr);
 
-        if (_DuplicateChannel)
+        if (iDuplicateChannel)
         {
             *ptr1++ = *(ptr+1);
             *ptr1++ = *(ptr);
@@ -112,14 +107,15 @@ TBool ProcessorPcmBufWASAPI::ProcessFragment16(const Brx& aData, TUint /*aNumCha
     return true;
 }
 
-TBool ProcessorPcmBufWASAPI::ProcessFragment24(const Brx& aData, TUint /*aNumChannels*/)
+TBool ProcessorPcmBufWASAPI::ProcessFragment24(const Brx& aData,
+                                               TUint      /*aNumChannels*/)
 {
     TByte *nData;
     TUint  bytes;
 
     bytes = aData.Bytes();
 
-    if (_DuplicateChannel)
+    if (iDuplicateChannel)
     {
         bytes *= 2;
     }
@@ -144,7 +140,7 @@ TBool ProcessorPcmBufWASAPI::ProcessFragment24(const Brx& aData, TUint /*aNumCha
         *ptr1++ = *(ptr+1);
         *ptr1++ = *(ptr+0);
 
-        if (_DuplicateChannel)
+        if (iDuplicateChannel)
         {
             *ptr1++ = *(ptr+2);
             *ptr1++ = *(ptr+1);
@@ -161,12 +157,13 @@ TBool ProcessorPcmBufWASAPI::ProcessFragment24(const Brx& aData, TUint /*aNumCha
     return true;
 }
 
-void ProcessorPcmBufWASAPI::ProcessSample8(const TByte* aSample, TUint aNumChannels)
+void ProcessorPcmBufWASAPI::ProcessSample8(const TByte* aSample,
+                                           TUint        aNumChannels)
 {
     TByte sample[8]  = { 0 };
     TUint sampleSize = 1;
 
-    if (_DuplicateChannel)
+    if (iDuplicateChannel)
     {
         sampleSize *= 2;
     }
@@ -174,7 +171,7 @@ void ProcessorPcmBufWASAPI::ProcessSample8(const TByte* aSample, TUint aNumChann
     for (TUint i=0; i<aNumChannels; i++) {
         sample[0] = *aSample;
 
-        if (_DuplicateChannel)
+        if (iDuplicateChannel)
         {
             sample[1] = *aSample;
         }
@@ -185,12 +182,13 @@ void ProcessorPcmBufWASAPI::ProcessSample8(const TByte* aSample, TUint aNumChann
     }
 }
 
-void ProcessorPcmBufWASAPI::ProcessSample16(const TByte* aSample, TUint aNumChannels)
+void ProcessorPcmBufWASAPI::ProcessSample16(const TByte* aSample,
+                                            TUint        aNumChannels)
 {
     TByte sample[8]  = { 0 };
     TUint sampleSize = 2;
 
-    if (_DuplicateChannel)
+    if (iDuplicateChannel)
     {
         sampleSize *= 2;
     }
@@ -199,7 +197,7 @@ void ProcessorPcmBufWASAPI::ProcessSample16(const TByte* aSample, TUint aNumChan
         sample[0] = *(aSample + 1);
         sample[1] = *aSample;
 
-        if (_DuplicateChannel)
+        if (iDuplicateChannel)
         {
             sample[2] = *(aSample + 1);
             sample[3] = *aSample;
@@ -212,12 +210,13 @@ void ProcessorPcmBufWASAPI::ProcessSample16(const TByte* aSample, TUint aNumChan
     }
 }
 
-void ProcessorPcmBufWASAPI::ProcessSample24(const TByte* aSample, TUint aNumChannels)
+void ProcessorPcmBufWASAPI::ProcessSample24(const TByte* aSample,
+                                            TUint        aNumChannels)
 {
     TByte sample[8]  = { 0 };
     TUint sampleSize = 3;
 
-    if (_DuplicateChannel)
+    if (iDuplicateChannel)
     {
         sampleSize *= 2;
     }
@@ -227,7 +226,7 @@ void ProcessorPcmBufWASAPI::ProcessSample24(const TByte* aSample, TUint aNumChan
         sample[1] = *(aSample + 1);
         sample[2] = *aSample;
 
-        if (_DuplicateChannel)
+        if (iDuplicateChannel)
         {
             sample[3] = *(aSample + 2);
             sample[4] = *(aSample + 1);

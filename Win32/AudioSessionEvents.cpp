@@ -9,26 +9,16 @@
 
 #include "AudioSessionEvents.h"
 #include "CustomMessages.h"
-
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
-
-#ifdef _DEBUG
-   #ifndef DBG_NEW
-      #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
-      #define new DBG_NEW
-   #endif
-#endif  // _DEBUG
+#include "MemoryCheck.h"
 
 using namespace OpenHome;
 using namespace OpenHome::Media;
 
-AudioSessionEvents::AudioSessionEvents(HWND hwnd,
+AudioSessionEvents::AudioSessionEvents(HWND   hwnd,
                                        HANDLE audioSessionDisconnectedEvent) :
-    _RefCount(1),
-    _Hwnd(hwnd),
-    _DisconnectedEvent(audioSessionDisconnectedEvent)
+    iRefCount(1),
+    iHwnd(hwnd),
+    iDisconnectedEvent(audioSessionDisconnectedEvent)
 {
 }
 
@@ -36,11 +26,11 @@ HRESULT AudioSessionEvents::OnSessionDisconnected (AudioSessionDisconnectReason 
 {
     Log::Print("Audio Session Terminated\n");
 
-    // Notify the render thread of the disconnection.
-    SetEvent(_DisconnectedEvent);
+    // Notify the audio render thread of the disconnection.
+    SetEvent(iDisconnectedEvent);
 
-    // Notify user of audio session disconnection.
-    PostMessage(_Hwnd, WM_APP_AUDIO_DISCONNECTED, NULL, NULL);
+    // Notify the user of audio session disconnection.
+    PostMessage(iHwnd, WM_APP_AUDIO_DISCONNECTED, NULL, NULL);
 
     return S_OK;
 }
@@ -54,6 +44,7 @@ HRESULT AudioSessionEvents::QueryInterface(REFIID Iid, void **Object)
     {
         return E_POINTER;
     }
+
     *Object = NULL;
 
     if (Iid == IID_IUnknown)
@@ -72,20 +63,23 @@ HRESULT AudioSessionEvents::QueryInterface(REFIID Iid, void **Object)
     {
         return E_NOINTERFACE;
     }
+
     return S_OK;
 }
 
 ULONG AudioSessionEvents::AddRef()
 {
-    return InterlockedIncrement(&_RefCount);
+    return InterlockedIncrement(&iRefCount);
 }
 
 ULONG AudioSessionEvents::Release()
 {
-    ULONG returnValue = InterlockedDecrement(&_RefCount);
+    ULONG returnValue = InterlockedDecrement(&iRefCount);
+
     if (returnValue == 0)
     {
         delete this;
     }
+
     return returnValue;
 }

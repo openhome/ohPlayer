@@ -2,8 +2,6 @@
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #pragma comment(lib, "comctl32.lib")
 
-#include "resource.h"
-#include "CustomMessages.h"
 #include <windows.h>
 #include <shellapi.h>
 #include <commctrl.h>
@@ -11,63 +9,70 @@
 #include <process.h>
 #include <vector>
 
+#include "resource.h"
+#include "CustomMessages.h"
 #include "MediaPlayerIF.h"
+#include "MemoryCheck.h"
 
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
+static const WCHAR WINDOW_CLASS[] = L"LitePipe"; // Window class name.
+static const INT   ICON_ID        = 100;         // System tray icon identifier.
 
-#ifdef _DEBUG
-   #ifndef DBG_NEW
-      #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
-      #define new DBG_NEW
-   #endif
-#endif  // _DEBUG
+// Application menu item positions.
+//
+// These reflect the IDC_CONTEXTMENU defined in LitePipeTestApp.rc
+// and modified programatically in ShowContextMenu().
+static const UINT MENU_PLAY    = 0;
+static const UINT MENU_PAUSE   = 1;
+static const UINT MENU_STOP    = 2;
+static const UINT MENU_SEP_1   = 3;
+static const UINT MENU_NETWORK = 4;
+static const UINT MENU_SEP_2   = 5;
+static const UINT MENU_UPDATE  = 6;
+static const UINT MENU_ABOUT   = 7;
+static const UINT MENU_EXIT    = 8;
 
-// System tray icon identifier.
-static const INT ICON_ID = 100;
+// Global variables.
+HINSTANCE  g_hInst            = NULL;  // Application instance.
+HMENU      g_hSubMenu         = NULL;  // Application options menu.
+BOOL       g_updatesAvailable = false; // Application updates availability.
+CHAR      *g_updateLocation   = NULL;  // Update location URL.
+INT        g_mediaOptions     = 0;     // Available media playback options flag.
+HANDLE     g_mplayerThread    = NULL;  // Media Player thread ID.
+InitArgs   g_mPlayerArgs;              // Media Player arguments.
 
-// Application menu item positions
-#define MENU_PLAY       0
-#define MENU_PAUSE      1
-#define MENU_STOP       2
-#define MENU_SEP_1      3
-#define MENU_NETWORK    4
-#define MENU_SEP_2      5
-#define MENU_UPDATE     6
-#define MENU_ABOUT      7
-#define MENU_EXIT       8
+// List of available subnets.
+// Used to populate the 'Networks' popup menu.
+std::vector<SubnetRecord*> *g_subnetList = NULL;
 
-HINSTANCE  g_hInst            = NULL;
-HMENU      g_hSubMenu         = NULL;
-BOOL       g_updatesAvailable = false;
-int        g_mediaOptions     = 0;
-CHAR      *g_updateLocation   = NULL;
-HANDLE     g_mplayerThread    = NULL;
-
-std::vector<SubnetRecord*> *g_subnetList = NULL;;
-
-wchar_t const szWindowClass[] = L"LitePipe";
-
-// Forward declarations of functions included in this code module:
-void              RegisterWindowClass(PCWSTR pszClassName, WNDPROC lpfnWndProc);
+// Required forward declarations.
 LRESULT CALLBACK  WndProc(HWND, UINT, WPARAM, LPARAM);
-void              ShowContextMenu(HWND hwnd, POINT pt);
-BOOL              AddNotificationIcon(HWND hwnd);
-BOOL              DeleteNotificationIcon(HWND hwnd);
-BOOL              ShowInfoBalloon(HWND hwnd, UINT title, UINT msg);
-BOOL              RestoreTooltip(HWND hwnd);
 
-int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR /*lpCmdLine*/, int /*nCmdShow*/)
+// Register application window class name and handler.
+void RegisterWindowClass(PCWSTR className, WNDPROC wndProc)
+{
+    WNDCLASSEX wcex = {sizeof(wcex)};
+
+    wcex.lpfnWndProc    = wndProc;
+    wcex.hInstance      = g_hInst;
+    wcex.lpszClassName  = className;
+
+    RegisterClassEx(&wcex);
+}
+
+// Application main entry point.
+INT APIENTRY wWinMain(HINSTANCE hInstance,
+                      HINSTANCE,
+                      PWSTR     /*lpCmdLine*/,
+                      INT       /*nCmdShow*/)
 {
     g_hInst = hInstance;
-    RegisterWindowClass(szWindowClass, WndProc);
+    RegisterWindowClass(WINDOW_CLASS, WndProc);
 
     // Create the main (hidden) window.
-    WCHAR szTitle[100];
-    LoadString(hInstance, IDS_APP_TITLE, szTitle, ARRAYSIZE(szTitle));
-    HWND hwnd = CreateWindowEx( 0, szWindowClass, szTitle, 0, 0, 0, 0, 0,
-                                HWND_MESSAGE, NULL, NULL, NULL );
+    WCHAR windowName[100];
+    LoadString(hInstance, IDS_APP_TITLE, windowName, ARRAYSIZE(windowName));
+    HWND hwnd = CreateWindowEx( WS_EX_LTRREADING, WINDOW_CLASS, windowName,
+                                0, 0, 0, 0, 0, HWND_MESSAGE, NULL, NULL, NULL );
 
     if (hwnd)
     {
@@ -81,6 +86,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR /*lpCmdLine*/, int /
     }
 
 #ifdef _DEBUG
+    // Dump memory leak information on exit.
     if (! _CrtDumpMemoryLeaks())
     {
         printf_s("No Memory Leaks Detected\n");
@@ -90,53 +96,50 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR /*lpCmdLine*/, int /
     return 0;
 }
 
-void RegisterWindowClass(PCWSTR pszClassName, WNDPROC lpfnWndProc)
-{
-    WNDCLASSEX wcex = {sizeof(wcex)};
-
-    wcex.lpfnWndProc    = lpfnWndProc;
-    wcex.hInstance      = g_hInst;
-    wcex.lpszClassName  = pszClassName;
-
-    RegisterClassEx(&wcex);
-}
-
+// Add the application icon to the system tray.
 BOOL AddNotificationIcon(HWND hwnd)
 {
     NOTIFYICONDATA nid = {};
 
-    nid.cbSize = sizeof(NOTIFYICONDATA);
-    nid.hWnd = hwnd;
+    nid.cbSize   = sizeof(NOTIFYICONDATA);
+    nid.hWnd     = hwnd;
 
     // Add the icon, setting the icon, tooltip, and callback message.
     // the icon will be identified with ICON_ID + hwd to be Vista compliant.
-    nid.uID    = ICON_ID;
-    nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP;
-
+    nid.uID              = ICON_ID;
+    nid.uFlags           = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP;
     nid.uCallbackMessage = WM_APP_NOTIFY;
-    LoadIconMetric(g_hInst, MAKEINTRESOURCE(IDI_NOTIFICATIONICON),
-                   LIM_SMALL, &nid.hIcon);
+
+    LoadIconMetric(g_hInst,
+                   MAKEINTRESOURCE(IDI_NOTIFICATIONICON),
+                   LIM_SMALL,
+                   &nid.
+                   hIcon);
+
     LoadString(g_hInst, IDS_TOOLTIP, nid.szTip, ARRAYSIZE(nid.szTip));
+
     Shell_NotifyIcon(NIM_ADD, &nid);
 
     nid.uVersion = NOTIFYICON_VERSION_4;
+
     return Shell_NotifyIcon(NIM_SETVERSION, &nid);
 }
 
+// Remove the application icon from the system tray.
 BOOL DeleteNotificationIcon(HWND hwnd)
 {
     NOTIFYICONDATA nid = {};
 
     nid.cbSize = sizeof(NOTIFYICONDATA);
-    nid.hWnd           = hwnd;
-    nid.uID            = ICON_ID;
+    nid.hWnd   = hwnd;
+    nid.uID    = ICON_ID;
 
     return Shell_NotifyIcon(NIM_DELETE, &nid);
 }
 
+// Display an informational balloon in the system tray.
 BOOL ShowInfoBalloon(HWND hwnd, UINT title, UINT msg )
 {
-    // Display an "update available" message.
     NOTIFYICONDATA nid = {};
 
     nid.cbSize = sizeof(NOTIFYICONDATA);
@@ -153,9 +156,10 @@ BOOL ShowInfoBalloon(HWND hwnd, UINT title, UINT msg )
     return Shell_NotifyIcon(NIM_MODIFY, &nid);
 }
 
+// Restore the application tooltip to the system tray icon.
 BOOL RestoreTooltip(HWND hwnd)
 {
-    // After the balloon is dismissed, restore the tooltip.
+    // After the balloon is dismissed, restore the application tooltip.
     NOTIFYICONDATA nid = {};
 
     nid.cbSize = sizeof(NOTIFYICONDATA);
@@ -166,6 +170,8 @@ BOOL RestoreTooltip(HWND hwnd)
     return Shell_NotifyIcon(NIM_MODIFY, &nid);
 }
 
+// Keep the menu playback options in sync with current state of the
+// media player.
 void UpdatePlaybackOptions()
 {
     if ((g_mediaOptions & MEDIAPLAYER_PLAY_OPTION) != 0)
@@ -199,6 +205,9 @@ void UpdatePlaybackOptions()
     }
 }
 
+// Placeholder.
+//
+// Instigate an application update.
 void ShowUpdateUI(HWND hwnd)
 {
     // TBD. Update UI.
@@ -207,6 +216,8 @@ void ShowUpdateUI(HWND hwnd)
                L"Update", MB_OK);
 }
 
+// Create a sub menu listing the available network adapters and their
+// associated networks.
 HMENU CreateNetworkAdapterPopup()
 {
     HMENU pMenu;
@@ -222,7 +233,7 @@ HMENU CreateNetworkAdapterPopup()
             g_subnetList = NULL;
         }
 
-        // Get a list of available subnets.
+        // Get a list of available subnets from the media player..
         g_subnetList = GetSubnets();
 
         UINT index = 0;
@@ -236,7 +247,8 @@ HMENU CreateNetworkAdapterPopup()
             size_t  itemSize;;
             UINT    uFlags = MF_STRING;
 
-            // If this is the subnet we are currently disable it's selection.
+            // If this is the subnet we are currently using disable it's
+            // selection.
             if ((*it)->isCurrent)
             {
                 uFlags |= MF_GRAYED;
@@ -265,6 +277,7 @@ HMENU CreateNetworkAdapterPopup()
     return pMenu;
 }
 
+// Display the applications options menu.
 void ShowContextMenu(HWND hwnd, POINT pt)
 {
     HMENU hMenu = LoadMenu(g_hInst, MAKEINTRESOURCE(IDC_CONTEXTMENU));
@@ -334,13 +347,14 @@ void ShowContextMenu(HWND hwnd, POINT pt)
     }
 }
 
+// Application message handler.
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
         case WM_CREATE:
         {
-            // Add the notification icon
+            // Add the system tray notification icon
             if (!AddNotificationIcon(hwnd))
             {
                 MessageBox(hwnd, L"Error Adding Icon", NULL, MB_OK);
@@ -348,11 +362,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                 return -1;
             }
 
-            InitArgs args = {hwnd, InitArgs::NO_SUBNET};
-
             /* Register UPnP/OhMedia devices. */
+            g_mPlayerArgs.hwnd   = hwnd;
+            g_mPlayerArgs.subnet = InitArgs::NO_SUBNET;
+
             g_mplayerThread = CreateThread(NULL, 0, &InitAndRunMediaPlayer,
-                                          (LPVOID)&args, 0, NULL);
+                                          (LPVOID)&g_mPlayerArgs, 0, NULL);
 
             break;
         }
@@ -412,7 +427,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                     {
                         UINT index = wmId - IDM_NETWORK_BASE;
 
-                        try {
+                        try
+                        {
                             SubnetRecord* subnetEntry = g_subnetList->at(index);
 
                             TIpAddress subnet = subnetEntry->subnet;
@@ -427,17 +443,20 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                             WaitForSingleObject(g_mplayerThread, INFINITE);
                             CloseHandle(g_mplayerThread);
 
-                            InitArgs args = {hwnd, subnet};
-
                             /* Re-Register UPnP/OhMedia devices. */
-                            g_mplayerThread = CreateThread(NULL,
-                                                           0,
-                                                           &InitAndRunMediaPlayer,
-                                                           (LPVOID)&args,
-                                                           0,
-                                                           NULL);
+                            g_mPlayerArgs.hwnd   = hwnd;
+                            g_mPlayerArgs.subnet = subnet;
+
+                            g_mplayerThread =
+                                CreateThread(NULL,
+                                             0,
+                                            &InitAndRunMediaPlayer,
+                                             (LPVOID)&g_mPlayerArgs,
+                                             0,
+                                             NULL);
                         }
-                        catch (const std::out_of_range& /*e*/) {
+                        catch (const std::out_of_range& /*e*/)
+                        {
                         }
 
                         break;

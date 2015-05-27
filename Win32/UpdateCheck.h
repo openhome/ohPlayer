@@ -9,7 +9,7 @@ namespace Media {
 class UpdateChecker
 {
 public:
-    static bool updateAvailable(Environment& aEnv, const char* aFeed, Bwx& aUrl);
+    static bool updateAvailable(Environment& aEnv, const TChar* aFeed, Bwx& aUrl);
 private:
     static Brn ReadNextString(ReaderUntil& aReaderUntil);
     static Brn ReadValue(ReaderUntil& aReaderUntil, Brn& key);

@@ -1,4 +1,4 @@
 End-User License Agreement for the LitePipe Win32 Sample Application
 --------------------------------------------------------------------
 
-TBD
+DO NOT SHIP WITH THIS PLACEHOLDER LICENSE

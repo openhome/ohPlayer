@@ -33,14 +33,14 @@ private:
     void initialEventVolume();
 
 private:
-    Net::CpProxyAvOpenhomeOrgVolume1   *_volumeProxy;
-    Net::CpProxyAvOpenhomeOrgPlaylist1 *_playlistProxy;
-    Net::CpDeviceDv                    *_cpPlayer;
+    Net::CpProxyAvOpenhomeOrgVolume1   *iVolumeProxy;
+    Net::CpProxyAvOpenhomeOrgPlaylist1 *iPlaylistProxy;
+    Net::CpDeviceDv                    *iCpPlayer;
 
-    Functor funcVolumeInitialEvent;
-    Functor funcVolumeChanged;
-    Functor funcGenericInitialEvent;
-    Functor funcIdChanged;
+    Functor iFuncVolumeInitialEvent;
+    Functor iFuncVolumeChanged;
+    Functor iFuncGenericInitialEvent;
+    Functor iFuncIdChanged;
 };
 
 } // namespace Av

@@ -5,7 +5,6 @@
 namespace OpenHome {
 namespace Av {
 
-
 // Store for compile time static data properties.
 class RamStore : public IStaticDataSource
 {

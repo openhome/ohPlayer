@@ -11,25 +11,15 @@
 #include <OpenHome/Private/Http.h>
 #include <OpenHome/Private/Stream.h>
 
+#include "MemoryCheck.h"
 #include "UpdateCheck.h"
 #include "version.h"
-
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
-
-#ifdef _DEBUG
-   #ifndef DBG_NEW
-      #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
-      #define new DBG_NEW
-   #endif
-#endif  // _DEBUG
 
 using namespace OpenHome;
 using namespace OpenHome::Media;
 
 //
-// Compare to version numbers of the form 'x.y.z' of a substring of.
+// Compare two version numbers of the form 'x.y.z' or a substring of.
 //
 // Returns true if version1 < version2. False otherwise.
 //
@@ -109,7 +99,8 @@ Brn UpdateChecker::ReadNextString(ReaderUntil& aReaderUntil)
 Brn UpdateChecker::ReadValue(ReaderUntil& aReaderUntil, Brn& key)
 {
     // Read until we find the requested key.
-    while (ReadNextString(aReaderUntil) != key) {
+    while (ReadNextString(aReaderUntil) != key)
+    {
         ;
     }
 
@@ -119,7 +110,7 @@ Brn UpdateChecker::ReadValue(ReaderUntil& aReaderUntil, Brn& key)
 
 // Check a given feed for a valid update returning the Url if found.
 TBool UpdateChecker::updateAvailable(Environment& aEnv,
-                                     const char* aFeed,
+                                     const TChar* aFeed,
                                      Bwx& aUrl)
 {
     const TUint        versionLen = 16;
@@ -146,16 +137,20 @@ TBool UpdateChecker::updateAvailable(Environment& aEnv,
     }
 
     // Connect to the server.
-    if (!client.Connect(feed)) {
+    if (!client.Connect(feed))
+    {
         return false;
     }
 
     // Process the feed.
-    try {
-        for (;;) {
+    try
+    {
+        for (;;)
+        {
             // Check this release record is for our platform.
             Brn jsonKey = Brn("platform");
-            if (ReadValue(readerUntil, jsonKey) == Brn("win32")) {
+            if (ReadValue(readerUntil, jsonKey) == Brn("win32"))
+            {
 
                 // Check this release record is valid for our platform version.
                 jsonKey    = Brn("platformMinVersion");
@@ -185,7 +180,8 @@ TBool UpdateChecker::updateAvailable(Environment& aEnv,
         }
     }
     // Catch the end of stream exception.
-    catch (ReaderError&) {
+    catch (ReaderError&)
+    {
     }
 
     return false;

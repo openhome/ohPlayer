@@ -30,53 +30,54 @@ class ExampleMediaPlayer : private Net::IResourceManager,
 {
     static const Brn kSongcastSenderIconFileName;
 public:
-    ExampleMediaPlayer(LPVOID lpParam, Net::DvStack& aDvStack, const Brx& aUdn,
+    ExampleMediaPlayer(HWND hwnd, Net::DvStack& aDvStack, const Brx& aUdn,
                        const TChar* aRoom, const TChar* aProductName,
                        const Brx& aUserAgent);
     virtual ~ExampleMediaPlayer();
-    Environment&  Env();
-    void StopPipeline();
-    TBool CanPlay();
-    void PlayPipeline();
-    TBool CanPause();
-    void PausePipeline();
-    TBool CanHalt();
-    void HaltPipeline();
-    void AddAttribute(const TChar* aAttribute); // FIXME - only required by Songcasting driver
-    virtual void RunWithSemaphore(Net::CpStack& aCpStack);
-    Media::PipelineManager& Pipeline();
-    Net::DvDeviceStandard* Device();
+
+    Environment            &Env();
+    void                    StopPipeline();
+    TBool                   CanPlay();
+    void                    PlayPipeline();
+    TBool                   CanPause();
+    void                    PausePipeline();
+    TBool                   CanHalt();
+    void                    HaltPipeline();
+    void                    AddAttribute(const TChar* aAttribute);
+    virtual void            RunWithSemaphore(Net::CpStack& aCpStack);
+    Media::PipelineManager &Pipeline();
+    Net::DvDeviceStandard  *Device();
 protected:
     virtual void RegisterPlugins(Environment& aEnv);
-    void DoRegisterPlugins(Environment& aEnv, const Brx& aSupportedProtocols);
+    void         DoRegisterPlugins(Environment& aEnv,
+                                   const Brx& aSupportedProtocols);
 private: // from Net::IResourceManager
     void WriteResource(const Brx& aUriTail, TIpAddress aInterface,
                        std::vector<char*>& aLanguageList,
                        Net::IResourceWriter& aResourceWriter) override;
 private:
-    static TUint Hash(const Brx& aBuf);
     TBool TryDisable(Net::DvDevice& aDevice);
-    void Disabled();
+    void  Disabled();
 protected:
-    MediaPlayer* iMediaPlayer;
-    Media::PipelineInitParams* iInitParams;
-    Net::DvDeviceStandard* iDevice;
-    Net::DvDevice* iDeviceUpnpAv;
-    RamStore* iRamStore;
-    Configuration::ConfigRegStore* iConfigRegStore;
-    Semaphore iSemShutdown;
+    MediaPlayer                   *iMediaPlayer;
+    Media::PipelineInitParams     *iInitParams;
+    Net::DvDeviceStandard         *iDevice;
+    Net::DvDevice                 *iDeviceUpnpAv;
+    RamStore                      *iRamStore;
+    Configuration::ConfigRegStore *iConfigRegStore;
+    Semaphore                      iSemShutdown;
 private:
-    Semaphore iDisabled;
+    Semaphore              iDisabled;
     Media::VolumePrinter   iVolume;
-    Media::EPipelineState  pState;
+    Media::EPipelineState  iPState;
     TBool                  iLive;
-    ControlPointProxy     *cpProxy;
-    const Brx& iUserAgent;
-    HWND                   _Hwnd; // Main window handle
-
+    ControlPointProxy     *iCpProxy;
+    const Brx             &iUserAgent;
+    HWND                   iHwnd; // Main window handle
 private: // from Media::IPipelineObserver
     void NotifyPipelineState(Media::EPipelineState aState) override;
-    void NotifyTrack(Media::Track& aTrack, const Brx& aMode, TBool aStartOfStream) override;
+    void NotifyTrack(Media::Track& aTrack, const Brx& aMode,
+                     TBool aStartOfStream) override;
     void NotifyMetaText(const Brx& aText) override;
     void NotifyTime(TUint aSeconds, TUint aTrackDurationSeconds) override;
     void NotifyStreamInfo(const Media::DecodedStreamInfo& aStreamInfo) override;

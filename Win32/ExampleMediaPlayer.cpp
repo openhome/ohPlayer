@@ -1,3 +1,5 @@
+#include <Windows.h>
+
 #include <OpenHome/Media/Codec/CodecFactory.h>
 #include <OpenHome/Media/Protocol/ProtocolFactory.h>
 #include <OpenHome/Av/SourceFactory.h>
@@ -8,25 +10,13 @@
 #include <OpenHome/Media/Pipeline/Pipeline.h>
 #include <OpenHome/Private/Printer.h>
 
-#include <Windows.h>
-
-#include "CustomMessages.h"
+#include "ConfigRegStore.h"
 #include "ControlPointProxy.h"
+#include "CustomMessages.h"
 #include "ExampleMediaPlayer.h"
+#include "MemoryCheck.h"
 #include "MediaPlayerIF.h"
 #include "RamStore.h"
-#include "ConfigRegStore.h"
-
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
-
-#ifdef _DEBUG
-   #ifndef DBG_NEW
-      #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
-      #define new DBG_NEW
-   #endif
-#endif  // _DEBUG
 
 using namespace OpenHome;
 using namespace OpenHome::Av;
@@ -38,7 +28,7 @@ using namespace OpenHome::Net;
 
 const Brn ExampleMediaPlayer::kSongcastSenderIconFileName("SongcastSenderIcon");
 
-ExampleMediaPlayer::ExampleMediaPlayer(LPVOID lpParam,
+ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
                                        Net::DvStack& aDvStack,
                                        const Brx& aUdn,
                                        const TChar* aRoom,
@@ -46,9 +36,9 @@ ExampleMediaPlayer::ExampleMediaPlayer(LPVOID lpParam,
                                        const Brx& aUserAgent)
     : iSemShutdown("TMPS", 0)
     , iDisabled("test", 0)
-    , _Hwnd(HWND(lpParam))
-    , cpProxy(NULL)
-    , pState(EPipelineStopped)
+    , iHwnd(hwnd)
+    , iCpProxy(NULL)
+    , iPState(EPipelineStopped)
     , iLive(false)
     , iUserAgent(aUserAgent)
 {
@@ -86,13 +76,11 @@ ExampleMediaPlayer::ExampleMediaPlayer(LPVOID lpParam,
 
     // create read/write store.  This creates a number of static (constant)
     // entries automatically
-    // FIXME - to be removed; this only exists to populate static data
     iRamStore = new RamStore();
 
     // create a read/write store using the new config framework
     iConfigRegStore = new ConfigRegStore();
 
-    // FIXME - available store keys should be listed somewhere
     iConfigRegStore->Write(Brn("Product.Room"), Brn(aRoom));
     iConfigRegStore->Write(Brn("Product.Name"), Brn(aProductName));
 
@@ -113,7 +101,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(LPVOID lpParam,
 ExampleMediaPlayer::~ExampleMediaPlayer()
 {
     ASSERT(!iDevice->Enabled());
-    delete cpProxy;
+    delete iCpProxy;
     delete iMediaPlayer;
     delete iDevice;
     delete iDeviceUpnpAv;
@@ -129,42 +117,48 @@ Environment& ExampleMediaPlayer::Env()
 void ExampleMediaPlayer::StopPipeline()
 {
     TUint waitCount = 0;
-    if (TryDisable(*iDevice)) {
+
+    if (TryDisable(*iDevice))
+    {
         waitCount++;
     }
-    if (TryDisable(*iDeviceUpnpAv)) {
+
+    if (TryDisable(*iDeviceUpnpAv))
+    {
         waitCount++;
     }
-    while (waitCount > 0) {
+
+    while (waitCount > 0)
+    {
         iDisabled.Wait();
         waitCount--;
     }
-    iMediaPlayer->Quit();
 
+    iMediaPlayer->Quit();
     iSemShutdown.Signal();
 }
 
 TBool ExampleMediaPlayer::CanPlay()
 {
-    return ((pState == EPipelineStopped) || (pState == EPipelinePaused));
+    return ((iPState == EPipelineStopped) || (iPState == EPipelinePaused));
 }
 
 TBool ExampleMediaPlayer::CanPause()
 {
     return (!iLive &&
-            (pState == EPipelinePlaying) || (pState == EPipelineBuffering));
+            (iPState == EPipelinePlaying) || (iPState == EPipelineBuffering));
 }
 
 TBool ExampleMediaPlayer::CanHalt()
 {
-    return ((pState == EPipelinePlaying) || (pState == EPipelinePaused));
+    return ((iPState == EPipelinePlaying) || (iPState == EPipelinePaused));
 }
 
 void ExampleMediaPlayer::PlayPipeline()
 {
     if (CanPlay())
     {
-        cpProxy->playlistPlay();
+        iCpProxy->playlistPlay();
     }
 }
 
@@ -172,7 +166,7 @@ void ExampleMediaPlayer::PausePipeline()
 {
     if (CanPause())
     {
-        cpProxy->playlistPause();
+        iCpProxy->playlistPause();
     }
 }
 
@@ -180,7 +174,7 @@ void ExampleMediaPlayer::HaltPipeline()
 {
     if (CanHalt())
     {
-        cpProxy->playlistStop();
+        iCpProxy->playlistStop();
     }
 }
 
@@ -196,7 +190,7 @@ void ExampleMediaPlayer::RunWithSemaphore(Net::CpStack& aCpStack)
     iDevice->SetEnabled();
     iDeviceUpnpAv->SetEnabled();
 
-    cpProxy = new ControlPointProxy(aCpStack, *(Device()));
+    iCpProxy = new ControlPointProxy(aCpStack, *(Device()));
 
     iSemShutdown.Wait();
 }
@@ -236,7 +230,7 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSupportedProtocols)
 {
     // Add codecs
-    Log::Print("Condec Registration: [\n");
+    Log::Print("Codec Registration: [\n");
 
     Log::Print("Codec\tAac\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewAac());
@@ -276,12 +270,13 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
                                                   kSongcastSenderIconFileName));
 }
 
-void ExampleMediaPlayer::WriteResource(const Brx& aUriTail,
-                                       TIpAddress /*aInterface*/,
+void ExampleMediaPlayer::WriteResource(const Brx&          aUriTail,
+                                       TIpAddress          /*aInterface*/,
                                        std::vector<char*>& /*aLanguageList*/,
-                                       IResourceWriter& aResourceWriter)
+                                       IResourceWriter&    aResourceWriter)
 {
-    if (aUriTail == kSongcastSenderIconFileName) {
+    if (aUriTail == kSongcastSenderIconFileName)
+    {
         aResourceWriter.WriteResourceBegin(sizeof(kIconDriverSongcastSender),
                                            kIconDriverSongcastSenderMimeType);
         aResourceWriter.WriteResource(kIconDriverSongcastSender,
@@ -290,21 +285,14 @@ void ExampleMediaPlayer::WriteResource(const Brx& aUriTail,
     }
 }
 
-TUint ExampleMediaPlayer::Hash(const Brx& aBuf)
-{
-    TUint hash = 0;
-    for (TUint i=0; i<aBuf.Bytes(); i++) {
-        hash += aBuf[i];
-    }
-    return hash;
-}
-
 TBool ExampleMediaPlayer::TryDisable(DvDevice& aDevice)
 {
-    if (aDevice.Enabled()) {
+    if (aDevice.Enabled())
+    {
         aDevice.SetDisabled(MakeFunctor(*this, &ExampleMediaPlayer::Disabled));
         return true;
     }
+
     return false;
 }
 
@@ -320,7 +308,7 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
     TUint                 index         = 0;
     InitialisationParams *initParams    = InitialisationParams::Create();
     TIpAddress            lastSubnet    = InitArgs::NO_SUBNET;;
-    const char           *lastSubnetStr = "Subnet.LastUsed";
+    const TChar          *lastSubnetStr = "Subnet.LastUsed";
 
     initParams->SetDvEnableBonjour();
 
@@ -328,7 +316,8 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
 
     std::vector<NetworkAdapter*>* subnetList = lib->CreateSubnetList();
 
-    if (subnetList->size() == 0) {
+    if (subnetList->size() == 0)
+    {
         Log::Print("ERROR: No adapters found\n");
         ASSERTS();
     }
@@ -336,15 +325,18 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
     Configuration::ConfigRegStore iConfigRegStore;
 
     // Check the configuration store for the last subnet joined.
-    try {
+    try
+    {
         Bwn lastSubnetBuf = Bwn((TByte *)&lastSubnet, sizeof(lastSubnet));
 
         iConfigRegStore.Read(Brn(lastSubnetStr), lastSubnetBuf);
     }
-    catch (StoreKeyNotFound&) {
+    catch (StoreKeyNotFound&)
+    {
         // No previous subnet stored.
     }
-    catch (StoreReadBufferUndersized&) {
+    catch (StoreReadBufferUndersized&)
+    {
         // This shouldn't happen.
         Log::Print("ERROR: Invalid 'Subnet.LastUsed' property in Config "
                    "Store\n");
@@ -362,7 +354,7 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
         }
 
         // If the last used subnet is available, note it.
-        // We'll fallback to it if the requested subnet is not available.
+        // We'll fall back to it if the requested subnet is not available.
         if (subnet == lastSubnet)
         {
             index = i;
@@ -371,6 +363,7 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
 
     // Choose the required adapter.
     TIpAddress subnet = (*subnetList)[index]->Subnet();
+
     Library::DestroySubnetList(subnetList);
     lib->SetCurrentSubnet(subnet);
 
@@ -390,9 +383,9 @@ void ExampleMediaPlayer::NotifyPipelineState(Media::EPipelineState aState)
 {
     int mediaOptions = 0;
 
-    pState = aState;
+    iPState = aState;
 
-    // Update the playback options available i the UI.
+    // Update the playback options available in the UI.
     if (CanPlay())
     {
         mediaOptions |= MEDIAPLAYER_PLAY_OPTION;
@@ -408,9 +401,9 @@ void ExampleMediaPlayer::NotifyPipelineState(Media::EPipelineState aState)
         mediaOptions |= MEDIAPLAYER_STOP_OPTION;
     }
 
-    PostMessage(_Hwnd, WM_APP_PLAYBACK_OPTIONS, NULL, (LPARAM)mediaOptions);
+    PostMessage(iHwnd, WM_APP_PLAYBACK_OPTIONS, NULL, (LPARAM)mediaOptions);
 
-    switch (pState)
+    switch (iPState)
     {
         case EPipelineStopped:
             Log::Print("Pipeline State: Stopped\n");
@@ -433,7 +426,9 @@ void ExampleMediaPlayer::NotifyPipelineState(Media::EPipelineState aState)
     }
 }
 
-void ExampleMediaPlayer::NotifyTrack(Media::Track& /*aTrack*/, const Brx& /*aMode*/, TBool /*aStartOfStream*/)
+void ExampleMediaPlayer::NotifyTrack(Media::Track& /*aTrack*/,
+                                     const Brx&    /*aMode*/,
+                                     TBool         /*aStartOfStream*/)
 {
 }
 
@@ -441,7 +436,8 @@ void ExampleMediaPlayer::NotifyMetaText(const Brx& /*aText*/)
 {
 }
 
-void ExampleMediaPlayer::NotifyTime(TUint /*aSeconds*/, TUint /*aTrackDurationSeconds*/)
+void ExampleMediaPlayer::NotifyTime(TUint /*aSeconds*/,
+                                    TUint /*aTrackDurationSeconds*/)
 {
 }
 

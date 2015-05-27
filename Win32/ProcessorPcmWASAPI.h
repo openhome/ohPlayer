@@ -15,7 +15,7 @@ private: // from IPcmProcessor
     void ProcessSample16(const TByte* aSample, TUint aNumChannels);
     void ProcessSample24(const TByte* aSample, TUint aNumChannels);
 
-    bool _DuplicateChannel;
+    bool iDuplicateChannel; // True if a mono input should be converted to streoe.
 };
 
 } // namespace Media

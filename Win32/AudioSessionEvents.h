@@ -25,9 +25,9 @@ private:
     STDMETHOD_(ULONG, AddRef)();
     STDMETHOD_(ULONG, Release)();
 
-    LONG   _RefCount;
-    HWND   _Hwnd;
-    HANDLE _DisconnectedEvent;
+    LONG   iRefCount;
+    HWND   iHwnd;
+    HANDLE iDisconnectedEvent;
 };
 
 } // Media

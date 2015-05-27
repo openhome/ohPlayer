@@ -1,45 +1,37 @@
-#include "ExampleMediaPlayer.h"
-#include "AudioDriver.h"
-#include "CustomMessages.h"
-#include "UpdateCheck.h"
-#include "MediaPlayerIF.h"
+#include <process.h>
+#include <Windows.h>
+
 #include <OpenHome/Net/Private/DviStack.h>
 #include <OpenHome/Private/Printer.h>
 
-#include <process.h>
-
-#include <Windows.h>
-
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
-#ifdef _DEBUG
-   #ifndef DBG_NEW
-      #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
-      #define new DBG_NEW
-   #endif
-#endif  // _DEBUG
+#include "ExampleMediaPlayer.h"
+#include "AudioDriver.h"
+#include "CustomMessages.h"
+#include "MediaPlayerIF.h"
+#include "MemoryCheck.h"
+#include "UpdateCheck.h"
 
 using namespace OpenHome;
 using namespace OpenHome::Av;
 using namespace OpenHome::Media;
 using namespace OpenHome::Net;
 
-static ExampleMediaPlayer* emp = nullptr; // Test media player instance.
-static Library*            lib = nullptr;
+// Location of application release JSON file.
+static const TChar RELEASE_URL[] = "http://elmo/~alans/application.json";
+
+static ExampleMediaPlayer* g_emp = NULL; // Example media player instance.
+static Library*            g_lib = NULL; // Library instance.
 
 // Timed callback to initiate application update check.
 static VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN /*TimerOrWaitFired*/)
 {
+    Bws<1024> urlBuf;
     HWND hwnd = (HWND)(lpParam);
 
-    Bws<1024> urlBuf;
-    if (UpdateChecker::updateAvailable(emp->Env(),
-                                       "http://elmo/~alans/application.json",
-                                       urlBuf))
+    if (UpdateChecker::updateAvailable(g_emp->Env(), RELEASE_URL, urlBuf))
     {
         // There is an update available. Obtain the URL of the download
-        // and notify the user via a system tray notification.
+        // location and notify the user via a system tray notification.
         TChar *urlString = new TChar[urlBuf.Bytes() + 1];
         if (urlString)
         {
@@ -51,59 +43,63 @@ static VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN /*TimerOrWaitFired*/)
     }
 }
 
+// Media Player thread entry point.
 DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
 {
-    // Handle supplied arguements.
+    // Handle supplied arguments.
     InitArgs   *args   = (InitArgs *)lpParam;
-    HWND        hwnd   = args->hwnd;
-    TIpAddress  subnet = args->subnet;
+    HWND        hwnd   = args->hwnd;            // Main window handle.
+    TIpAddress  subnet = args->subnet;          // Preferred subnet.
 
     // Pipeline configuration.
-    TChar *aRoom     = "ExampleTestRoom";
-    TChar *aName     = "ExamplePlayer";
-    TChar *aUdn      = "ExampleDevice";
+    static const TChar *aRoom  = "ExampleTestRoom";
+    static const TChar *aName  = "ExamplePlayer";
+    static const TChar *aUdn   = "ExampleDevice";
+    static const TChar *cookie = "ExampleMediaPlayer";
 
-    const TChar* cookie ="ExampleMediaPlayer";
+    NetworkAdapter *adapter = NULL;
+    Net::CpStack   *cpStack = NULL;
+    Net::DvStack   *dvStack = NULL;
+    AudioDriver    *driver  = NULL;
 
-    NetworkAdapter     *adapter     = nullptr;
-    Net::CpStack       *cpStack     = nullptr;
-    Net::DvStack       *dvStack     = nullptr;
-    AudioDriver        *driver      = nullptr;
-
-    Bwh udn;
-
-    HANDLE hTimer = NULL;
+    HANDLE hTimer      = NULL;
     HANDLE hTimerQueue = NULL;
 
+    // Assign the maximum priority for this process.
     if(!SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS))
     {
         Log::Print("Can't up the process priority of InitAndRunMediaPlayer "
                    "\n");
     }
 
-    // Create lib on the supplied subnet.
-    lib  = ExampleMediaPlayerInit::CreateLibrary(subnet);
-    if (lib == nullptr)
+    // Create the library on the supplied subnet.
+    g_lib  = ExampleMediaPlayerInit::CreateLibrary(subnet);
+    if (g_lib == NULL)
     {
         return 1;
     }
 
-    adapter = lib->CurrentSubnetAdapter(cookie);
-    if (adapter == nullptr)
+    // Get the current network adapter.
+    adapter = g_lib->CurrentSubnetAdapter(cookie);
+    if (adapter == NULL)
     {
         goto cleanup;
     }
 
-    lib->StartCombined(adapter->Subnet(), cpStack, dvStack);
+    // Start a control point and dv stack.
+    //
+    // The control point will be used for playback control.
+    g_lib->StartCombined(adapter->Subnet(), cpStack, dvStack);
 
     adapter->RemoveRef(cookie);
 
-    // Create ExampleMediaPlayer.
-    emp = new ExampleMediaPlayer(hwnd, *dvStack, Brn(aUdn), aRoom, aName,
-                                 Brx::Empty()/*aUserAgent*/);
+    // Create the ExampleMediaPlayer instance.
+    g_emp = new ExampleMediaPlayer(hwnd, *dvStack, Brn(aUdn), aRoom, aName,
+                                   Brx::Empty()/*aUserAgent*/);
 
-    driver = new AudioDriver(dvStack->Env(), emp->Pipeline(), hwnd);
-    if (driver == nullptr)
+    // Add the audio driver to the pipeline.
+    driver = new AudioDriver(dvStack->Env(), g_emp->Pipeline(), hwnd);
+    if (driver == NULL)
     {
         goto cleanup;
     }
@@ -138,7 +134,7 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
     }
 
     /* Run the media player. (Blocking) */
-    emp->RunWithSemaphore(*cpStack);
+    g_emp->RunWithSemaphore(*cpStack);
 
 cleanup:
     /* Tidy up on exit. */
@@ -149,19 +145,19 @@ cleanup:
         DeleteTimerQueue(hTimerQueue);
     }
 
-    if (driver != nullptr)
+    if (driver != NULL)
     {
         delete driver;
     }
 
-    if (emp != nullptr)
+    if (g_emp != NULL)
     {
-        delete emp;
+        delete g_emp;
     }
 
-    if (lib != nullptr)
+    if (g_lib != NULL)
     {
-        delete lib;
+        delete g_lib;
     }
 
     return 1;
@@ -169,72 +165,61 @@ cleanup:
 
 void ExitMediaPlayer()
 {
-    if (emp != nullptr)
+    if (g_emp != NULL)
     {
-        emp->StopPipeline();
+        g_emp->StopPipeline();
     }
 }
 
 void PipeLinePlay()
 {
-    if (emp != nullptr)
+    if (g_emp != NULL)
     {
-        emp->PlayPipeline();
+        g_emp->PlayPipeline();
     }
 }
 
 void PipeLinePause()
 {
-    if (emp != nullptr)
+    if (g_emp != NULL)
     {
-        emp->PausePipeline();
+        g_emp->PausePipeline();
     }
 }
 
 void PipeLineStop()
 {
-    if (emp != nullptr)
+    if (g_emp != NULL)
     {
-        emp->HaltPipeline();
+        g_emp->HaltPipeline();
     }
 }
 
-// Free up resources allocated to a subnet menu vector.
-void FreeSubnets(std::vector<SubnetRecord*> *subnetVector)
-{
-    std::vector<SubnetRecord*>::iterator it;
-
-    for (it=subnetVector->begin(); it < subnetVector->end(); it++)
-    {
-        delete (*it)->menuString;
-        delete *it;
-    }
-
-    delete subnetVector;
-}
-
-// Cerate a subnet menu vector.
+// Create a subnet menu vector containing network adaptor and associate
+// subnet information.
 std::vector<SubnetRecord*> *GetSubnets()
 {
-    if (emp != nullptr)
+    if (g_emp != NULL)
     {
-        // Obtain a refernce to the current active network adapter.
+        // Obtain a reference to the current active network adapter.
         const TChar    *cookie  = "GetSubnets";
-        NetworkAdapter *adapter = nullptr;
+        NetworkAdapter *adapter = NULL;
 
-        adapter = lib->CurrentSubnetAdapter(cookie);
+        adapter = g_lib->CurrentSubnetAdapter(cookie);
 
         // Obtain a list of available network adapters.
-        std::vector<NetworkAdapter*>* subnetList = lib->CreateSubnetList();
+        std::vector<NetworkAdapter*>* subnetList = g_lib->CreateSubnetList();
 
-        if (subnetList->size() == 0) {
+        if (subnetList->size() == 0)
+        {
             return NULL;
         }
 
         std::vector<SubnetRecord*> *subnetVector =
             new std::vector<SubnetRecord*>;
 
-        for (unsigned i=0; i<subnetList->size(); ++i) {
+        for (unsigned i=0; i<subnetList->size(); ++i)
+        {
             SubnetRecord *subnetEntry = new SubnetRecord;
 
             if (subnetEntry == NULL)
@@ -243,7 +228,7 @@ std::vector<SubnetRecord*> *GetSubnets()
             }
 
             // Get a string containing ip address and adapter name and store
-            // it in our vectoe element.
+            // it in our vector element.
             TChar *fullName = (*subnetList)[i]->FullName();
 
             subnetEntry->menuString = new std::string(fullName);
@@ -270,12 +255,15 @@ std::vector<SubnetRecord*> *GetSubnets()
                 subnetEntry->isCurrent = false;
             }
 
+            // Add the entry to the vector.
             subnetVector->push_back(subnetEntry);
         }
 
+        // Free up the resources allocated by CreateSubnetList().
         Library::DestroySubnetList(subnetList);
 
-        if (adapter != NULL) {
+        if (adapter != NULL)
+        {
             adapter->RemoveRef(cookie);
         }
 
@@ -283,4 +271,18 @@ std::vector<SubnetRecord*> *GetSubnets()
     }
 
     return NULL;
+}
+
+// Free up resources allocated to a subnet menu vector.
+void FreeSubnets(std::vector<SubnetRecord*> *subnetVector)
+{
+    std::vector<SubnetRecord*>::iterator it;
+
+    for (it=subnetVector->begin(); it < subnetVector->end(); it++)
+    {
+        delete (*it)->menuString;
+        delete *it;
+    }
+
+    delete subnetVector;
 }

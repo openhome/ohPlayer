@@ -24,7 +24,7 @@ private:
     LPWSTR BrxToWString(const Brx& aKey);
     TBool GetAppRegistryKey();
 private:
-    HKEY    iHk;
+    HKEY          iHk;
     mutable Mutex iLock;
 };
 

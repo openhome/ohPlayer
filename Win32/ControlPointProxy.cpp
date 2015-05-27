@@ -5,89 +5,79 @@
 #include <CpAvOpenhomeOrgVolume1.h>
 #include <CpAvOpenhomeOrgPlaylist1.h>
 
-
 #include "AudioDriver.h"
 #include "ControlPointProxy.h"
+#include "MemoryCheck.h"
 
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
-
-#ifdef _DEBUG
-   #ifndef DBG_NEW
-      #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
-      #define new DBG_NEW
-   #endif
-#endif  // _DEBUG
 
 using namespace OpenHome;
 using namespace OpenHome::Av;
 using namespace OpenHome::Media;
 using namespace OpenHome::Net;
 
-// ControlPointProxy
+// ControlPointProxy to control playback.
 
 ControlPointProxy::ControlPointProxy(CpStack& aCpStack, DvDevice& aDevice)
 {
-    _cpPlayer = CpDeviceDv::New(aCpStack, aDevice);
+    iCpPlayer = CpDeviceDv::New(aCpStack, aDevice);
 
-    // create proxies for the Volume and Playlist services on our
+    // Create proxies for the Volume and Playlist services on our
     // player device
-    _volumeProxy   = new CpProxyAvOpenhomeOrgVolume1(*_cpPlayer);
-    _playlistProxy = new CpProxyAvOpenhomeOrgPlaylist1(*_cpPlayer);
+    iVolumeProxy   = new CpProxyAvOpenhomeOrgVolume1(*iCpPlayer);
+    iPlaylistProxy = new CpProxyAvOpenhomeOrgPlaylist1(*iCpPlayer);
 
-    // create callbacks for all of the notifications we're interested in.
-    funcVolumeInitialEvent =
+    // Create callbacks for all of the notifications we're interested in.
+    iFuncVolumeInitialEvent =
         MakeFunctor(*this, &ControlPointProxy::ohNetVolumeInitialEvent);
 
-    _volumeProxy->SetPropertyInitialEvent(funcVolumeInitialEvent);
+    iVolumeProxy->SetPropertyInitialEvent(iFuncVolumeInitialEvent);
 
-    funcVolumeChanged =
+    iFuncVolumeChanged =
         MakeFunctor(*this, &ControlPointProxy::ohNetVolumeChanged);
 
-    // register for notifications about various volume properties
-    _volumeProxy->SetPropertyVolumeChanged(funcVolumeChanged);
-    _volumeProxy->SetPropertyVolumeLimitChanged(funcVolumeChanged);
-    _volumeProxy->SetPropertyMuteChanged(funcVolumeChanged);
+    // Register for notifications about various volume properties
+    iVolumeProxy->SetPropertyVolumeChanged(iFuncVolumeChanged);
+    iVolumeProxy->SetPropertyVolumeLimitChanged(iFuncVolumeChanged);
+    iVolumeProxy->SetPropertyMuteChanged(iFuncVolumeChanged);
 
-    // subscribe to the volume change service
-    _volumeProxy->Subscribe();
+    // Subscribe to the volume change service
+    iVolumeProxy->Subscribe();
 
-    // create callbacks for playlist notifications we're interested in.
-    funcGenericInitialEvent =
+    // Create callbacks for playlist notifications we're interested in.
+    iFuncGenericInitialEvent =
         MakeFunctor(*this, &ControlPointProxy::ohNetGenericInitialEvent);
 
-    _playlistProxy->SetPropertyInitialEvent(funcGenericInitialEvent);
+    iPlaylistProxy->SetPropertyInitialEvent(iFuncGenericInitialEvent);
 
-    funcIdChanged =
+    iFuncIdChanged =
         MakeFunctor(*this, &ControlPointProxy::ohNetPlaylistIdChangedEvent);
 
-    _playlistProxy->SetPropertyIdChanged(funcIdChanged);
+    iPlaylistProxy->SetPropertyIdChanged(iFuncIdChanged);
 
-    // subscribe to the playlist service
-    _playlistProxy->Subscribe();
+    // Subscribe to the playlist service
+    iPlaylistProxy->Subscribe();
 }
 
 ControlPointProxy::~ControlPointProxy()
 {
-    // delete the proxies if they haven't been already
-    if (_playlistProxy != NULL)
+    // Delete the proxies if they haven't been already
+    if (iPlaylistProxy != NULL)
     {
-        _playlistProxy->Unsubscribe();
+        iPlaylistProxy->Unsubscribe();
 
-        delete _playlistProxy;
-        _playlistProxy = NULL;
+        delete iPlaylistProxy;
+        iPlaylistProxy = NULL;
     }
 
-    if (_volumeProxy != NULL)
+    if (iVolumeProxy != NULL)
     {
-        _volumeProxy->Unsubscribe();
+        iVolumeProxy->Unsubscribe();
 
-        delete _volumeProxy;
-        _volumeProxy = NULL;
+        delete iVolumeProxy;
+        iVolumeProxy = NULL;
     }
 
-    _cpPlayer->RemoveRef();
+    iCpPlayer->RemoveRef();
 }
 
 void ControlPointProxy::ohNetGenericInitialEvent()
@@ -116,9 +106,9 @@ void ControlPointProxy::volumeChanged()
     TUint newLimit;
     TBool newMute;
 
-    _volumeProxy->PropertyVolume(newVolume);
-    _volumeProxy->PropertyVolumeLimit(newLimit);
-    _volumeProxy->PropertyMute(newMute);
+    iVolumeProxy->PropertyVolume(newVolume);
+    iVolumeProxy->PropertyVolumeLimit(newLimit);
+    iVolumeProxy->PropertyMute(newMute);
 
     Log::Print("ControlPointProxy::volumeChanged [%u]\n", newVolume);
 
@@ -133,15 +123,15 @@ void ControlPointProxy::initialEventVolume()
 
 void ControlPointProxy::playlistStop()
 {
-    _playlistProxy->SyncStop();
+    iPlaylistProxy->SyncStop();
 }
 
 void ControlPointProxy::playlistPlay()
 {
-    _playlistProxy->SyncPlay();
+    iPlaylistProxy->SyncPlay();
 }
 
 void ControlPointProxy::playlistPause()
 {
-    _playlistProxy->SyncPause();
+    iPlaylistProxy->SyncPause();
 }

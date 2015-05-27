@@ -9,51 +9,42 @@
 
 #include "AudioDriver.h"
 #include "CustomMessages.h"
+#include "MemoryCheck.h"
 #include "ProcessorPcmWASAPI.h"
 
 #include <avrt.h>
 #include <stdlib.h>
 
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
-
-#ifdef _DEBUG
-   #ifndef DBG_NEW
-      #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
-      #define new DBG_NEW
-   #endif
-#endif  // _DEBUG
 
 using namespace OpenHome;
 using namespace OpenHome::Media;
 
 // Static data
-TBool AudioDriver::_volumeChanged = false;
-float AudioDriver::_volumeLevel   = 100.0f;
-TBool AudioDriver::_volumeMute    = false;
+TBool AudioDriver::iVolumeChanged = false;
+float AudioDriver::iVolumeLevel   = 100.0f;
+TBool AudioDriver::iVolumeMute    = false;
 
-AudioDriver::AudioDriver(Environment& /*aEnv*/, IPipeline& aPipeline, LPVOID lpParam) :
-    _Hwnd(HWND(lpParam)),
-    _AudioEndpoint(NULL),
-    _AudioClient(NULL),
-    _RenderClient(NULL),
-    _MixFormat(NULL),
-    _AudioSessionControl(NULL),
-    _AudioSessionVolume(NULL),
-    _AudioSessionEvents(NULL),
-    _AudioSamplesReadyEvent(NULL),
-    _AudioSessionDisconnectedEvent(NULL),
-    _EngineLatencyInMS(25),
-    _BufferSize(0),
-    _StreamFormatSupported(false),
-    _AudioSessionDisconnected(false),
-    _AudioEngineInitialised(false),
-    _AudioClientStarted(false),
-    _RenderBytesThisPeriod(0),
-    _RenderBytesRemaining(0),
-    _FrameSize(0),
-    _DuplicateChannel(false),
+AudioDriver::AudioDriver(Environment& /*aEnv*/, IPipeline& aPipeline, HWND hwnd) :
+    iHwnd(hwnd),
+    iAudioEndpoint(NULL),
+    iAudioClient(NULL),
+    iRenderClient(NULL),
+    iMixFormat(NULL),
+    iAudioSessionControl(NULL),
+    iAudioSessionVolume(NULL),
+    iAudioSessionEvents(NULL),
+    iAudioSamplesReadyEvent(NULL),
+    iAudioSessionDisconnectedEvent(NULL),
+    iEngineLatencyInMS(25),
+    iBufferSize(0),
+    iStreamFormatSupported(false),
+    iAudioSessionDisconnected(false),
+    iAudioEngineInitialised(false),
+    iAudioClientStarted(false),
+    iRenderBytesThisPeriod(0),
+    iRenderBytesRemaining(0),
+    iFrameSize(0),
+    iDuplicateChannel(false),
 
     Thread("PipelineAnimator", kPrioritySystemHighest),
     iPipeline(aPipeline),
@@ -71,9 +62,9 @@ AudioDriver::~AudioDriver()
 
 void AudioDriver::SetVolume(float level, TBool mute)
 {
-    _volumeChanged = true;
-    _volumeLevel   = level;
-    _volumeMute    = mute;
+    iVolumeChanged = true;
+    iVolumeLevel   = level;
+    iVolumeMute    = mute;
 }
 
 Msg* AudioDriver::ProcessMsg(MsgMode* aMsg)
@@ -153,7 +144,7 @@ TUint AudioDriver::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/,
     //
     // Load the MixFormat. This may differ depending on the shared mode used
     //
-    HRESULT hr = _AudioClient->GetMixFormat(&mixFormat);
+    HRESULT hr = iAudioClient->GetMixFormat(&mixFormat);
     if (FAILED(hr))
     {
         Log::Print("Warning Audio Endpoint mix format unknown\n",
@@ -165,7 +156,7 @@ TUint AudioDriver::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/,
     // query the Audio Engine.
     mixFormat->nSamplesPerSec = aSampleRateTo;
 
-    hr = _AudioClient->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED,
+    hr = iAudioClient->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED,
                                          mixFormat,
                                          &closestMix);
 
@@ -174,7 +165,7 @@ TUint AudioDriver::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/,
 
     if (hr != S_OK)
     {
-        _StreamFormatSupported = false;
+        iStreamFormatSupported = false;
 
         Log::Print("Warning sample rate not supported [%u]\n", aSampleRateTo);
         THROW(SampleRateUnsupported);
@@ -183,20 +174,20 @@ TUint AudioDriver::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/,
     return 0;
 }
 
-bool AudioDriver::CheckMixFormat(TUint iSampleRate,
-                                 TUint iNumChannels,
-                                 TUint iBitDepth)
+TBool AudioDriver::CheckMixFormat(TUint iSampleRate,
+                                  TUint iNumChannels,
+                                  TUint iBitDepth)
 {
     HRESULT       hr;
     WAVEFORMATEX *closestMix;
     WAVEFORMATEX  savedMixFormat;
-    bool          retVal = false;
+    TBool         retVal = false;
 
-    _DuplicateChannel = false;
+    iDuplicateChannel = false;
 
-    if (_MixFormat == NULL)
+    if (iMixFormat == NULL)
     {
-        hr = _AudioClient->GetMixFormat(&_MixFormat);
+        hr = iAudioClient->GetMixFormat(&iMixFormat);
         if (FAILED(hr))
         {
             Log::Print("ERROR: Could not obtain mix system format.\n");
@@ -204,19 +195,19 @@ bool AudioDriver::CheckMixFormat(TUint iSampleRate,
         }
     }
 
-    savedMixFormat = *_MixFormat;
+    savedMixFormat = *iMixFormat;
 
     // Verify the Audio Engine supports the pipeline format.
-    _MixFormat->wFormatTag      = WAVE_FORMAT_PCM;
-    _MixFormat->nChannels       = (WORD)iNumChannels;
-    _MixFormat->nSamplesPerSec  = iSampleRate;
-    _MixFormat->nBlockAlign     = WORD((iNumChannels * iBitDepth)/8);
-    _MixFormat->nAvgBytesPerSec = DWORD(iSampleRate * _MixFormat->nBlockAlign);
-    _MixFormat->wBitsPerSample  = (WORD)iBitDepth;
-    _MixFormat->cbSize          = 0;
+    iMixFormat->wFormatTag      = WAVE_FORMAT_PCM;
+    iMixFormat->nChannels       = (WORD)iNumChannels;
+    iMixFormat->nSamplesPerSec  = iSampleRate;
+    iMixFormat->nBlockAlign     = WORD((iNumChannels * iBitDepth)/8);
+    iMixFormat->nAvgBytesPerSec = DWORD(iSampleRate * iMixFormat->nBlockAlign);
+    iMixFormat->wBitsPerSample  = (WORD)iBitDepth;
+    iMixFormat->cbSize          = 0;
 
-    hr = _AudioClient->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED,
-                                         _MixFormat,
+    hr = iAudioClient->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED,
+                                         iMixFormat,
                                         &closestMix);
 
     if (hr != S_OK)
@@ -227,22 +218,22 @@ bool AudioDriver::CheckMixFormat(TUint iSampleRate,
         // We can duplicate a channel to play mono as stereo.
         if (iNumChannels == 1 && closestMix->nChannels == 2)
         {
-            _MixFormat->nChannels   = closestMix->nChannels;
-            _MixFormat->nBlockAlign =
-                                   WORD((_MixFormat->nChannels * iBitDepth)/8);
-            _MixFormat->nAvgBytesPerSec =
-                                   DWORD(iSampleRate * _MixFormat->nBlockAlign);
+            iMixFormat->nChannels   = closestMix->nChannels;
+            iMixFormat->nBlockAlign =
+                                   WORD((iMixFormat->nChannels * iBitDepth)/8);
+            iMixFormat->nAvgBytesPerSec =
+                                   DWORD(iSampleRate * iMixFormat->nBlockAlign);
 
             CoTaskMemFree(closestMix);
 
-            hr = _AudioClient->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED,
-                                                 _MixFormat,
+            hr = iAudioClient->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED,
+                                                 iMixFormat,
                                                 &closestMix);
 
             if (hr == S_OK)
             {
                 Log::Print("Converting mono input to stereo\n");
-                _DuplicateChannel = true;
+                iDuplicateChannel = true;
                 retVal            = true;
             }
             else
@@ -313,8 +304,8 @@ Msg* AudioDriver::ProcessMsg(MsgDecodedStream* aMsg)
     Log::Print("\tNumber Of Channels: %6u\n", iNumChannels);
     Log::Print("\tBit Depth:          %6u\n", iBitDepth);
 
-    _StreamFormatSupported = false;
-    _FrameSize             = 0;
+    iStreamFormatSupported = false;
+    iFrameSize             = 0;
 
     if (CheckMixFormat(iSampleRate, iNumChannels, iBitDepth))
     {
@@ -324,29 +315,29 @@ Msg* AudioDriver::ProcessMsg(MsgDecodedStream* aMsg)
         //
         // Any allocated resources will be freed on exit of pipeline
         // processing loop in Run().
-        if (_AudioEngineInitialised)
+        if (iAudioEngineInitialised)
         {
             if (!RestartAudioEngine())
             {
-                _AudioEngineInitialised = false;
+                iAudioEngineInitialised = false;
             }
         }
         else
         {
             if (InitializeAudioEngine())
             {
-                _AudioEngineInitialised = true;
+                iAudioEngineInitialised = true;
             }
         }
 
-        if (_AudioEngineInitialised)
+        if (iAudioEngineInitialised)
         {
-            _StreamFormatSupported = true;
-            _FrameSize             = _MixFormat->nBlockAlign;
+            iStreamFormatSupported = true;
+            iFrameSize             = iMixFormat->nBlockAlign;
         }
         else
         {
-            PostMessage(_Hwnd, WM_APP_AUDIO_INIT_ERROR, NULL, NULL);
+            PostMessage(iHwnd, WM_APP_AUDIO_INIT_ERROR, NULL, NULL);
         }
     }
     else
@@ -360,13 +351,13 @@ Msg* AudioDriver::ProcessMsg(MsgDecodedStream* aMsg)
         // - Halt the Audio Engine
         // - Pull and discard the audio data from the pipeline.
         //
-        if (_AudioClientStarted)
+        if (iAudioClientStarted)
         {
             Log::Print("Stopping Audio Client.\n");
 
-            _AudioClient->Stop();
-            _AudioClient->Reset();
-            _AudioClientStarted = false;
+            iAudioClient->Stop();
+            iAudioClient->Reset();
+            iAudioClientStarted = false;
         }
     }
 
@@ -384,7 +375,7 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
 
     // If the native audio system is not available yet just throw
     // the data away.
-    if (! _StreamFormatSupported || _AudioSessionDisconnected)
+    if (! iStreamFormatSupported || iAudioSessionDisconnected)
     {
         aMsg->RemoveRef();
         return;
@@ -392,14 +383,14 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
 
     bytes = aMsg->Bytes();
 
-    if (_DuplicateChannel)
+    if (iDuplicateChannel)
     {
         bytes *= 2;
     }
 
-    TUint framesToWrite = bytes / _FrameSize;
+    TUint framesToWrite = bytes / iFrameSize;
 
-    if (bytes > _RenderBytesRemaining)
+    if (bytes > iRenderBytesRemaining)
     {
         // We've passed enough data for this period. Hold on to the data
         // for the next render period.
@@ -407,7 +398,7 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
         return;
     }
 
-    hr = _RenderClient->GetBuffer(framesToWrite, &pData);
+    hr = iRenderClient->GetBuffer(framesToWrite, &pData);
     if (! SUCCEEDED(hr))
     {
         Log::Print("ERROR: Can't get render buffer\n");
@@ -415,13 +406,13 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
         // Can't get render buffer. Hold on to the data for the next
         // render period.
         iPlayable = aMsg;
-        _RenderClient->ReleaseBuffer(0, 0);
+        iRenderClient->ReleaseBuffer(0, 0);
         return;
     }
 
     // Get the message data. This converts the pipeline data into a format
     // suitable for the native audio system.
-    ProcessorPcmBufWASAPI pcmProcessor(_DuplicateChannel);
+    ProcessorPcmBufWASAPI pcmProcessor(iDuplicateChannel);
     aMsg->Read(pcmProcessor);
     Brn buf(pcmProcessor.Buf());
 
@@ -429,9 +420,9 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
     CopyMemory(pData, buf.Ptr(), bytes);
 
     // Release the render buffer.
-    _RenderClient->ReleaseBuffer(framesToWrite, 0);
+    iRenderClient->ReleaseBuffer(framesToWrite, 0);
 
-    _RenderBytesRemaining -= bytes;
+    iRenderBytesRemaining -= bytes;
 
     // Release the source buffer.
     aMsg->RemoveRef();
@@ -463,10 +454,10 @@ Msg* AudioDriver::ProcessMsg(MsgHalt* aMsg)
 }
 
 // Obtain the use of the native multimedia device.
-bool AudioDriver::GetMultimediaDevice(IMMDevice **DeviceToUse)
+TBool AudioDriver::GetMultimediaDevice(IMMDevice **DeviceToUse)
 {
     HRESULT hr;
-    bool retValue = true;
+    TBool   retValue = true;
 
     IMMDeviceEnumerator *deviceEnumerator = NULL;
 
@@ -494,8 +485,8 @@ bool AudioDriver::GetMultimediaDevice(IMMDevice **DeviceToUse)
         goto Exit;
     }
 
-    *DeviceToUse       = device;
-    retValue           = true;
+    *DeviceToUse = device;
+    retValue     = true;
 Exit:
     SafeRelease(&deviceEnumerator);
 
@@ -503,12 +494,12 @@ Exit:
 }
 
 // Restart the audio engine with a new mix format.
-bool AudioDriver::RestartAudioEngine()
+TBool AudioDriver::RestartAudioEngine()
 {
     HRESULT hr;
 
-    _AudioClientStarted     = false;
-    _AudioEngineInitialised = false;
+    iAudioClientStarted     = false;
+    iAudioEngineInitialised = false;
     iPlayable               = NULL;
 
 #ifdef _TIMINGS_DEBUG
@@ -520,35 +511,35 @@ bool AudioDriver::RestartAudioEngine()
 #endif /* _TIMINGS_DEBUG */
 
     // Shutdown audio client.
-    hr = _AudioClient->Stop();
+    hr = iAudioClient->Stop();
     if (FAILED(hr))
     {
         Log::Print("Unable to stop audio client: %x\n", hr);
     }
-    _AudioClient->Reset();
+    iAudioClient->Reset();
 
-    SafeRelease(&_AudioClient);
-    SafeRelease(&_RenderClient);
-    SafeRelease(&_AudioSessionControl);
-    SafeRelease(&_AudioSessionVolume);
+    SafeRelease(&iAudioClient);
+    SafeRelease(&iRenderClient);
+    SafeRelease(&iAudioSessionControl);
+    SafeRelease(&iAudioSessionVolume);
 
     // Restart the audio client with latest mix format.
-    hr = _AudioEndpoint->Activate(__uuidof(IAudioClient),
+    hr = iAudioEndpoint->Activate(__uuidof(IAudioClient),
                                   CLSCTX_INPROC_SERVER,
                                   NULL,
-                                  reinterpret_cast<void **>(&_AudioClient));
+                                  reinterpret_cast<void **>(&iAudioClient));
     if (FAILED(hr))
     {
         Log::Print("Unable to activate endpoint\n");
         return false;
     }
 
-    hr = _AudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED,
+    hr = iAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED,
                                   AUDCLNT_STREAMFLAGS_EVENTCALLBACK |
                                   AUDCLNT_STREAMFLAGS_NOPERSIST,
-                                  _EngineLatencyInMS * 10000,
+                                  iEngineLatencyInMS * 10000,
                                   0,
-                                  _MixFormat,
+                                  iMixFormat,
                                   NULL);
 
     if (FAILED(hr))
@@ -560,7 +551,7 @@ bool AudioDriver::RestartAudioEngine()
     //
     //  Retrieve the buffer size, in frames,  for the audio client.
     //
-    hr = _AudioClient->GetBufferSize(&_BufferSize);
+    hr = iAudioClient->GetBufferSize(&iBufferSize);
     if(FAILED(hr))
     {
         Log::Print("Unable to get audio client buffer: %x. \n", hr);
@@ -571,17 +562,17 @@ bool AudioDriver::RestartAudioEngine()
     // Setup the maximum amount of data to buffer prior to starting the
     // audio client, to avoid glitches on startup.
     //
-    _RenderBytesThisPeriod = _BufferSize * _FrameSize;
-    _RenderBytesRemaining  = _RenderBytesThisPeriod;
+    iRenderBytesThisPeriod = iBufferSize * iFrameSize;
+    iRenderBytesRemaining  = iRenderBytesThisPeriod;
 
-    hr = _AudioClient->SetEventHandle(_AudioSamplesReadyEvent);
+    hr = iAudioClient->SetEventHandle(iAudioSamplesReadyEvent);
     if (FAILED(hr))
     {
         Log::Print("Unable to set ready event: %x.\n", hr);
         return false;
     }
 
-    hr = _AudioClient->GetService(IID_PPV_ARGS(&_RenderClient));
+    hr = iAudioClient->GetService(IID_PPV_ARGS(&iRenderClient));
     if (FAILED(hr))
     {
         Log::Print("Unable to get new render client: %x.\n", hr);
@@ -589,7 +580,7 @@ bool AudioDriver::RestartAudioEngine()
     }
 
     // Get Audio Session Control
-    hr = _AudioClient->GetService(IID_PPV_ARGS(&_AudioSessionControl));
+    hr = iAudioClient->GetService(IID_PPV_ARGS(&iAudioSessionControl));
     if (FAILED(hr))
     {
         Log::Print("Unable to retrieve session control: %x\n", hr);
@@ -602,7 +593,7 @@ bool AudioDriver::RestartAudioEngine()
     //  A stream switch is initiated when we receive a session disconnect
     //  notification or we receive a default device changed notification.
     //
-    hr = _AudioSessionControl->RegisterAudioSessionNotification(_AudioSessionEvents);
+    hr = iAudioSessionControl->RegisterAudioSessionNotification(iAudioSessionEvents);
 
     if (FAILED(hr))
     {
@@ -613,14 +604,14 @@ bool AudioDriver::RestartAudioEngine()
     }
 
     // Get Volume Control
-    hr = _AudioClient->GetService(IID_PPV_ARGS(&_AudioSessionVolume));
+    hr = iAudioClient->GetService(IID_PPV_ARGS(&iAudioSessionVolume));
     if (FAILED(hr))
     {
         Log::Print("Unable to retrieve volume control: %x\n", hr);
         return false;
     }
 
-    _AudioEngineInitialised = true;
+    iAudioEngineInitialised = true;
 
 #ifdef _TIMINGS_DEBUG
     QueryPerformanceCounter(&EndingTime);
@@ -644,18 +635,18 @@ bool AudioDriver::RestartAudioEngine()
 }
 
 // Initialise the native audio engine.
-bool AudioDriver::InitializeAudioEngine()
+TBool AudioDriver::InitializeAudioEngine()
 {
     HRESULT hr;
 
     Log::Print("Initializing Audio Engine\n");
 
-    hr = _AudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED,
+    hr = iAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED,
                                   AUDCLNT_STREAMFLAGS_EVENTCALLBACK |
                                   AUDCLNT_STREAMFLAGS_NOPERSIST,
-                                  _EngineLatencyInMS * 10000,
+                                  iEngineLatencyInMS * 10000,
                                   0,
-                                  _MixFormat,
+                                  iMixFormat,
                                   NULL);
 
     if (FAILED(hr))
@@ -667,7 +658,7 @@ bool AudioDriver::InitializeAudioEngine()
     //
     //  Retrieve the buffer size, in frames,  for the audio client.
     //
-    hr = _AudioClient->GetBufferSize(&_BufferSize);
+    hr = iAudioClient->GetBufferSize(&iBufferSize);
     if(FAILED(hr))
     {
         Log::Print("Unable to get audio client buffer: %x. \n", hr);
@@ -678,17 +669,17 @@ bool AudioDriver::InitializeAudioEngine()
     // Setup the maximum amount of data to buffer prior to starting the
     // audio client, to avoid glitches on startup.
     //
-    _RenderBytesThisPeriod = _BufferSize * _FrameSize;
-    _RenderBytesRemaining  = _RenderBytesThisPeriod;
+    iRenderBytesThisPeriod = iBufferSize * iFrameSize;
+    iRenderBytesRemaining  = iRenderBytesThisPeriod;
 
-    hr = _AudioClient->SetEventHandle(_AudioSamplesReadyEvent);
+    hr = iAudioClient->SetEventHandle(iAudioSamplesReadyEvent);
     if (FAILED(hr))
     {
         Log::Print("Unable to set ready event: %x.\n", hr);
         return false;
     }
 
-    hr = _AudioClient->GetService(IID_PPV_ARGS(&_RenderClient));
+    hr = iAudioClient->GetService(IID_PPV_ARGS(&iRenderClient));
     if (FAILED(hr))
     {
         Log::Print("Unable to get new render client: %x.\n", hr);
@@ -696,15 +687,15 @@ bool AudioDriver::InitializeAudioEngine()
     }
 
     // Get Audio Session Control
-    hr = _AudioClient->GetService(IID_PPV_ARGS(&_AudioSessionControl));
+    hr = iAudioClient->GetService(IID_PPV_ARGS(&iAudioSessionControl));
     if (FAILED(hr))
     {
         Log::Print("Unable to retrieve session control: %x\n", hr);
         return false;
     }
 
-    _AudioSessionEvents = new AudioSessionEvents(_Hwnd,
-                                                 _AudioSessionDisconnectedEvent);
+    iAudioSessionEvents = new AudioSessionEvents(iHwnd,
+                                                 iAudioSessionDisconnectedEvent);
 
     //
     //  Register for session change notifications.
@@ -712,7 +703,7 @@ bool AudioDriver::InitializeAudioEngine()
     //  A stream switch is initiated when we receive a session disconnect
     //  notification or we receive a default device changed notification.
     //
-    hr = _AudioSessionControl->RegisterAudioSessionNotification(_AudioSessionEvents);
+    hr = iAudioSessionControl->RegisterAudioSessionNotification(iAudioSessionEvents);
 
     if (FAILED(hr))
     {
@@ -723,7 +714,7 @@ bool AudioDriver::InitializeAudioEngine()
     }
 
     // Get Volume Control
-    hr = _AudioClient->GetService(IID_PPV_ARGS(&_AudioSessionVolume));
+    hr = iAudioClient->GetService(IID_PPV_ARGS(&iAudioSessionVolume));
     if (FAILED(hr))
     {
         Log::Print("Unable to retrieve volume control: %x\n", hr);
@@ -733,13 +724,13 @@ bool AudioDriver::InitializeAudioEngine()
     return true;
 }
 
-bool AudioDriver::InitializeAudioClient()
+TBool AudioDriver::InitializeAudioClient()
 {
     HRESULT hr;
 
-    _AudioSamplesReadyEvent = CreateEventEx(NULL, NULL, 0,
+    iAudioSamplesReadyEvent = CreateEventEx(NULL, NULL, 0,
                                             EVENT_MODIFY_STATE | SYNCHRONIZE);
-    if (_AudioSamplesReadyEvent == NULL)
+    if (iAudioSamplesReadyEvent == NULL)
     {
         Log::Print("Unable to create samples ready event: %d.\n",
                    GetLastError());
@@ -750,9 +741,9 @@ bool AudioDriver::InitializeAudioClient()
     // Create our session disconnected event.
     //
     // This will be triggered when the audio session is disconnected.
-    _AudioSessionDisconnectedEvent = CreateEventEx(NULL, NULL, 0,
+    iAudioSessionDisconnectedEvent = CreateEventEx(NULL, NULL, 0,
                                        EVENT_MODIFY_STATE | SYNCHRONIZE);
-    if (_AudioSessionDisconnectedEvent == NULL)
+    if (iAudioSessionDisconnectedEvent == NULL)
     {
         Log::Print("Unable to create stream switch event: %d.\n",
                    GetLastError());
@@ -760,21 +751,21 @@ bool AudioDriver::InitializeAudioClient()
         goto Exit;
     }
 
-    if (!GetMultimediaDevice(&_AudioEndpoint))
+    if (!GetMultimediaDevice(&iAudioEndpoint))
     {
         goto Exit;
     }
 
-    _AudioEndpoint->AddRef();
+    iAudioEndpoint->AddRef();
 
     //
     // Now activate an IAudioClient object on the multimedia endpoint and
     // retrieve the mix format for that endpoint.
     //
-    hr = _AudioEndpoint->Activate(__uuidof(IAudioClient),
+    hr = iAudioEndpoint->Activate(__uuidof(IAudioClient),
                                   CLSCTX_INPROC_SERVER,
                                   NULL,
-                                  reinterpret_cast<void **>(&_AudioClient));
+                                  reinterpret_cast<void **>(&iAudioClient));
     if (FAILED(hr))
     {
         goto Exit;
@@ -791,30 +782,30 @@ Exit:
 // Shutdown the Audio Engine, freeing associated resources.
 void AudioDriver::ShutdownAudioEngine()
 {
-    if (_AudioSamplesReadyEvent)
+    if (iAudioSamplesReadyEvent)
     {
-        CloseHandle(_AudioSamplesReadyEvent);
-        _AudioSamplesReadyEvent = NULL;
+        CloseHandle(iAudioSamplesReadyEvent);
+        iAudioSamplesReadyEvent = NULL;
     }
 
-    if (_AudioSessionDisconnectedEvent)
+    if (iAudioSessionDisconnectedEvent)
     {
-        CloseHandle(_AudioSessionDisconnectedEvent);
-        _AudioSessionDisconnectedEvent = NULL;
+        CloseHandle(iAudioSessionDisconnectedEvent);
+        iAudioSessionDisconnectedEvent = NULL;
     }
 
-    SafeRelease(&_AudioEndpoint);
-    SafeRelease(&_AudioClient);
-    SafeRelease(&_RenderClient);
-    SafeRelease(&_AudioSessionControl);
-    SafeRelease(&_AudioSessionVolume);
+    SafeRelease(&iAudioEndpoint);
+    SafeRelease(&iAudioClient);
+    SafeRelease(&iRenderClient);
+    SafeRelease(&iAudioSessionControl);
+    SafeRelease(&iAudioSessionVolume);
 
-    delete (_AudioSessionEvents);
+    delete (iAudioSessionEvents);
 
-    if (_MixFormat)
+    if (iMixFormat)
     {
-        CoTaskMemFree(_MixFormat);
-        _MixFormat = NULL;
+        CoTaskMemFree(iMixFormat);
+        iMixFormat = NULL;
     }
 }
 
@@ -827,13 +818,13 @@ void AudioDriver::StopAudioEngine()
 
     Log::Print("StopAudioEngine: Starting ...\n");
 
-    hr = _AudioClient->Stop();
+    hr = iAudioClient->Stop();
     if (FAILED(hr))
     {
         Log::Print("Unable to stop audio client: %x\n", hr);
     }
 
-    _AudioEngineInitialised = false;
+    iAudioEngineInitialised = false;
 
     Log::Print("StopAudioEngine: Complete\n");
 }
@@ -869,8 +860,8 @@ void AudioDriver::Run()
     }
 
     // Native events waited on in this thread.
-    HANDLE waitArray[2] = {_AudioSessionDisconnectedEvent,
-                           _AudioSamplesReadyEvent};
+    HANDLE waitArray[2] = {iAudioSessionDisconnectedEvent,
+                           iAudioSamplesReadyEvent};
 
     // Pipeline processing loop.
     try {
@@ -894,21 +885,21 @@ void AudioDriver::Run()
             //  If the Audio Engine has not been initialized yet stick with
             //  the default value.
             //
-            if (_AudioEngineInitialised && ! _AudioSessionDisconnected)
+            if (iAudioEngineInitialised && ! iAudioSessionDisconnected)
             {
-                hr = _AudioClient->GetCurrentPadding(&padding);
+                hr = iAudioClient->GetCurrentPadding(&padding);
                 if (SUCCEEDED(hr))
                 {
-                    _RenderBytesThisPeriod = (_BufferSize - padding) *
-                                              _FrameSize;
+                    iRenderBytesThisPeriod = (iBufferSize - padding) *
+                                              iFrameSize;
                 }
                 else
                 {
                     Log::Print("ERROR: Couldn't read render buffer padding\n");
-                    _RenderBytesThisPeriod = 0;
+                    iRenderBytesThisPeriod = 0;
                 }
 
-                _RenderBytesRemaining = _RenderBytesThisPeriod;
+                iRenderBytesRemaining = iRenderBytesThisPeriod;
             }
 
             //
@@ -940,18 +931,18 @@ void AudioDriver::Run()
 
             // Log some interesting data if we can't fill at least half
             // of the available space in the render buffer.
-            if (_RenderBytesThisPeriod * 0.5 < _RenderBytesRemaining)
+            if (iRenderBytesThisPeriod * 0.5 < iRenderBytesRemaining)
             {
                 Log::Print("Audio period: Requested Bytes [%u] : Returned Bytes"
                            " [%u]\n",
-                           _RenderBytesThisPeriod,
-                           _RenderBytesThisPeriod - _RenderBytesRemaining);
+                           iRenderBytesThisPeriod,
+                           iRenderBytesThisPeriod - iRenderBytesRemaining);
 
                 if (iPlayable)
                 {
                     TUint bytes = iPlayable->Bytes();
 
-                    if (_DuplicateChannel)
+                    if (iDuplicateChannel)
                     {
                         bytes *= 2;
                     }
@@ -963,12 +954,12 @@ void AudioDriver::Run()
                     Log::Print("  Available Bytes [0]\n");
                 }
 
-                if (_AudioEngineInitialised)
+                if (iAudioEngineInitialised)
                 {
                     Log::Print(" Period Start Frames In Buffer [%u]\n",
                                padding);
 
-                    hr = _AudioClient->GetCurrentPadding(&padding);
+                    hr = iAudioClient->GetCurrentPadding(&padding);
                     if (SUCCEEDED(hr))
                     {
                         Log::Print(" Current Frames In Buffer [%u]\n",
@@ -1004,14 +995,14 @@ void AudioDriver::Run()
             // The audio client isn't capable of playing this stream.
             // Continue to pull from pipeline until the next playable
             // stream is available.
-            if (! _StreamFormatSupported)
+            if (! iStreamFormatSupported)
             {
                 continue;
             }
 
             // The audio session has been disconnected.
             // Continue to pull from pipeline until we are instructed to quit.
-            if (_AudioSessionDisconnected)
+            if (iAudioSessionDisconnected)
             {
                 continue;
             }
@@ -1022,31 +1013,31 @@ void AudioDriver::Run()
             //
             // This will prevent any initial audio glitches..
             //
-            if (! _AudioClientStarted)
+            if (! iAudioClientStarted)
             {
                 // There was no data read this period so try again next period.
-                if (_RenderBytesThisPeriod == _RenderBytesRemaining)
+                if (iRenderBytesThisPeriod == iRenderBytesRemaining)
                 {
                     continue;
                 }
 
-                hr = _AudioClient->Start();
+                hr = iAudioClient->Start();
                 if (FAILED(hr))
                 {
                     Log::Print("Unable to start render client: %x.\n", hr);
                     break;
                 }
 
-                _AudioClientStarted = true;
+                iAudioClientStarted = true;
             }
 
             // Apply any volume changes
-            if (_AudioClientStarted && _volumeChanged)
+            if (iAudioClientStarted && iVolumeChanged)
             {
-                _AudioSessionVolume->SetMasterVolume(_volumeLevel, NULL);
-                _AudioSessionVolume->SetMute(_volumeMute, NULL);
+                iAudioSessionVolume->SetMasterVolume(iVolumeLevel, NULL);
+                iAudioSessionVolume->SetMute(iVolumeMute, NULL);
 
-                _volumeChanged = false;
+                iVolumeChanged = false;
             }
 
             // Wait for a kick from the native audio engine.
@@ -1054,16 +1045,16 @@ void AudioDriver::Run()
                 WaitForMultipleObjects(2, waitArray, FALSE, INFINITE);
 
             switch (waitResult) {
-                case WAIT_OBJECT_0 + 0:     // _AudioSessionDisconnectedEvent
+                case WAIT_OBJECT_0 + 0:     // iAudioSessionDisconnectedEvent
 
                     // Stop the audio client
-                    _AudioClient->Stop();
-                    _AudioClient->Reset();
-                    _AudioClientStarted = false;
+                    iAudioClient->Stop();
+                    iAudioClient->Reset();
+                    iAudioClientStarted = false;
 
-                    _AudioSessionDisconnected = true;
+                    iAudioSessionDisconnected = true;
                     break;
-                case WAIT_OBJECT_0 + 1:     // _AudioSamplesReadyEvent
+                case WAIT_OBJECT_0 + 1:     // iAudioSamplesReadyEvent
                     break;
                 default:
                     Log::Print("ERROR: Unexpected event received  [%d]\n",

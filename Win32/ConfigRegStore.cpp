@@ -2,22 +2,12 @@
 #include <OpenHome/Private/Printer.h>
 
 #include "ConfigRegStore.h"
-
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
-
-#ifdef _DEBUG
-   #ifndef DBG_NEW
-      #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
-      #define new DBG_NEW
-   #endif
-#endif  // _DEBUG
+#include "MemoryCheck.h"
 
 using namespace OpenHome;
 using namespace OpenHome::Configuration;
 
-// ConfigRegStore
+// Registry based implementation of the IStoreReadWrite interface
 
 ConfigRegStore::ConfigRegStore()
     : iLock("RAMS")
@@ -28,7 +18,7 @@ ConfigRegStore::~ConfigRegStore()
 {
 }
 
-// Convert Brx string data to a native wide string.
+// Convert Brx normal string data to a native wide string.
 LPWSTR ConfigRegStore::BrxToWString(const Brx& aKey)
 {
     WCHAR  *wcstring;
@@ -181,7 +171,7 @@ void ConfigRegStore::Delete(const Brx& aKey)
             RegCloseKey(iHk);
             delete keyString;
 
-            // Throw exception if the deletioj failed.
+            // Throw exception if the deletion failed.
             if (retVal != ERROR_SUCCESS)
             {
                 THROW(StoreKeyNotFound);

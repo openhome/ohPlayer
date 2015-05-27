@@ -4,6 +4,11 @@
 
 #include "AudioSessionEvents.h"
 
+namespace OpenHome {
+    class Environment;
+
+namespace Media {
+
 template <class T> void SafeRelease(T **ppT)
 {
     if (*ppT)
@@ -13,24 +18,19 @@ template <class T> void SafeRelease(T **ppT)
     }
 }
 
-namespace OpenHome {
-    class Environment;
-
-namespace Media {
-
 class AudioDriver : public Thread, private IMsgProcessor, public IPipelineAnimator
 {
     static const TInt64 kClockPullDefault = (1 << 29) * 100LL;
 public:
-    AudioDriver(Environment& aEnv, IPipeline& aPipeline, LPVOID lpParam);
+    AudioDriver(Environment& aEnv, IPipeline& aPipeline, HWND hwnd);
     ~AudioDriver();
 
     static void SetVolume(float level, TBool mute);
 
 private: // Data set by SetVolume()
-    static TBool _volumeChanged;
-    static float _volumeLevel;
-    static TBool _volumeMute;
+    static TBool iVolumeChanged;
+    static float iVolumeLevel;
+    static TBool iVolumeMute;
 private: // from Thread
     void Run();
 private:
@@ -54,62 +54,62 @@ private: // from IMsgProcessor
 private: // from IPipelineDriver
     TUint PipelineDriverDelayJiffies(TUint aSampleRateFrom, TUint aSampleRateTo) override;
 private:
-    IPipeline& iPipeline;
-    TUint iSampleRate;
-    TUint iNumChannels;
-    TUint iBitDepth;
-    MsgPlayable* iPlayable;
-    TBool iQuit;
+    IPipeline   &iPipeline;
+    TUint        iSampleRate;
+    TUint        iNumChannels;
+    TUint        iBitDepth;
+    MsgPlayable *iPlayable;
+    TBool        iQuit;
 private:
     // WASAPI Related
-    IMMDevice            *_AudioEndpoint;
-    IAudioClient         *_AudioClient;
-    IAudioRenderClient   *_RenderClient;
-    WAVEFORMATEX         *_MixFormat;
-    IAudioSessionControl *_AudioSessionControl;
-    AudioSessionEvents   *_AudioSessionEvents;
-    ISimpleAudioVolume   *_AudioSessionVolume;
+    IMMDevice            *iAudioEndpoint;
+    IAudioClient         *iAudioClient;
+    IAudioRenderClient   *iRenderClient;
+    WAVEFORMATEX         *iMixFormat;
+    IAudioSessionControl *iAudioSessionControl;
+    AudioSessionEvents   *iAudioSessionEvents;
+    ISimpleAudioVolume   *iAudioSessionVolume;
 
 private:
     // Audio Client Events
-    HANDLE              _AudioSamplesReadyEvent;
-    HANDLE              _AudioSessionDisconnectedEvent;
+    HANDLE iAudioSamplesReadyEvent;
+    HANDLE iAudioSessionDisconnectedEvent;
 
     // Internal Data
 
     // Main window handle.
-    HWND                _Hwnd;
+    HWND    iHwnd;
     // The buffer shared with the audio engine should be at least big enough
     // to buffer enough data to cover this time frame.
-    LONG                _EngineLatencyInMS;
+    LONG    iEngineLatencyInMS;
     // Max audio Frames in Audio Client buffer.
-    TUint32             _BufferSize;
+    TUint32 iBufferSize;
     // Set when the audio stream has benn verified as playable
-    bool                _StreamFormatSupported;
+    TBool   iStreamFormatSupported;
     // Set when the audio session has been disconnected.
-    bool                _AudioSessionDisconnected;
+    TBool   iAudioSessionDisconnected;
     // Set when native audio is initialised successfully to the stream format.
-    bool                _AudioEngineInitialised;
+    TBool   iAudioEngineInitialised;
     // Set when native audio client has been started successfully.
-    bool                _AudioClientStarted;
+    TBool   iAudioClientStarted;
     // Amount of space in the render buffer this render period.
-    TUint32             _RenderBytesThisPeriod;
+    TUint32 iRenderBytesThisPeriod;
     // Amount of remaining space in the render buffer this render period.
-    TUint32             _RenderBytesRemaining;
+    TUint32 iRenderBytesRemaining;
     // Audio renderer frame size.
-    TUint32             _FrameSize;
+    TUint32 iFrameSize;
     // Duplicate a chaneel when rendering (mono->stereo).
-    bool                _DuplicateChannel;
+    TBool   iDuplicateChannel;
 
 private:
     // Utility functions
-    bool GetMultimediaDevice(IMMDevice **DeviceToUse);
-    bool CheckMixFormat(TUint iSampleRate, TUint iNumChannels, TUint iBitDepth);
-    bool InitializeAudioClient();
-    bool InitializeAudioEngine();
-    bool RestartAudioEngine();
-    void StopAudioEngine();
-    void ShutdownAudioEngine();
+    TBool GetMultimediaDevice(IMMDevice **DeviceToUse);
+    TBool CheckMixFormat(TUint iSampleRate, TUint iNumChannels, TUint iBitDepth);
+    TBool InitializeAudioClient();
+    TBool InitializeAudioEngine();
+    TBool RestartAudioEngine();
+    void  StopAudioEngine();
+    void  ShutdownAudioEngine();
 };
 } // namespace Media
 } // namespace OpenHome
