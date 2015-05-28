@@ -198,6 +198,7 @@
     <ClCompile Include="ProcessorPcmWASAPI.cpp" />
     <ClCompile Include="RamStore.cpp" />
     <ClCompile Include="UpdateCheck.cpp" />
+    <ClCompile Include="Volume.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="LitePipeTestApp.ico" />

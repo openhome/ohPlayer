@@ -7,6 +7,8 @@
 
 #include <Windows.h>
 
+#include "Volume.h"
+
 namespace OpenHome {
 namespace Net {
     class DviServerUpnp;
@@ -68,7 +70,7 @@ protected:
     Semaphore                      iSemShutdown;
 private:
     Semaphore              iDisabled;
-    Media::VolumePrinter   iVolume;
+    Media::VolumeControl   iVolume;
     Media::EPipelineState  iPState;
     TBool                  iLive;
     ControlPointProxy     *iCpProxy;

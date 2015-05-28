@@ -60,10 +60,15 @@ AudioDriver::~AudioDriver()
     Join();
 }
 
-void AudioDriver::SetVolume(float level, TBool mute)
+void AudioDriver::SetVolume(float level)
 {
     iVolumeChanged = true;
     iVolumeLevel   = level;
+}
+
+void AudioDriver::SetMute(TBool mute)
+{
+    iVolumeChanged = true;
     iVolumeMute    = mute;
 }
 

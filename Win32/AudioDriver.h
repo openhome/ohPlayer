@@ -25,7 +25,8 @@ public:
     AudioDriver(Environment& aEnv, IPipeline& aPipeline, HWND hwnd);
     ~AudioDriver();
 
-    static void SetVolume(float level, TBool mute);
+    static void SetVolume(float level);
+    static void SetMute(TBool mute);
 
 private: // Data set by SetVolume()
     static TBool iVolumeChanged;
