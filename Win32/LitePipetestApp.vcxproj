@@ -26,24 +26,24 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v100</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v100</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v100</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v100</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -69,15 +69,15 @@
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>Include/OpenHome/Av/Tests;Include;$(IncludePath)</IncludePath>
-    <LibraryPath>Libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\dependencies\Windows-x86\ohMediaPlayer\include;..\dependencies\Windows-x86\ohNet-Windows-x86-Debug\include\ohnet;..\dependencies\Windows-x86\ohNetmon\include;..\dependencies\Windows-x86\ohNetGenerated-Windows-x86-Release\include\ohnet\OpenHome\Net\Core;$(IncludePath)</IncludePath>
+    <LibraryPath>..\dependencies\Windows-x86\ohMediaPlayer\lib;..\dependencies\Windows-x86\ohNet-Windows-x86-Debug\lib;..\dependencies\Windows-x86\ohNetmon\lib;..\dependencies\Windows-x86\openssl\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>Include/OpenHome/Av/Tests;Include;$(IncludePath)</IncludePath>
-    <LibraryPath>Libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\dependencies\Windows-x86\ohMediaPlayer\include;..\dependencies\Windows-x86\ohNet-Windows-x86-Release\include\ohnet;..\dependencies\Windows-x86\ohNetmon\include;..\dependencies\Windows-x86\ohNetGenerated-Windows-x86-Release\include\ohnet\OpenHome\Net\Core;$(IncludePath)</IncludePath>
+    <LibraryPath>..\dependencies\Windows-x86\ohMediaPlayer\lib;..\dependencies\Windows-x86\ohNet-Windows-x86-Release\lib;..\dependencies\Windows-x86\ohNetmon\lib;..\dependencies\Windows-x86\openssl\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
@@ -116,7 +116,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader />
       <WarningLevel>Level4</WarningLevel>
@@ -191,7 +191,6 @@
     <ClCompile Include="AudioSessionEvents.cpp" />
     <ClCompile Include="ConfigRegStore.cpp" />
     <ClCompile Include="ControlPointProxy.cpp" />
-    <ClCompile Include="Generated\CpAvOpenhomeOrgVolume1.cpp" />
     <ClCompile Include="LitePipeTestApp.cpp" />
     <ClCompile Include="ExampleMediaPlayer.cpp" />
     <ClCompile Include="MediaPlayerIF.cpp" />

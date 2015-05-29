@@ -13,8 +13,5 @@ tags
 
 # External libraries copied in from the OhNea/OhNetMon and LitePipe
 # respositories.
-Include/
-Libs/
 Win32/
-Generated/
 

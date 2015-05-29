@@ -34,5 +34,11 @@
         "platform-specific": true,
         "version": "0.0.191",
         "archive-suffix": "-${debugmode}"
+    },
+    {   "name": "ohNetGenerated",
+        "type": "openhome",
+        "platform-specific": true,
+        "version": "1.0.67",
+        "archive-filename": "${name}-${version}-${archive-platform}-Release.tar.gz"
     }
 ]
