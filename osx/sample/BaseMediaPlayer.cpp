@@ -82,17 +82,21 @@ const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, con
     iConfigRamStore->Write(Brn("Product.Room"), Brn(aRoom));
     iConfigRamStore->Write(Brn("Product.Name"), Brn(aProductName));
     
+    PipelineInitParams* pipelineParams = PipelineInitParams::New();
+    pipelineParams->SetThreadPriorityMax(kPriorityHighest);
+    
     // create MediaPlayer
     iMediaPlayer = new MediaPlayer( aDvStack,
                                    *iDevice,
                                    *iRamStore,
                                    *iConfigRamStore,
-                                   PipelineInitParams::New(),
+                                   pipelineParams,
                                    iVolume,
                                    iVolume,
                                    aUdn,
                                    Brn("Main Room"),
                                    Brn("Softplayer"));
+    
 }
 
 BaseMediaPlayer::~BaseMediaPlayer()
