@@ -26,12 +26,10 @@ public:
     ~AudioDriver();
 
     static void SetVolume(float level);
-    static void SetMute(TBool mute);
 
 private: // Data set by SetVolume()
     static TBool iVolumeChanged;
     static float iVolumeLevel;
-    static TBool iVolumeMute;
 private: // from Thread
     void Run();
 private:

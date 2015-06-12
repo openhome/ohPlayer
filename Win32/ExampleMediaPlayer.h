@@ -3,7 +3,7 @@
 #include <OpenHome/Av/MediaPlayer.h>
 #include <OpenHome/Av/Utils/DriverSongcastSender.h>
 #include <OpenHome/Media/PipelineManager.h>
-#include <OpenHome/Media/Tests/VolumeUtils.h>
+#include <OpenHome/Av/VolumeManager.h>
 
 #include <Windows.h>
 
@@ -70,7 +70,7 @@ protected:
     Semaphore                      iSemShutdown;
 private:
     Semaphore              iDisabled;
-    Media::VolumeControl   iVolume;
+    Av::VolumeControl      iVolume;
     Media::EPipelineState  iPState;
     TBool                  iLive;
     ControlPointProxy     *iCpProxy;

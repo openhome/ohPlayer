@@ -22,7 +22,6 @@ using namespace OpenHome::Media;
 // Static data
 TBool AudioDriver::iVolumeChanged = false;
 float AudioDriver::iVolumeLevel   = 100.0f;
-TBool AudioDriver::iVolumeMute    = false;
 
 AudioDriver::AudioDriver(Environment& /*aEnv*/, IPipeline& aPipeline, HWND hwnd) :
     iHwnd(hwnd),
@@ -64,12 +63,6 @@ void AudioDriver::SetVolume(float level)
 {
     iVolumeChanged = true;
     iVolumeLevel   = level;
-}
-
-void AudioDriver::SetMute(TBool mute)
-{
-    iVolumeChanged = true;
-    iVolumeMute    = mute;
 }
 
 Msg* AudioDriver::ProcessMsg(MsgMode* aMsg)
@@ -1040,8 +1033,6 @@ void AudioDriver::Run()
             if (iAudioClientStarted && iVolumeChanged)
             {
                 iAudioSessionVolume->SetMasterVolume(iVolumeLevel, NULL);
-                iAudioSessionVolume->SetMute(iVolumeMute, NULL);
-
                 iVolumeChanged = false;
             }
 

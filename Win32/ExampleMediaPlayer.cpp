@@ -84,6 +84,13 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
     iConfigRegStore->Write(Brn("Product.Room"), Brn(aRoom));
     iConfigRegStore->Write(Brn("Product.Name"), Brn(aProductName));
 
+    // Volume Control
+    VolumeProfile  volumeProfile;
+    VolumeConsumer volumeInit(iVolume);
+
+    volumeInit.SetBalance(iVolume);
+    volumeInit.SetFade(iVolume);
+
     // Set pipeline thread priority just below the pipeline animator.
     iInitParams = PipelineInitParams::New();
     iInitParams->SetThreadPriorityMax(kPriorityHighest);
@@ -91,7 +98,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
     // create MediaPlayer
     iMediaPlayer = new MediaPlayer( aDvStack, *iDevice, *iRamStore,
                                    *iConfigRegStore, iInitParams,
-                                    iVolume, iVolume, aUdn, Brn(aRoom),
+                                    volumeInit, volumeProfile, aUdn, Brn(aRoom),
                                     Brn(aProductName));
 
     // Register an observer, primarily to monitor the pipeline status.
