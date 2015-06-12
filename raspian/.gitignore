@@ -1,0 +1,15 @@
+# Editor related files.
+*~
+.*.swp
+
+# "tags" files are caches created by ctags for quick navigation in
+# various text editors.
+tags
+
+# Object files created during the build process.
+objs/
+debug-objs/
+
+# Executables
+LitePipeTestApp
+LitePipeTestAppDebug
