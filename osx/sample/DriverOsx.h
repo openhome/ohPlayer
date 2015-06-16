@@ -10,11 +10,14 @@
 #include <OpenHome/Media/Utils/ProcessorPcmUtils.h>
 #include <OpenHome/Net/Core/DvDevice.h>
 #include <OpenHome/Media/Pipeline/Pipeline.h>
+#include <OpenHome/Av/VolumeManager.h>
+#include <OpenHome/Media/MuteManager.h>
 
 #include "OsxAudio.h"
 
 namespace OpenHome {
     class Environment;
+
 namespace Media {
 
 // DriverOsx is a LitePipe pipeline animator which renders audio messages
@@ -64,6 +67,11 @@ public:
     // Return:
     //   true if the pipeline is being animated, false otherwise
     TBool isPlaying() { return iPlaying; }
+    
+    // Set the audio stream volume.
+    // Parameters:
+    //   volume:      volume - from 0 to 1.0
+    void setVolume(Float32 volume);
     
 private: // from Thread
     // Run - the execution method for class's main thread

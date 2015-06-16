@@ -23,11 +23,6 @@ SampleMediaPlayer::SampleMediaPlayer()
 SampleMediaPlayer::~SampleMediaPlayer()
 {
     // delete the proxies if they haven't been already
-    if (_volumeProxy != NULL)
-    {
-        delete _volumeProxy;
-        _volumeProxy = NULL;
-    }
     if (_playlistProxy != NULL)
     {
         delete _playlistProxy;
@@ -37,23 +32,8 @@ SampleMediaPlayer::~SampleMediaPlayer()
 
 void SampleMediaPlayer::initialiseProxies()
 {
-    // create proxies for the Volume and Playlist services on our
-    // player device
-    _volumeProxy = new CpProxyAvOpenhomeOrgVolume1(*cpPlayerVol);
+    // create proxies for the Playlist service on our player device
     _playlistProxy = new CpProxyAvOpenhomeOrgPlaylist1(*cpPlayerPlaylist);
-
-    // create callbacks for all of the notifications we're interested in.
-    funcVolumeInitialEvent = MakeFunctor(*this, &SampleMediaPlayer::ohNetVolumeInitialEvent);
-    _volumeProxy->SetPropertyInitialEvent(funcVolumeInitialEvent);
-    funcVolumeChanged = MakeFunctor(*this, &SampleMediaPlayer::ohNetVolumeChanged);
-    
-    // register for notifications about various volume properties
-    _volumeProxy->SetPropertyVolumeChanged(funcVolumeChanged);
-    _volumeProxy->SetPropertyVolumeLimitChanged(funcVolumeChanged);
-    _volumeProxy->SetPropertyMuteChanged(funcVolumeChanged);
-    
-    // subscribe to the volume change service
-    _volumeProxy->Subscribe();
     
     // create callbacks for playlist notifications we're interested in.
     funcGenericInitialEvent = MakeFunctor(*this, &SampleMediaPlayer::ohNetGenericInitialEvent);
@@ -72,47 +52,6 @@ void SampleMediaPlayer::ohNetGenericInitialEvent()
 void SampleMediaPlayer::ohNetPlaylistIdChangedEvent()
 {
 }
-
-
-void SampleMediaPlayer::ohNetVolumeInitialEvent()
-{
-    volumeChanged();
-}
-
-
-void SampleMediaPlayer::ohNetVolumeChanged()
-{
-    volumeChanged();
-}
-
-void SampleMediaPlayer::volumeChanged()
-{
-    TUint newVolume;
-    TUint newLimit;
-    TBool newMute;
-    
-    _volumeProxy->PropertyVolume(newVolume);
-    _volumeProxy->PropertyVolumeLimit(newLimit);
-    _volumeProxy->PropertyMute(newMute);
-    
-    // set the OS volume
-}
-
-void SampleMediaPlayer::initialEventVolume()
-{
-    volumeChanged();
-}
-
-void SampleMediaPlayer::setVolume(TUint volume)
-{    
-    _volumeProxy->SyncSetVolume(volume);
-}
-
-void SampleMediaPlayer::setMute(TBool muted)
-{
-    _volumeProxy->SyncSetMute(muted);
-}
-
 
 void SampleMediaPlayer::playlistStop()
 {
@@ -162,18 +101,20 @@ TBool SampleMediaPlayer::setup ()
         delete mp;
         return false;
     }
+    
+    // now that we've created the media player (and volume control), hook
+    // it up to the host audio driver
+    mp->VolumeControl().SetHost(driver);
   
     mp->Pipeline().AddObserver(*this);
     iState = EPipelineStopped;
 
     mp->Run();
     
-    // create a CpDeviceC for our internal player
-    // we create 2 temporarily as CpDeviceDv only allows one subscription
-    cpPlayerVol = CpDeviceDv::New(*cpStack, *(mp->Device()));
+    // create a CpDeviceDv for our internal player
     cpPlayerPlaylist = CpDeviceDv::New(*cpStack, *(mp->Device()));
     
-    // initialise ohNet Proxies for Volume, playlist
+    // initialise ohNet Proxy for playlist
     initialiseProxies();
     
     return true;
@@ -185,7 +126,6 @@ void SampleMediaPlayer::shutdown() {
     playlistStop();
     
     // unsubscribe to volume and playlist services
-    _volumeProxy->Unsubscribe();
     _playlistProxy->Unsubscribe();
     
     // delete our media player

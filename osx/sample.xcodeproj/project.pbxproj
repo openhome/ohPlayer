@@ -79,9 +79,9 @@
 		EB796A581AD2AEAA00684025 /* libcrypto.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB796A571AD2AEAA00684025 /* libcrypto.a */; };
 		EB796A5A1AD2B2C700684025 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EB796A591AD2B2C700684025 /* SystemConfiguration.framework */; };
 		EB796A5D1AD2C14800684025 /* ConfigRamStore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB796A5B1AD2C14800684025 /* ConfigRamStore.cpp */; };
-		EB796A601AD2CD3E00684025 /* VolumeUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB796A5E1AD2CD3E00684025 /* VolumeUtils.cpp */; };
 		EB796A6A1AD5BA1C00684025 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EB796A691AD5BA1C00684025 /* AudioToolbox.framework */; };
 		EBA0E8EF1AC5D8AF00903A7F /* SampleMediaPlayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EBA0E8EE1AC5D8AF00903A7F /* SampleMediaPlayer.cpp */; };
+		EBD2C6781B30101900B39E08 /* Volume.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EBD2C6761B30101900B39E08 /* Volume.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -681,12 +681,12 @@
 		EB796A591AD2B2C700684025 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		EB796A5B1AD2C14800684025 /* ConfigRamStore.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ConfigRamStore.cpp; sourceTree = "<group>"; };
 		EB796A5C1AD2C14800684025 /* ConfigRamStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ConfigRamStore.h; sourceTree = "<group>"; };
-		EB796A5E1AD2CD3E00684025 /* VolumeUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VolumeUtils.cpp; sourceTree = "<group>"; };
-		EB796A5F1AD2CD3E00684025 /* VolumeUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VolumeUtils.h; sourceTree = "<group>"; };
 		EB796A681AD5744F00684025 /* PcmHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PcmHandler.h; sourceTree = "<group>"; };
 		EB796A691AD5BA1C00684025 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		EBA0E8EE1AC5D8AF00903A7F /* SampleMediaPlayer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SampleMediaPlayer.cpp; sourceTree = "<group>"; };
 		EBA0E8F01AC5D99800903A7F /* SampleMediaPlayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SampleMediaPlayer.h; sourceTree = "<group>"; };
+		EBD2C6761B30101900B39E08 /* Volume.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Volume.cpp; sourceTree = "<group>"; };
+		EBD2C6771B30101900B39E08 /* Volume.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Volume.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -816,11 +816,11 @@
 		EB40D91F1A9B23A20043722C /* sample */ = {
 			isa = PBXGroup;
 			children = (
+				EBD2C6761B30101900B39E08 /* Volume.cpp */,
+				EBD2C6771B30101900B39E08 /* Volume.h */,
 				EB698ADC1ADE517500B47100 /* OsxAudio.cpp */,
 				EB698ADD1ADE517500B47100 /* OsxAudio.h */,
-				EB796A5E1AD2CD3E00684025 /* VolumeUtils.cpp */,
 				EB3670571ADEA86B00AC684B /* PcmHandler.cpp */,
-				EB796A5F1AD2CD3E00684025 /* VolumeUtils.h */,
 				EB796A5B1AD2C14800684025 /* ConfigRamStore.cpp */,
 				EB796A5C1AD2C14800684025 /* ConfigRamStore.h */,
 				EB796A511AD2A7A200684025 /* BaseMediaPlayer.cpp */,
@@ -2561,6 +2561,7 @@
 				EB463CB51ACAE083002AF5B2 /* DriverOsx.cpp in Sources */,
 				EB243E751AE51DB10071F041 /* DvUpnpOrgRenderingControl1.cpp in Sources */,
 				EB463CB21ACAD87D002AF5B2 /* RamStore.cpp in Sources */,
+				EBD2C6781B30101900B39E08 /* Volume.cpp in Sources */,
 				EB243E6B1AE51DB10071F041 /* DvAvOpenhomeOrgInfo1.cpp in Sources */,
 				EB3670581ADEA86B00AC684B /* PcmHandler.cpp in Sources */,
 				EB796A521AD2A7A200684025 /* BaseMediaPlayer.cpp in Sources */,
@@ -2569,7 +2570,6 @@
 				EB243E611AE51DB10071F041 /* CpAvOpenhomeOrgRadio1.cpp in Sources */,
 				EB243E6F1AE51DB10071F041 /* DvAvOpenhomeOrgReceiver1.cpp in Sources */,
 				EB243E6E1AE51DB10071F041 /* DvAvOpenhomeOrgRadio1.cpp in Sources */,
-				EB796A601AD2CD3E00684025 /* VolumeUtils.cpp in Sources */,
 				EB243E691AE51DB10071F041 /* DvAvOpenhomeOrgConfiguration1.cpp in Sources */,
 				EB243E5C1AE51DB10071F041 /* CpAvOpenhomeOrgConfiguration1.cpp in Sources */,
 				EB243E701AE51DB10071F041 /* DvAvOpenhomeOrgSender1.cpp in Sources */,

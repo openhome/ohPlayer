@@ -24,9 +24,10 @@
 #include <OpenHome/Av/Raop/Raop.h>
 #include <OpenHome/PowerManager.h>
 #include <OpenHome/Web/WebAppFramework.h>
+#include <OpenHome/Av/VolumeManager.h>
 
 #include "RamStore.h"
-#include "VolumeUtils.h"
+#include "Volume.h"
 
 namespace OpenHome {
     class PowerManager;
@@ -69,6 +70,7 @@ namespace OpenHome {
                 virtual void Run();
                 Media::PipelineManager& Pipeline();
                 Net::DvDeviceStandard* Device();
+                VolumeControl& VolumeControl() {return iVolume;}
             protected:
                 virtual void RegisterPlugins(Environment& aEnv);
                 void DoRegisterPlugins(Environment& aEnv, const Brx& aSupportedProtocols);
@@ -93,7 +95,7 @@ namespace OpenHome {
                 Semaphore iSemShutdown;
             private:
                 Semaphore iDisabled;
-                Media::VolumePrinter iVolume;
+                Av::VolumeControl iVolume;
                 const Brx& iTuneInPartnerId;
                 const Brx& iTidalId;
                 const Brx& iQobuzIdSecret;

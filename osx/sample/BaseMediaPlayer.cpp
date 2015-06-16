@@ -82,6 +82,14 @@ const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, con
     iConfigRamStore->Write(Brn("Product.Room"), Brn(aRoom));
     iConfigRamStore->Write(Brn("Product.Name"), Brn(aProductName));
     
+    // Volume Control
+    VolumeProfile  volumeProfile;
+    VolumeConsumer volumeInit(iVolume);
+    
+    volumeInit.SetBalance(iVolume);
+    volumeInit.SetFade(iVolume);
+    
+    
     PipelineInitParams* pipelineParams = PipelineInitParams::New();
     pipelineParams->SetThreadPriorityMax(kPriorityHighest);
     
@@ -91,8 +99,8 @@ const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, con
                                    *iRamStore,
                                    *iConfigRamStore,
                                    pipelineParams,
-                                   iVolume,
-                                   iVolume,
+                                   volumeInit,
+                                   volumeProfile,
                                    aUdn,
                                    Brn("Main Room"),
                                    Brn("Softplayer"));

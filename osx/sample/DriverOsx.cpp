@@ -172,6 +172,11 @@ Msg* DriverOsx::ProcessMsg(MsgQuit* aMsg)
     return NULL;
 }
 
+void DriverOsx::setVolume(Float32 volume)
+{
+    iOsxAudio.setVolume(volume);
+}
+
 
 TUint DriverOsx::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/, TUint /*aSampleRateTo*/)
 {

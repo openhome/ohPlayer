@@ -19,8 +19,7 @@ namespace OpenHome {
 namespace Av {
 namespace Sample {
 
-    class SampleMediaPlayer : private Media::IPipelineObserver
-
+class SampleMediaPlayer : private Media::IPipelineObserver
 {
 public:
     SampleMediaPlayer();
@@ -34,19 +33,13 @@ public:
 
     void initialiseProxies();
     void ohNetVolumeInitialEvent();
-    void ohNetVolumeChanged();
     void ohNetGenericInitialEvent();
     void ohNetPlaylistIdChangedEvent();
-
-    void initialEventVolume();
-    
-    void setVolume(TUint volume);
-    void setVolumeLimit(TUint limit);
-    void setMute(TBool muted);
 
     void playlistPlay();
     void playlistPause();
     void playlistStop();
+    
     TBool canPlay();
     TBool canPause();
     TBool canStop();
@@ -80,14 +73,11 @@ private:
     BaseMediaPlayer* mp;
     Media::DriverOsx* driver;
     
-    Functor funcVolumeInitialEvent;
-    Functor funcVolumeChanged;
     Functor funcGenericInitialEvent;
     Functor funcIdChanged;
     
     // Create proxies to control the volume and playback
     // of our local player
-    Net::CpProxyAvOpenhomeOrgVolume1 * _volumeProxy;
     Net::CpProxyAvOpenhomeOrgPlaylist1 * _playlistProxy;
 };
   
