@@ -1,9 +1,7 @@
 #include <OpenHome/Types.h>
 #include <OpenHome/Buffer.h>
-#include <OpenHome/Printer.h>
 #include <OpenHome/Media/Pipeline/Msg.h>
 #include <OpenHome/OsWrapper.h>
-#include <OpenHome/Env.h>
 
 #include <string>
 #include <limits>
@@ -349,8 +347,6 @@ void OsxAudio::Run()
         }
     }
     catch (ThreadKill &e) {}
-    
-    Log::Print("EXIT OsxAudio Thread\n");
 }
 
 

@@ -1,6 +1,5 @@
 #include "RamStore.h"
 #include <OpenHome/Av/KvpStore.h>
-#include <OpenHome/Printer.h>
 
 #include <map>
 

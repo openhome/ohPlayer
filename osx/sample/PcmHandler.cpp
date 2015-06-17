@@ -1,5 +1,4 @@
 #include "PcmHandler.h"
-#include <OpenHome/Printer.h>
 
 using namespace OpenHome;
 using namespace OpenHome::Media;
