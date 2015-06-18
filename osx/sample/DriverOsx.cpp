@@ -1,9 +1,8 @@
 #include <OpenHome/Types.h>
 #include <OpenHome/Buffer.h>
-#include <OpenHome/Printer.h>
 #include <OpenHome/Media/Pipeline/Msg.h>
 #include <OpenHome/OsWrapper.h>
-#include <OpenHome/Env.h>
+#include <OpenHome/Private/Env.h>
 
 #include <string>
 #include <limits>

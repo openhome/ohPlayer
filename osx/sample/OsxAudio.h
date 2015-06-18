@@ -4,7 +4,7 @@
 #include <AudioToolbox/AudioToolbox.h>
 #include <AudioToolbox/AudioQueue.h>
 #include <OpenHome/Types.h>
-#include <OpenHome/Thread.h>
+#include <OpenHome/Private/Thread.h>
 #include <OpenHome/Media/Pipeline/Msg.h>
 #include <OpenHome/Media/ClockPuller.h>
 #include <OpenHome/Media/Utils/ProcessorPcmUtils.h>

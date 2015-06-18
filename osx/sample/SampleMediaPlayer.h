@@ -7,8 +7,7 @@
 
 #include <OpenHome/Types.h>
 #include <OpenHome/Net/Private/DviStack.h>
-#include <Generated/CpAvOpenhomeOrgVolume1.h>
-#include <Generated/CpAvOpenhomeOrgPlaylist1.h>
+#include <OpenHome/Net/Core/CpAvOpenhomeOrgPlaylist1.h>
 #include <OpenHome/Net/Core/CpDeviceDv.h>
 #include <OpenHome/Functor.h>
 
