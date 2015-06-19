@@ -16,10 +16,10 @@ GTK_LIBS   := $(shell pkg-config --libs gtk+-3.0)
 
 TARGET       = LitePipeTestApp
 CC           = g++
-CFLAGS       = -c -Wall -std=c++0x $(GTK_CFLAGS)
+CFLAGS       = -c -Wall -std=c++11 $(GTK_CFLAGS)
 DEBUG_CFLAGS = -g -O0 -DDEBUG -fstack-protector
-LIBS         = $(GTK_LIBS) -lnotify
-INCLUDES     =
+LIBS         = $(GTK_LIBS) -lnotify -lpthread -lohNetCore -lohPipeline -lohNetmon -lssl -lcrypto -lohMediaPlayer -lCodecAacBase -lCodecAac -lCodecAifc -lCodecAlacBase -lCodecAlac -lCodecPcm -lCodecAiffBase -lCodecAiff -llibOgg -lCodecVorbis -lCodecAdts -lCodecFlac -lCodecWav -lSourcePlaylist -lSourceUpnpAv -lSourceSongcast -lohMediaPlayerTestUtils
+INCLUDES     = -I../dependencies/Linux-armhf/ohMediaPlayer/include -I../dependencies/Linux-armhf/ohNetmon/include -I../dependencies/Linux-armhf/openssl/include
 
 REL_TARGET    = LitePipeTestApp
 DEBUG_TARGET  = LitePipeTestAppDebug
@@ -30,10 +30,18 @@ DEBUG_OBJ_DIR = debug-objs/
 OBJ_DIR       = $(REL_OBJ_DIR)
 
 # If 'DEBUG=0 is specified on the command line build a debug biuld.
+
+LIBS += -L../dependencies/Linux-armhf/ohMediaPlayer/lib -L../dependencies/Linux-armhf/ohNetmon/lib -L../dependencies/Linux-armhf/openssl/lib
+
 ifdef DEBUG
-OBJ_DIR  = $(DEBUG_OBJ_DIR)
-CFLAGS  += $(DEBUG_CFLAGS)
-TARGET   = $(DEBUG_TARGET)
+OBJ_DIR   = $(DEBUG_OBJ_DIR)
+CFLAGS   += $(DEBUG_CFLAGS)
+TARGET    = $(DEBUG_TARGET)
+LIBS     += -L../dependencies/Linux-armhf/ohNet-Linux-armhf-Debug/lib
+INCLUDES += -I../dependencies/Linux-armhf/ohNet-Linux-armhf-Debug/include/ohnet
+else
+LIBS     += -L../dependencies/Linux-armhf/ohNet-Linux-armhf-Release/lib
+INCLUDES += -I../dependencies/Linux-armhf/ohNetGenerated-Linux-armhf-Release/include/ohnet/OpenHome/Net/Core
 endif
 
 ifdef NVWA_DIR

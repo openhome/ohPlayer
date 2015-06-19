@@ -4,7 +4,7 @@
 #include <libnotify/notify.h>
 #include <vector>
 
-#include "mediaPlayerIF.h"
+#include "MediaPlayerIF.h"
 
 #ifdef DEBUG
 // Mtrace allocation tracing.
@@ -37,14 +37,12 @@ static GtkWidget *g_mi_exit     = NULL;
 static GtkWidget *g_mi_sep      = NULL;
 static GtkWidget *g_mi_sep1     = NULL;
 
-gboolean  g_updatesAvailable = false; // Application updates availability.
-gchar    *g_updateLocation   = NULL;  // Update location URL.
-gint      g_mediaOptions     = 0;     // Available media playback options flag.
-//InitArgs   g_mPlayerArgs;              // Media Player arguments.
+static gboolean  g_updatesAvailable = false; // App updates availability.
+static gchar    *g_updateLocation   = NULL;  // Update location URL.
+static gint      g_mediaOptions     = 0;     // Available media playback options
+static InitArgs  g_mPlayerArgs;              // Media Player arguments.
 
-// List of available subnets.
-// Used to populate the 'Networks' submenu.
-//std::vector<SubnetRecord*> *g_subnetList = NULL;
+const gchar     *g_appName          = "LitePipeTestApp";
 
 gint tCallback(gpointer /*data*/)
 {
@@ -113,10 +111,6 @@ void stopSelectionHandler()
 {
 }
 
-void networkSelectionHandler()
-{
-}
-
 void aboutSelectionHandler()
 {
 }
@@ -130,6 +124,71 @@ void exitSelectionHandler()
     gtk_main_quit();
 }
 
+void NetworkSelectionHandler(GtkMenuItem * /*menuitem*/, gpointer args)
+{
+#if 0
+    TIpAddress subnet = GPOINTER_TO_UINT(args);
+
+    // Restart the media player on the selected subnet.
+    ExitMediaPlayer();
+
+    WaitForSingleObject(g_mplayerThread, INFINITE);
+    CloseHandle(g_mplayerThread);
+
+    /* Re-Register UPnP/OhMedia devices. */
+    g_mPlayerArgs.subnet = subnet;
+
+    g_mplayerThread =
+        CreateThread(NULL,
+                     0,
+                    &InitAndRunMediaPlayer,
+                     (LPVOID)&g_mPlayerArgs,
+                     0,
+                     NULL);
+#endif
+}
+
+// Create a sub menu listing the available network adapters and their
+// associated networks.
+void CreateNetworkAdapterSubmenu(GtkWidget *networkMenuItem)
+{
+    GtkWidget                  *submenu    = gtk_menu_new();
+    std::vector<SubnetRecord*> *subnetList = NULL;
+
+    // Get a list of available subnets from the media player..
+    subnetList = GetSubnets();
+
+    std::vector<SubnetRecord*>::iterator it;
+
+    // Put each subnet in our submenu.
+    for (it=subnetList->begin(); it < subnetList->end(); it++)
+    {
+        GtkWidget *subnet;
+
+        subnet = gtk_menu_item_new_with_label((*it)->menuString->c_str());
+        gtk_menu_shell_append (GTK_MENU_SHELL(submenu), subnet);
+        gtk_widget_show (subnet);
+
+        // Attach menuitem handler.
+        g_signal_connect(G_OBJECT(subnet),
+                         "activate",
+                         G_CALLBACK(NetworkSelectionHandler),
+                         GUINT_TO_POINTER((*it)->subnet));
+
+        // If this is the subnet we are currently using disable it's
+        // selection.
+        if ((*it)->isCurrent)
+        {
+            gtk_widget_set_sensitive(subnet,FALSE);
+        }
+    }
+
+    // Release any existing subnet list resources.
+    FreeSubnets(subnetList);
+
+    gtk_menu_item_set_submenu (GTK_MENU_ITEM(networkMenuItem), submenu);
+}
+
 // Display the context menu
 void tray_icon_on_menu(GtkStatusIcon *status_icon,
                        guint          button,
@@ -137,7 +196,6 @@ void tray_icon_on_menu(GtkStatusIcon *status_icon,
                        gpointer       user_data)
 {
     GtkMenu   *menu    = (GtkMenu*)gtk_menu_new();
-    GtkWidget *submenu = gtk_menu_new();
 
     g_mi_play     = gtk_menu_item_new_with_label("Play");
     g_mi_pause    = gtk_menu_item_new_with_label("Pause");
@@ -176,8 +234,6 @@ void tray_icon_on_menu(GtkStatusIcon *status_icon,
                               G_CALLBACK(pauseSelectionHandler), NULL);
     g_signal_connect(G_OBJECT(g_mi_stop), "activate",
                               G_CALLBACK(stopSelectionHandler), NULL);
-    g_signal_connect(G_OBJECT(g_mi_networks), "activate",
-                              G_CALLBACK(networkSelectionHandler), NULL);
     g_signal_connect(G_OBJECT(g_mi_about), "activate",
                               G_CALLBACK(aboutSelectionHandler), NULL);
     g_signal_connect(G_OBJECT(g_mi_update), "activate",
@@ -185,25 +241,8 @@ void tray_icon_on_menu(GtkStatusIcon *status_icon,
     g_signal_connect(G_OBJECT(g_mi_exit), "activate",
                               G_CALLBACK(exitSelectionHandler), NULL);
 
-    // Example subnet submenu
-    {
-        GtkWidget *net1;
-        GtkWidget *net2;
-
-        net1 = gtk_menu_item_new_with_label ("1.2.3.4");
-        net2 = gtk_menu_item_new_with_label ("4.3.2.1");
-
-        gtk_menu_shell_append (GTK_MENU_SHELL(submenu), net1);
-        gtk_menu_shell_append (GTK_MENU_SHELL(submenu), net2);
-
-        gtk_widget_show (net1);
-        gtk_widget_show (net2);
-
-        // Gray out active subnet.
-        gtk_widget_set_sensitive (net1,FALSE);
-
-        gtk_menu_item_set_submenu (GTK_MENU_ITEM(g_mi_networks), submenu);
-    }
+    // Populate the 'Networks' submenu.
+    CreateNetworkAdapterSubmenu(g_mi_networks);
 
     gtk_menu_popup(menu,
                    NULL,
@@ -220,7 +259,7 @@ static void create_tray_icon()
 
     tray_icon = gtk_status_icon_new_from_file("OpenHome-48x48.png");
 
-    gtk_status_icon_set_tooltip_text(tray_icon, "LitePipeSampleApp");
+    gtk_status_icon_set_tooltip_text(tray_icon, g_appName);
 
     g_signal_connect(G_OBJECT(tray_icon), "activate",
                      G_CALLBACK(tray_icon_on_click), NULL);
@@ -252,12 +291,16 @@ int main(int argc, char **argv)
 #endif
 
     gtk_init(&argc, &argv);
-    notify_init("LitePipeTestApp");
+    notify_init(g_appName);
 
     create_tray_icon();
 
     // Start MediaPlayer thread.
-    g_thread_new("MediaPlayerIF", (GThreadFunc)InitAndRunMediaPlayer, NULL);
+    g_mPlayerArgs.subnet = InitArgs::NO_SUBNET;
+
+    g_thread_new("MediaPlayerIF",
+                 (GThreadFunc)InitAndRunMediaPlayer,
+                 (gpointer)&g_mPlayerArgs);
 
     // REMOVE: Quick check to see if menu items can be grayed whilst being
     // shown.
