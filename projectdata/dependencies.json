@@ -2,7 +2,7 @@
     {   "name": "ohNet",
         "type": "openhome",
         "platform-specific": true,
-        "version": "1.4.1645",
+        "version": "1.4.1654",
         "archive-suffix": "-${debugmode}",
         "main-dir": "${dest}${name}-${platform}-${debugmode}",
         "configure-args": [
@@ -25,20 +25,20 @@
     {   "name": "ohNetmon",
         "type": "openhome",
         "platform-specific": true,
-        "version": "1.0.31",
+        "version": "1.0.32",
         "archive-suffix": "-${debugmode}",
         "main-dir": "${dest}${name}-${platform}-${debugmode}"
     },
     {   "name": "ohMediaPlayer",
         "type": "openhome",
         "platform-specific": true,
-        "version": "0.0.195",
+        "version": "0.0.196",
         "archive-suffix": "-${debugmode}"
     },
     {   "name": "ohNetGenerated",
         "type": "openhome",
         "platform-specific": true,
-        "version": "1.0.67",
+        "version": "1.0.71",
         "archive-filename": "${name}-${version}-${archive-platform}-Release.tar.gz"
     }
 ]
