@@ -1,5 +1,4 @@
 #include <OpenHome/Media/Pipeline/Msg.h>
-//#include <OpenHome/Media/Tests/VolumeUtils.h>
 #include <OpenHome/Av/VolumeManager.h>
 #include <OpenHome/Private/Printer.h>
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <OpenHome/Av/VolumeManager.h>
-#include <OpenHome/Media/MuteManager.h>
 
 namespace OpenHome {
 namespace Av {
