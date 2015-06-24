@@ -12,18 +12,12 @@
 
 #include <string>
 #include "ConfigGTKKeyStore.h"
-#if 0
 #include "ControlPointProxy.h"
 #include "CustomMessages.h"
-#endif
 #include "ExampleMediaPlayer.h"
-#if 0
-#include "MemoryCheck.h"
-#endif
+#include "LitePipeTestApp.h"
 #include "MediaPlayerIF.h"
-#if 0
 #include "RamStore.h"
-#endif
 
 using namespace OpenHome;
 using namespace OpenHome::Av;
@@ -31,23 +25,20 @@ using namespace OpenHome::Configuration;
 using namespace OpenHome::Media;
 using namespace OpenHome::Net;
 
-#if 0
 // ExampleMediaPlayer
 
 const Brn ExampleMediaPlayer::kSongcastSenderIconFileName("SongcastSenderIcon");
 
-ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
-                                       Net::DvStack& aDvStack,
+ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
                                        const Brx& aUdn,
                                        const TChar* aRoom,
                                        const TChar* aProductName,
                                        const Brx& aUserAgent)
     : iSemShutdown("TMPS", 0)
     , iDisabled("test", 0)
-    , iHwnd(hwnd)
-    , iCpProxy(NULL)
     , iPState(EPipelineStopped)
     , iLive(false)
+    , iCpProxy(NULL)
     , iUserAgent(aUserAgent)
 {
     Bws<256> friendlyName;
@@ -87,10 +78,10 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
     iRamStore = new RamStore();
 
     // create a read/write store using the new config framework
-    iConfigRegStore = new ConfigRegStore();
+    iConfigStore = ConfigGTKKeyStore::getInstance();
 
-    iConfigRegStore->Write(Brn("Product.Room"), Brn(aRoom));
-    iConfigRegStore->Write(Brn("Product.Name"), Brn(aProductName));
+    iConfigStore->Write(Brn("Product.Room"), Brn(aRoom));
+    iConfigStore->Write(Brn("Product.Name"), Brn(aProductName));
 
     // Volume Control
     VolumeProfile  volumeProfile;
@@ -105,7 +96,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
 
     // create MediaPlayer
     iMediaPlayer = new MediaPlayer( aDvStack, *iDevice, *iRamStore,
-                                   *iConfigRegStore, iInitParams,
+                                   *iConfigStore, iInitParams,
                                     volumeInit, volumeProfile, aUdn, Brn(aRoom),
                                     Brn(aProductName));
 
@@ -121,7 +112,6 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
     delete iDevice;
     delete iDeviceUpnpAv;
     delete iRamStore;
-    delete iConfigRegStore;
 }
 
 Environment& ExampleMediaPlayer::Env()
@@ -161,7 +151,7 @@ TBool ExampleMediaPlayer::CanPlay()
 TBool ExampleMediaPlayer::CanPause()
 {
     return (!iLive &&
-            (iPState == EPipelinePlaying) || (iPState == EPipelineBuffering));
+            ((iPState == EPipelinePlaying) || (iPState == EPipelineBuffering)));
 }
 
 TBool ExampleMediaPlayer::CanHalt()
@@ -316,7 +306,6 @@ void ExampleMediaPlayer::Disabled()
     iDisabled.Signal();
 }
 
-#endif
 // ExampleMediaPlayerInit
 
 OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredSubnet)
@@ -338,14 +327,14 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
         ASSERTS();
     }
 
-    ConfigGTKKeyStore &configStore = ConfigGTKKeyStore::getInstance();
+    ConfigGTKKeyStore *configStore = ConfigGTKKeyStore::getInstance();
 
     // Check the configuration store for the last subnet joined.
     try
     {
         Bwn lastSubnetBuf = Bwn((TByte *)&lastSubnet, sizeof(lastSubnet));
 
-        configStore.Read(Brn(lastSubnetStr), lastSubnetBuf);
+        configStore->Read(Brn(lastSubnetStr), lastSubnetBuf);
     }
     catch (StoreKeyNotFound&)
     {
@@ -384,8 +373,8 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
     lib->SetCurrentSubnet(subnet);
 
     // Store the selected subnet in persistent storage.
-    configStore.Write(Brn(lastSubnetStr),
-                      Brn((TByte *)&subnet, sizeof(subnet)));
+    configStore->Write(Brn(lastSubnetStr),
+                       Brn((TByte *)&subnet, sizeof(subnet)));
 
     Log::Print("Using Subnet %d.%d.%d.%d\n", subnet&0xff, (subnet>>8)&0xff,
                                              (subnet>>16)&0xff,
@@ -394,11 +383,10 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
     return lib;
 }
 
-#if 0
 // Pipeline Observer callbacks.
 void ExampleMediaPlayer::NotifyPipelineState(Media::EPipelineState aState)
 {
-    int mediaOptions = 0;
+    unsigned int mediaOptions = 0;
 
     iPState = aState;
 
@@ -418,7 +406,7 @@ void ExampleMediaPlayer::NotifyPipelineState(Media::EPipelineState aState)
         mediaOptions |= MEDIAPLAYER_STOP_OPTION;
     }
 
-    PostMessage(iHwnd, WM_APP_PLAYBACK_OPTIONS, NULL, (LPARAM)mediaOptions);
+    gdk_threads_add_idle((GSourceFunc)updateUI, GINT_TO_POINTER(mediaOptions));
 
     switch (iPState)
     {
@@ -462,4 +450,3 @@ void ExampleMediaPlayer::NotifyStreamInfo(const Media::DecodedStreamInfo& aStrea
 {
     iLive = aStreamInfo.Live();
 }
-#endif

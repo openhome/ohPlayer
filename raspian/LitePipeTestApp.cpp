@@ -4,7 +4,9 @@
 #include <libnotify/notify.h>
 #include <vector>
 
+#include "CustomMessages.h"
 #include "MediaPlayerIF.h"
+#include "version.h"
 
 #ifdef DEBUG
 // Mtrace allocation tracing.
@@ -39,27 +41,15 @@ static GtkWidget *g_mi_sep1     = NULL;
 
 static gboolean  g_updatesAvailable = false; // App updates availability.
 static gchar    *g_updateLocation   = NULL;  // Update location URL.
-static gint      g_mediaOptions     = 0;     // Available media playback options
+static guint     g_mediaOptions     = 0;     // Available media playback options
+static GThread  *g_mplayerThread    = NULL;  // Media Player thread
 static InitArgs  g_mPlayerArgs;              // Media Player arguments.
 
 const gchar     *g_appName          = "LitePipeTestApp";
 
-gint tCallback(gpointer /*data*/)
-{
-    g_debug("TIMEOUT\n");
-
-    if (g_mi_play != NULL)
-    {
-        // Grey out the play option, test only.
-        gtk_widget_set_sensitive(g_mi_play,FALSE);
-    }
-
-    return 0;
-}
-
-void displayNotification(const gchar *summary,
-                         const gchar *body,
-                         NotificationClassifiction nClass)
+static void displayNotification(const gchar *summary,
+                                const gchar *body,
+                                NotificationClassifiction nClass)
 {
     NotifyNotification *notification;
     GError             *error = NULL;
@@ -90,67 +80,130 @@ void displayNotification(const gchar *summary,
     g_object_unref(G_OBJECT(notification));
 }
 
-void tray_icon_on_click(GtkStatusIcon *status_icon,
-                        gpointer       user_data)
+static void tray_icon_on_click(GtkStatusIcon *status_icon,
+                               gpointer       user_data)
 {
     g_debug("Clicked on tray icon\n");
 }
 
 // Context Menu Handlers.
-void playSelectionHandler()
+static void playSelectionHandler()
 {
-    // REMOVE: Test of the notification mechanism.
-    displayNotification("Test", "Notification", NotificationClassifiction::INFO);
+    PipeLinePlay();
 }
 
-void pauseSelectionHandler()
+static void pauseSelectionHandler()
 {
+    PipeLinePause();
 }
 
-void stopSelectionHandler()
+static void stopSelectionHandler()
 {
+    PipeLineStop();
 }
 
-void aboutSelectionHandler()
+static void aboutSelectionHandler()
 {
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file("OpenHome-48x48.png", NULL);
+
+    GtkWidget *dialog = gtk_about_dialog_new();
+
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), g_appName);
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), CURRENT_VERSION);
+    gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog),
+      "(c) OpenHome");
+    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog),
+     "An example OpenHome Media Player Application.");
+    gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(dialog),
+      "http://www.openhome.org");
+
+    gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), pixbuf);
+    g_object_unref(pixbuf);
+    pixbuf = NULL;
+
+    gtk_dialog_run(GTK_DIALOG (dialog));
+    gtk_widget_destroy(dialog);
 }
 
-void updateSelectionHandler()
+static void updateSelectionHandler()
 {
+    // TBD Update UI
+    GtkWidget *dialog;
+    dialog = gtk_message_dialog_new(NULL,
+            GTK_DIALOG_MODAL,
+            GTK_MESSAGE_INFO,
+            GTK_BUTTONS_OK,
+            "Installing Updates");
+    gtk_window_set_title(GTK_WINDOW(dialog), "Update");
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
 }
 
-void exitSelectionHandler()
+static void exitSelectionHandler()
 {
+    ExitMediaPlayer();
+
     gtk_main_quit();
 }
 
-void NetworkSelectionHandler(GtkMenuItem * /*menuitem*/, gpointer args)
+static void NetworkSelectionHandler(GtkMenuItem * /*menuitem*/, gpointer args)
 {
-#if 0
     TIpAddress subnet = GPOINTER_TO_UINT(args);
 
     // Restart the media player on the selected subnet.
     ExitMediaPlayer();
 
-    WaitForSingleObject(g_mplayerThread, INFINITE);
-    CloseHandle(g_mplayerThread);
+    // Wait on the Media Player thread to complete.
+    g_thread_join(g_mplayerThread);
 
     /* Re-Register UPnP/OhMedia devices. */
     g_mPlayerArgs.subnet = subnet;
 
-    g_mplayerThread =
-        CreateThread(NULL,
-                     0,
-                    &InitAndRunMediaPlayer,
-                     (LPVOID)&g_mPlayerArgs,
-                     0,
-                     NULL);
-#endif
+    g_mplayerThread = g_thread_new("MediaPlayerIF",
+                                   (GThreadFunc)InitAndRunMediaPlayer,
+                                   (gpointer)&g_mPlayerArgs);
+}
+
+// Keep the menu playback options in sync with current state of the
+// media player.
+static void UpdatePlaybackOptions()
+{
+    if (g_mi_play == NULL || g_mi_pause == NULL || g_mi_stop == NULL)
+    {
+        return;
+    }
+
+    if ((g_mediaOptions & MEDIAPLAYER_PLAY_OPTION) != 0)
+    {
+        gtk_widget_set_sensitive(g_mi_play,true);
+    }
+    else
+    {
+        gtk_widget_set_sensitive(g_mi_play,false);
+    }
+
+    if ((g_mediaOptions & MEDIAPLAYER_PAUSE_OPTION) != 0)
+    {
+        gtk_widget_set_sensitive(g_mi_pause,true);
+    }
+    else
+    {
+        gtk_widget_set_sensitive(g_mi_pause,false);
+    }
+
+    if ((g_mediaOptions & MEDIAPLAYER_STOP_OPTION) != 0)
+    {
+        gtk_widget_set_sensitive(g_mi_stop,true);
+    }
+    else
+    {
+        gtk_widget_set_sensitive(g_mi_stop,false);
+    }
 }
 
 // Create a sub menu listing the available network adapters and their
 // associated networks.
-void CreateNetworkAdapterSubmenu(GtkWidget *networkMenuItem)
+static void CreateNetworkAdapterSubmenu(GtkWidget *networkMenuItem)
 {
     GtkWidget                  *submenu    = gtk_menu_new();
     std::vector<SubnetRecord*> *subnetList = NULL;
@@ -190,10 +243,10 @@ void CreateNetworkAdapterSubmenu(GtkWidget *networkMenuItem)
 }
 
 // Display the context menu
-void tray_icon_on_menu(GtkStatusIcon *status_icon,
-                       guint          button,
-                       guint          activate_time,
-                       gpointer       user_data)
+static void tray_icon_on_menu(GtkStatusIcon *status_icon,
+                              guint          button,
+                              guint          activate_time,
+                              gpointer       user_data)
 {
     GtkMenu   *menu    = (GtkMenu*)gtk_menu_new();
 
@@ -244,6 +297,19 @@ void tray_icon_on_menu(GtkStatusIcon *status_icon,
     // Populate the 'Networks' submenu.
     CreateNetworkAdapterSubmenu(g_mi_networks);
 
+    // Update the playback options in the UI
+    UpdatePlaybackOptions();
+
+    // Disable the 'Update' menu item until updates become available.
+    if (g_updatesAvailable)
+    {
+        gtk_widget_set_sensitive(g_mi_update,true);
+    }
+    else
+    {
+        gtk_widget_set_sensitive(g_mi_update,false);
+    }
+
     gtk_menu_popup(menu,
                    NULL,
                    NULL,
@@ -271,16 +337,40 @@ static void create_tray_icon()
     gtk_status_icon_set_visible(tray_icon, TRUE);
 }
 
-gboolean updateUI()
+gboolean updateUI(gpointer mediaOptions)
 {
+    // The audio pipeline state has changed. Update the available
+    // menu options in line with the current state.
+    g_mediaOptions = GPOINTER_TO_UINT(mediaOptions);
+
+    // Update the playback options in the UI
+    UpdatePlaybackOptions();
+
     return false;
 }
 
-gboolean terminate (GThread *thread)
+gboolean updatesAvailable(gpointer data)
 {
-  g_thread_join (thread);
+    g_updatesAvailable = true;
 
-  return false;
+    // Alert the user to availability of an application update.
+    displayNotification("Update",
+                        "There are updates available for this application",
+                        NotificationClassifiction::INFO);
+
+    // Enable the update option in the system tray menu.
+    if (g_mi_update != NULL)
+    {
+        gtk_widget_set_sensitive(g_mi_update,true);
+    }
+
+    // Free up any previously stored location.
+    delete[] g_updateLocation;
+
+    // Note the location of the update installer.
+    g_updateLocation = (char *)data;
+
+    return false;
 }
 
 int main(int argc, char **argv)
@@ -298,15 +388,18 @@ int main(int argc, char **argv)
     // Start MediaPlayer thread.
     g_mPlayerArgs.subnet = InitArgs::NO_SUBNET;
 
-    g_thread_new("MediaPlayerIF",
-                 (GThreadFunc)InitAndRunMediaPlayer,
-                 (gpointer)&g_mPlayerArgs);
-
-    // REMOVE: Quick check to see if menu items can be grayed whilst being
-    // shown.
-    g_timeout_add(10 * 1000, tCallback, NULL);
+    g_mplayerThread = g_thread_new("MediaPlayerIF",
+                                   (GThreadFunc)InitAndRunMediaPlayer,
+                                   (gpointer)&g_mPlayerArgs);
 
     gtk_main();
+
+    // Wait on the Media Player thread to complete.
+    g_thread_join(g_mplayerThread);
+
+    // Free up resources.
+    delete[] g_updateLocation;
+    g_updateLocation = NULL;
 
     notify_uninit();
 

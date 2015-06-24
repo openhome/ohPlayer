@@ -21,10 +21,10 @@ private:
     ConfigGTKKeyStore& operator=(ConfigGTKKeyStore const& copy);
 
 public:
-    static ConfigGTKKeyStore& getInstance()
+    static ConfigGTKKeyStore *getInstance()
     {
         static ConfigGTKKeyStore instance;
-        return instance;
+        return &instance;
     }
 
 public: // from IStoreReadWrite

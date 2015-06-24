@@ -506,7 +506,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
 
             // Note the location of the update installer.
-            delete g_updateLocation;
+            delete[] g_updateLocation;
 
             g_updateLocation = (char *)lParam;
 
@@ -568,7 +568,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         case WM_DESTROY:
         {
-            delete g_updateLocation;
+            delete[] g_updateLocation;
             g_updateLocation = NULL;
 
             if (g_subnetList != NULL)

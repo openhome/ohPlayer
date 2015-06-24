@@ -3,9 +3,9 @@
 #include <OpenHome/Av/MediaPlayer.h>
 #include <OpenHome/Av/Utils/DriverSongcastSender.h>
 #include <OpenHome/Media/PipelineManager.h>
-//#include <OpenHome/Av/VolumeManager.h>
+#include <OpenHome/Av/VolumeManager.h>
 
-//#include "Volume.h"
+#include "Volume.h"
 
 namespace OpenHome {
 namespace Net {
@@ -68,12 +68,11 @@ protected:
     Semaphore                      iSemShutdown;
 private:
     Semaphore              iDisabled;
-//    Av::VolumeControl      iVolume;
+    Av::VolumeControl      iVolume;
     Media::EPipelineState  iPState;
     TBool                  iLive;
-//    ControlPointProxy     *iCpProxy;
+    ControlPointProxy     *iCpProxy;
     const Brx             &iUserAgent;
-//    HWND                   iHwnd; // Main window handle
 private: // from Media::IPipelineObserver
     void NotifyPipelineState(Media::EPipelineState aState) override;
     void NotifyTrack(Media::Track& aTrack, const Brx& aMode,

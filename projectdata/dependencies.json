@@ -2,7 +2,7 @@
     {   "name": "ohNet",
         "type": "openhome",
         "platform-specific": true,
-        "version": "1.4.1654",
+        "version": "1.4.1659",
         "archive-suffix": "-${debugmode}",
         "main-dir": "${dest}${name}-${platform}-${debugmode}",
         "configure-args": [
@@ -38,7 +38,7 @@
     {   "name": "ohNetGenerated",
         "type": "openhome",
         "platform-specific": true,
-        "version": "1.0.71",
+        "version": "1.0.73",
         "archive-filename": "${name}-${version}-${archive-platform}-Release.tar.gz"
     }
 ]

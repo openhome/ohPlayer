@@ -18,49 +18,28 @@
 #include "ExampleMediaPlayer.h"
 #if 0
 #include "AudioDriver.h"
-#include "CustomMessages.h"
-#include "MediaPlayerIF.h"
-#include "MemoryCheck.h"
+#endif
 #include "UpdateCheck.h"
-#else
-#endif
-
-#if 0
-// Media Player thread entry point.
-void InitAndRunMediaPlayer()
-{
-    int i;
-
-    for (i = 0; i < 10; i++)
-    {
-      usleep(100000); /* 0.1 s */
-      gdk_threads_add_idle((GSourceFunc)updateUI, NULL);
-    }
-
-    /* Make sure this thread is joined properly */
-    gdk_threads_add_idle((GSourceFunc)terminate, g_thread_self());
-}
-#endif
 
 using namespace OpenHome;
 using namespace OpenHome::Av;
 using namespace OpenHome::Media;
 using namespace OpenHome::Net;
 
-#if 0
 // Location of application release JSON file.
 static const TChar RELEASE_URL[] = "http://elmo/~alans/application.json";
+static const TInt  TenSeconds    = 10;
+static const TInt  FourHours     = 4 * 60 * 60;
 
 static ExampleMediaPlayer* g_emp = NULL; // Example media player instance.
-#endif
 static Library*            g_lib = NULL; // Library instance.
+static gint                g_tID = 0;
 
-#if 0
 // Timed callback to initiate application update check.
-static VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN /*TimerOrWaitFired*/)
+static gint tCallback(gpointer data)
 {
+    gint      period = GPOINTER_TO_INT(data);
     Bws<1024> urlBuf;
-    HWND hwnd = (HWND)(lpParam);
 
     if (UpdateChecker::updateAvailable(g_emp->Env(), RELEASE_URL, urlBuf))
     {
@@ -69,21 +48,34 @@ static VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN /*TimerOrWaitFired*/)
         TChar *urlString = new TChar[urlBuf.Bytes() + 1];
         if (urlString)
         {
-            CopyMemory(urlString, urlBuf.Ptr(), urlBuf.Bytes());
+            memcpy((void *)urlString, (void *)(urlBuf.Ptr()), urlBuf.Bytes());
             urlString[urlBuf.Bytes()] = '\0';
         }
 
-        PostMessage(hwnd, WM_APP_UPDATE_AVAILABLE, NULL, (LPARAM)urlString);
+        gdk_threads_add_idle((GSourceFunc)updatesAvailable,
+                             (gpointer)urlString);
     }
+
+    if (period == TenSeconds)
+    {
+        // Schedule the next timeout for a longer period.
+        g_tID = g_timeout_add_seconds(FourHours,
+                                      tCallback,
+                                      GINT_TO_POINTER(FourHours));
+
+
+        // Terminate this timeout.
+        return false;
+    }
+
+    return true;
 }
-#endif
 
 // Media Player thread entry point.
 void InitAndRunMediaPlayer(gpointer args)
 {
     // Handle supplied arguments.
     InitArgs   *iArgs   = (InitArgs *)args;
-    //HWND        hwnd   = args->hwnd;            // Main window handle.
     TIpAddress  subnet = iArgs->subnet;          // Preferred subnet.
 
     // Pipeline configuration.
@@ -98,18 +90,6 @@ void InitAndRunMediaPlayer(gpointer args)
     //AudioDriver    *driver  = NULL;
     DriverBasic    *driver  = NULL;
 
-#if 0
-    HANDLE hTimer      = NULL;
-    HANDLE hTimerQueue = NULL;
-
-    // Assign the maximum priority for this process.
-    if(!SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS))
-    {
-        Log::Print("Can't up the process priority of InitAndRunMediaPlayer "
-                   "\n");
-    }
-#endif
-
     // Create the library on the supplied subnet.
     g_lib  = ExampleMediaPlayerInit::CreateLibrary(subnet);
     if (g_lib == NULL)
@@ -117,12 +97,11 @@ void InitAndRunMediaPlayer(gpointer args)
         return;
     }
 
-#if 0
     // Get the current network adapter.
     adapter = g_lib->CurrentSubnetAdapter(cookie);
     if (adapter == NULL)
     {
-        //goto cleanup;
+        goto cleanup;
     }
 
     // Start a control point and dv stack.
@@ -133,43 +112,37 @@ void InitAndRunMediaPlayer(gpointer args)
     adapter->RemoveRef(cookie);
 
     // Create the ExampleMediaPlayer instance.
-    g_emp = new ExampleMediaPlayer(hwnd, *dvStack, Brn(aUdn), aRoom, aName,
+    g_emp = new ExampleMediaPlayer(*dvStack, Brn(aUdn), aRoom, aName,
                                    Brx::Empty()/*aUserAgent*/);
 
+#if 0
     // Add the audio driver to the pipeline.
     driver = new AudioDriver(dvStack->Env(), g_emp->Pipeline(), hwnd);
     if (driver == NULL)
     {
         goto cleanup;
     }
+#else
+    // Quick test before integrating ALSA driver.
+    driver = new Media::DriverBasic(dvStack->Env(), g_emp->Pipeline());
+#endif
 
     // Create the timer queue for update checking.
-    hTimerQueue = CreateTimerQueue();
-    if (NULL == hTimerQueue)
+
+    if (subnet != InitArgs::NO_SUBNET)
     {
-        Log::Print("CreateTimerQueue failed (%d)\n", GetLastError());
+        // If we are restarting due to a user instigated subnet change we
+        // don't want to recheck for updates so set the initial check to be
+        // the timer period.
+        g_tID = g_timeout_add_seconds(FourHours,
+                                      tCallback,
+                                      GINT_TO_POINTER(FourHours));
     }
     else
     {
-        static const DWORD TenSeconds = 10 * 1000;
-        static const DWORD FourHours  = 4 * 60 * 60 * 1000;
-
-        DWORD initialTimeout = TenSeconds;
-
-        if (subnet != InitArgs::NO_SUBNET)
-        {
-            // If we are restarting due to a user instigated subnet change we
-            // don't want to recheck for updates so set the initial check to be
-            // the timer period.
-            initialTimeout = FourHours;
-        }
-
-        if (!CreateTimerQueueTimer(&hTimer, hTimerQueue,
-                (WAITORTIMERCALLBACK)TimerRoutine, hwnd,
-                initialTimeout, FourHours, 0))
-        {
-            Log::Print("CreateTimerQueueTimer failed (%d)\n", GetLastError());
-        }
+        g_tID = g_timeout_add_seconds(TenSeconds,
+                                      tCallback,
+                                      GINT_TO_POINTER(TenSeconds));
     }
 
     /* Run the media player. (Blocking) */
@@ -178,10 +151,11 @@ void InitAndRunMediaPlayer(gpointer args)
 cleanup:
     /* Tidy up on exit. */
 
-    if (hTimerQueue != NULL)
+    if (g_tID != 0)
     {
-        // Delete all timers in the timer queue.
-        DeleteTimerQueue(hTimerQueue);
+        // Remove the update timer.
+        g_source_remove(g_tID);
+        g_tID = 0;
     }
 
     if (driver != NULL)
@@ -199,11 +173,10 @@ cleanup:
         delete g_lib;
     }
 
-    return 1;
-#endif
+    // Terminate the thread.
+    g_thread_exit(NULL);
 }
 
-#if 0
 void ExitMediaPlayer()
 {
     if (g_emp != NULL)
@@ -235,13 +208,12 @@ void PipeLineStop()
         g_emp->HaltPipeline();
     }
 }
-#endif
 
 // Create a subnet menu vector containing network adaptor and associate
 // subnet information.
 std::vector<SubnetRecord*> *GetSubnets()
 {
-//    if (g_emp != NULL)
+    if (g_emp != NULL)
     {
         // Obtain a reference to the current active network adapter.
         const TChar    *cookie  = "GetSubnets";
@@ -275,7 +247,7 @@ std::vector<SubnetRecord*> *GetSubnets()
 
             subnetEntry->menuString = new std::string(fullName);
 
-            delete fullName;
+            free(fullName);
 
             if (subnetEntry->menuString == NULL)
             {

@@ -2,5 +2,5 @@
 
 extern const gchar *g_appName;
 
-gboolean updateUI();
-gboolean terminate(GThread *thread);
+gboolean updateUI(gpointer mediaOptions);
+void updatesAvailable(gpointer data);

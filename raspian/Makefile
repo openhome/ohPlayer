@@ -18,8 +18,8 @@ TARGET       = LitePipeTestApp
 CC           = g++
 CFLAGS       = -c -Wall -std=c++11 $(GTK_CFLAGS)
 DEBUG_CFLAGS = -g -O0 -DDEBUG -fstack-protector
-LIBS         = $(GTK_LIBS) -lnotify -lpthread -lohNetCore -lohPipeline -lohNetmon -lssl -lcrypto -lohMediaPlayer -lCodecAacBase -lCodecAac -lCodecAifc -lCodecAlacBase -lCodecAlac -lCodecPcm -lCodecAiffBase -lCodecAiff -llibOgg -lCodecVorbis -lCodecAdts -lCodecFlac -lCodecWav -lSourcePlaylist -lSourceUpnpAv -lSourceSongcast -lohMediaPlayerTestUtils
-INCLUDES     = -I../dependencies/Linux-armhf/ohMediaPlayer/include -I../dependencies/Linux-armhf/ohNetmon/include -I../dependencies/Linux-armhf/openssl/include
+LIBS         = $(GTK_LIBS) -lnotify -lpthread -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lohMediaPlayer -lohMediaPlayerTestUtils -lohNetCore -lohNetmon -lssl -lcrypto -ldl -lCodecAac -lCodecAacBase -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecAdts -lCodecFlac -lCodecWav -lohPipeline
+INCLUDES     = -I../dependencies/Linux-armhf/ohMediaPlayer/include -I../dependencies/Linux-armhf/ohNetmon/include -I../dependencies/Linux-armhf/openssl/include -I../dependencies/Linux-armhf/ohNetGenerated-Linux-armhf-Release/include/ohnet/OpenHome/Net/Core
 
 REL_TARGET    = LitePipeTestApp
 DEBUG_TARGET  = LitePipeTestAppDebug

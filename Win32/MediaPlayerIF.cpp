@@ -233,7 +233,7 @@ std::vector<SubnetRecord*> *GetSubnets()
 
             subnetEntry->menuString = new std::string(fullName);
 
-            delete fullName;
+            free(fullName);
 
             if (subnetEntry->menuString == NULL)
             {

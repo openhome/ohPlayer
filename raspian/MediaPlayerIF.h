@@ -22,6 +22,10 @@ typedef struct
 } InitArgs;
 
 void InitAndRunMediaPlayer(gpointer args);
+void ExitMediaPlayer();                  // Terminate the media player thread
+void PipeLinePlay();                     // Pipeline - Play
+void PipeLinePause();                    // Pipeline - Pause
+void PipeLineStop();                     // Pipeline - Stop
 
 // Get a list of available subnets
 std::vector<SubnetRecord*> * GetSubnets();
