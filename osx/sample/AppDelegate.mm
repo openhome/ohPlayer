@@ -125,9 +125,9 @@ OpenHome::Av::Sample::SampleMediaPlayer *samplePlayer;
 
 
 - (NSURL *)applicationDocumentsDirectory {
-    // The directory the application uses to store the Core Data store file. This code uses a directory named "com.linn.litepipe.sample" in the user's Application Support directory.
+    // The directory the application uses to store the Core Data store file. This code uses a directory named "com.openhome.litepipe.sample" in the user's Application Support directory.
     NSURL *appSupportURL = [[[NSFileManager defaultManager] URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask] lastObject];
-    return [appSupportURL URLByAppendingPathComponent:@"com.linn.litepipe.sample"];
+    return [appSupportURL URLByAppendingPathComponent:@"com.openhome.litepipe.sample"];
 }
 
 - (NSManagedObjectModel *)managedObjectModel {
@@ -264,7 +264,7 @@ OpenHome::Av::Sample::SampleMediaPlayer *samplePlayer;
             return NSTerminateCancel;
         }
     }
-
+    
     return NSTerminateNow;
 }
 
