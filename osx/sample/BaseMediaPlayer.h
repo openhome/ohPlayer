@@ -59,8 +59,6 @@ namespace OpenHome {
             private:
                 static const Brn kSongcastSenderIconFileName;
                 static const TUint kTrackCount = 1200;
-                // FIXME - make at least kMaxUiTabs a parameter?
-                static const TUint kMaxUiTabs = 4;
                 static const TUint kUiSendQueueSize = 32;
             public:
                 BaseMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName,
@@ -79,9 +77,6 @@ namespace OpenHome {
                 void WriteResource(const Brx& aUriTail, TIpAddress aInterface, std::vector<char*>& aLanguageList, Net::IResourceWriter& aResourceWriter) override;
 
             private:
-                static TUint Hash(const Brx& aBuf);
-                static void GenerateMacAddr(Environment& aEnv, TUint aSeed, Bwx& aMacAddr);
-                void MacAddrFromUdn(Environment& aEnv, Bwx& aMacAddr);
                 void PresentationUrlChanged(const Brx& aUrl);
                 TBool TryDisable(Net::DvDevice& aDevice);
                 void Disabled();
@@ -96,50 +91,15 @@ namespace OpenHome {
             private:
                 Semaphore iDisabled;
                 Av::VolumeControl iVolume;
-                const Brx& iTuneInPartnerId;
-                const Brx& iTidalId;
-                const Brx& iQobuzIdSecret;
-                const Brx& iUserAgent;
                 ObservableBrx iObservableFriendlyName;
             };
             
-            class BaseMediaPlayerOptions
-            {
-            public:
-                BaseMediaPlayerOptions();
-                void AddOption(TestFramework::Option* aOption);
-                TBool Parse(int aArgc, char* aArgv[]);
-                TestFramework::OptionString& Room();
-                TestFramework::OptionString& Name();
-                TestFramework::OptionString& Udn();
-                TestFramework::OptionUint& Channel();
-                TestFramework::OptionUint& Adapter();
-                TestFramework::OptionBool& Loopback();
-                TestFramework::OptionString& TuneIn();
-                TestFramework::OptionString& Tidal();
-                TestFramework::OptionString& Qobuz();
-                TestFramework::OptionString& UserAgent();
-            private:
-                TestFramework::OptionParser iParser;
-                TestFramework::OptionString iOptionRoom;
-                TestFramework::OptionString iOptionName;
-                TestFramework::OptionString iOptionUdn;
-                TestFramework::OptionUint iOptionChannel;
-                TestFramework::OptionUint iOptionAdapter;
-                TestFramework::OptionBool iOptionLoopback;
-                TestFramework::OptionString iOptionTuneIn;
-                TestFramework::OptionString iOptionTidal;
-                TestFramework::OptionString iOptionQobuz;
-                TestFramework::OptionString iOptionUserAgent;
-            };
             
             // Not very nice, but only to allow reusable test functions.
             class BaseMediaPlayerInit
             {
             public:
                 static OpenHome::Net::Library* CreateLibrary(TBool aLoopback, TUint aAdapter);  // creates lib; client must start appropriate stacks
-                static void SeedRandomNumberGenerator(Environment& aEnv, const Brx& aRoom, TIpAddress aAddress, Net::DviServerUpnp& aServer);    // seed from room + server port
-                static void AppendUniqueId(Environment& aEnv, const Brx& aUserUdn, const Brx& aDefaultUdn, Bwh& aOutput);
             };
             
         } // namespace Test

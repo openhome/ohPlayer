@@ -30,10 +30,6 @@ BaseMediaPlayer::BaseMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const 
 const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, const Brx& aUserAgent)
 : iSemShutdown("TMPS", 0)
 , iDisabled("test", 0)
-, iTuneInPartnerId(aTuneInPartnerId)
-, iTidalId(aTidalId)
-, iQobuzIdSecret(aQobuzIdSecret)
-, iUserAgent(aUserAgent)
 , iObservableFriendlyName(new Bws<RaopDevice::kMaxNameBytes>())
 {
     Bws<256> friendlyName;
@@ -182,45 +178,13 @@ void BaseMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSupported
     iMediaPlayer->Add(Codec::CodecFactory::NewVorbis());
     iMediaPlayer->Add(Codec::CodecFactory::NewWav());
 
-    // Add protocol modules (Radio source can require several stacked Http instances)
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHls(aEnv, iUserAgent));
-
-    // only add Tidal if we have a token to use with login
-    if (iTidalId.Bytes() > 0) {
-    iMediaPlayer->Add(ProtocolFactory::NewTidal(aEnv, iTidalId, iMediaPlayer->CredentialsManager(), iMediaPlayer->ConfigInitialiser()));
-    }
-    // ...likewise, only add Qobuz if we have ids for login
-    if (iQobuzIdSecret.Bytes() > 0) {
-    Parser p(iQobuzIdSecret);
-    Brn appId(p.Next(':'));
-    Brn appSecret(p.Remaining());
-    Log::Print("Qobuz: appId = ");
-    Log::Print(appId);
-    Log::Print(", appSecret = ");
-    Log::Print(appSecret);
-    Log::Print("\n");
-    iMediaPlayer->Add(ProtocolFactory::NewQobuz(aEnv, appId, appSecret, iMediaPlayer->CredentialsManager(), iMediaPlayer->ConfigInitialiser()));
-    }
 
     // Add sources
     iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer, aSupportedProtocols));
-    if (iTuneInPartnerId.Bytes() == 0) {
-    iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer, NULL, aSupportedProtocols));
-    }
-    else {
-    iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer, NULL, aSupportedProtocols, iTuneInPartnerId));
-    }
     iMediaPlayer->Add(SourceFactory::NewUpnpAv(*iMediaPlayer, *iDeviceUpnpAv, aSupportedProtocols));
 
     Bwh hostName(iDevice->Udn().Bytes()+1); // space for null terminator
     hostName.Replace(iDevice->Udn());
-    Bws<12> macAddr;
-    MacAddrFromUdn(aEnv, macAddr);
     const TChar* friendlyName;
     iDevice->GetAttribute("Upnp.FriendlyName", &friendlyName);
     iObservableFriendlyName.Replace(Brn(friendlyName));
@@ -240,42 +204,6 @@ void BaseMediaPlayer::WriteResource(const Brx& aUriTail, TIpAddress /*aInterface
     }
 }
 
-TUint BaseMediaPlayer::Hash(const Brx& aBuf)
-{
-    TUint hash = 0;
-    for (TUint i=0; i<aBuf.Bytes(); i++) {
-    hash += aBuf[i];
-    }
-    return hash;
-}
-
-void BaseMediaPlayer::GenerateMacAddr(Environment& aEnv, TUint aSeed, Bwx& aMacAddr)
-{
-    // Generate a 48-bit, 12-byte hex string.
-    // Method:
-    // - Generate two random numbers in the range 0 - 2^24
-    // - Get the hex representation of these numbers
-    // - Combine the two hex representations into the output buffer, aMacAddr
-    const TUint maxLimit = 0x01000000;
-    Bws<8> macBuf1;
-    Bws<8> macBuf2;
-
-    aEnv.SetRandomSeed(aSeed);
-    TUint mac1 = aEnv.Random(maxLimit, 0);
-    TUint mac2 = aEnv.Random(maxLimit, 0);
-
-    Ascii::AppendHex(macBuf1, mac1);
-    Ascii::AppendHex(macBuf2, mac2);
-
-    aMacAddr.Append(macBuf1.Split(2));
-    aMacAddr.Append(macBuf2.Split(2));
-}
-
-void BaseMediaPlayer::MacAddrFromUdn(Environment& aEnv, Bwx& aMacAddr)
-{
-    TUint hash = Hash(iDevice->Udn());
-    GenerateMacAddr(aEnv, hash, aMacAddr);
-}
 
 void BaseMediaPlayer::PresentationUrlChanged(const Brx& aUrl)
 {
@@ -295,93 +223,6 @@ TBool BaseMediaPlayer::TryDisable(DvDevice& aDevice)
 void BaseMediaPlayer::Disabled()
 {
     iDisabled.Signal();
-}
-
-
-// BaseMediaPlayerOptions
-
-BaseMediaPlayerOptions::BaseMediaPlayerOptions()
-: iOptionRoom("-r", "--room", Brn("OsxRoom"), "room the Product service will report")
-, iOptionName("-n", "--name", Brn("SoftPlayer"), "Product name")
-, iOptionUdn("-u", "--udn", Brn(""), "Udn (optional - one will be generated if this is left blank)")
-, iOptionChannel("-c", "--channel", 0, "[0..65535] sender channel")
-, iOptionAdapter("-a", "--adapter", 0, "[adapter] index of network adapter to use")
-, iOptionLoopback("-l", "--loopback", "Use loopback adapter")
-, iOptionTuneIn("-t", "--tunein", Brn(""), "TuneIn partner id")
-, iOptionTidal("", "--tidal", Brn(""), "Tidal token")
-, iOptionQobuz("", "--qobuz", Brn(""), "app_id:app_secret")
-, iOptionUserAgent("", "--useragent", Brn(""), "User Agent (for HTTP requests)")
-{
-    iParser.AddOption(&iOptionRoom);
-    iParser.AddOption(&iOptionName);
-    iParser.AddOption(&iOptionUdn);
-    iParser.AddOption(&iOptionChannel);
-    iParser.AddOption(&iOptionAdapter);
-    iParser.AddOption(&iOptionLoopback);
-    iParser.AddOption(&iOptionTuneIn);
-    iParser.AddOption(&iOptionTidal);
-    iParser.AddOption(&iOptionQobuz);
-    iParser.AddOption(&iOptionUserAgent);
-}
-
-void BaseMediaPlayerOptions::AddOption(Option* aOption)
-{
-    iParser.AddOption(aOption);
-}
-
-TBool BaseMediaPlayerOptions::Parse(int aArgc, char* aArgv[])
-{
-    return iParser.Parse(aArgc, aArgv);
-}
-
-OptionString& BaseMediaPlayerOptions::Room()
-{
-    return iOptionRoom;
-}
-
-OptionString& BaseMediaPlayerOptions::Name()
-{
-    return iOptionName;
-}
-
-OptionString& BaseMediaPlayerOptions::Udn()
-{
-    return iOptionUdn;
-}
-
-OptionUint& BaseMediaPlayerOptions::Channel()
-{
-    return iOptionChannel;
-}
-
-OptionUint& BaseMediaPlayerOptions::Adapter()
-{
-    return iOptionAdapter;
-}
-
-OptionBool& BaseMediaPlayerOptions::Loopback()
-{
-    return iOptionLoopback;
-}
-
-OptionString& BaseMediaPlayerOptions::TuneIn()
-{
-    return iOptionTuneIn;
-}
-
-OptionString& BaseMediaPlayerOptions::Tidal()
-{
-    return iOptionTidal;
-}
-
-OptionString& BaseMediaPlayerOptions::Qobuz()
-{
-    return iOptionQobuz;
-}
-
-OptionString& BaseMediaPlayerOptions::UserAgent()
-{
-    return iOptionUserAgent;
 }
 
 
@@ -417,37 +258,4 @@ OpenHome::Net::Library* BaseMediaPlayerInit::CreateLibrary(TBool aLoopback, TUin
     return lib;
 }
 
-void BaseMediaPlayerInit::SeedRandomNumberGenerator(Environment& aEnv, const Brx& aRoom, TIpAddress aAddress, DviServerUpnp& aServer)
-{
-    if (aRoom == Brx::Empty()) {
-        Log::Print("ERROR: room must be set\n");
-        ASSERTS();
-    }
-    // Re-seed random number generator with hash of (unique) room name + UPnP
-    // device server port to avoid UDN clashes.
-    TUint port = aServer.Port(aAddress);
-    Log::Print("UPnP DV server using port: %u\n", port);
-    TUint hash = 0;
-    for (TUint i=0; i<aRoom.Bytes(); i++) {
-        hash += aRoom[i];
-    }
-    hash += port;
-    Log::Print("Seeding random number generator with: %u\n", hash);
-    aEnv.SetRandomSeed(hash);
-}
 
-void BaseMediaPlayerInit::AppendUniqueId(Environment& aEnv, const Brx& aUserUdn, const Brx& aDefaultUdn, Bwh& aOutput)
-{
-    if (aUserUdn.Bytes() == 0) {
-        if (aOutput.MaxBytes() < aDefaultUdn.Bytes()) {
-            aOutput.Grow(aDefaultUdn.Bytes());
-        }
-        aOutput.Replace(aDefaultUdn);
-    }
-    else {
-        if (aUserUdn.Bytes() > aOutput.MaxBytes()) {
-            aOutput.Grow(aUserUdn.Bytes());
-        }
-        aOutput.Replace(aUserUdn);
-    }
-}
