@@ -1,6 +1,6 @@
 //
-//  BaseMediaPlayer.h
-//  LitePipe Base media player class
+//  ExampleMediaPlayer.h
+//  LitePipe example media player class
 //
 //  Copyright (c) 2015 Linn Products Limited. All rights reserved.
 //
@@ -54,18 +54,16 @@ namespace OpenHome {
         class RamStore;
         namespace Sample {
             
-            class BaseMediaPlayer : private Net::IResourceManager
+            class ExampleMediaPlayer : private Net::IResourceManager
             {
             private:
                 static const Brn kSongcastSenderIconFileName;
-                static const TUint kTrackCount = 1200;
-                static const TUint kUiSendQueueSize = 32;
             public:
-                BaseMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName,
+                ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName,
                                 const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, const Brx& aUserAgent);
-                virtual ~BaseMediaPlayer();
+                virtual ~ExampleMediaPlayer();
                 void AddAttribute(const TChar* aAttribute); // FIXME - only required by Songcasting driver
-                virtual void Run();
+                virtual void RunWithSemaphore(Net::CpStack& aCpStack);
                 Media::PipelineManager& Pipeline();
                 Net::DvDeviceStandard* Device();
                 VolumeControl& VolumeControl() {return iVolume;}
@@ -96,7 +94,7 @@ namespace OpenHome {
             
             
             // Not very nice, but only to allow reusable test functions.
-            class BaseMediaPlayerInit
+            class ExampleMediaPlayerInit
             {
             public:
                 static OpenHome::Net::Library* CreateLibrary(TBool aLoopback, TUint aAdapter);  // creates lib; client must start appropriate stacks

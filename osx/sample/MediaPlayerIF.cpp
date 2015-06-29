@@ -1,11 +1,11 @@
 //
-//  SampleMediaPlayer.cpp
+//  MediaPlayerIF.cpp
 //  LitePipe Sample Mediaplayer
 //
 //  Copyright (c) 2015 Linn Products Limited. All rights reserved.
 //
 
-#include "SampleMediaPlayer.h"
+#include "MediaPlayerIF.h"
 
 using namespace OpenHome;
 using namespace OpenHome::Av;
@@ -14,13 +14,13 @@ using namespace OpenHome::Media;
 using namespace OpenHome::Net;
 
 
-SampleMediaPlayer::SampleMediaPlayer()
+MediaPlayerIF::MediaPlayerIF()
 {
     // set up our media player
     setup();
 }
 
-SampleMediaPlayer::~SampleMediaPlayer()
+MediaPlayerIF::~MediaPlayerIF()
 {
     // delete the proxies if they haven't been already
     if (_playlistProxy != NULL)
@@ -30,66 +30,57 @@ SampleMediaPlayer::~SampleMediaPlayer()
     }
 }
 
-void SampleMediaPlayer::initialiseProxies()
+void MediaPlayerIF::initialiseProxies()
 {
     // create proxies for the Playlist service on our player device
     _playlistProxy = new CpProxyAvOpenhomeOrgPlaylist1(*cpPlayerPlaylist);
     
     // create callbacks for playlist notifications we're interested in.
-    funcGenericInitialEvent = MakeFunctor(*this, &SampleMediaPlayer::ohNetGenericInitialEvent);
+    funcGenericInitialEvent = MakeFunctor(*this, &MediaPlayerIF::ohNetGenericInitialEvent);
     _playlistProxy->SetPropertyInitialEvent(funcGenericInitialEvent);
-    funcIdChanged = MakeFunctor(*this, &SampleMediaPlayer::ohNetPlaylistIdChangedEvent);
+    funcIdChanged = MakeFunctor(*this, &MediaPlayerIF::ohNetPlaylistIdChangedEvent);
     _playlistProxy->SetPropertyIdChanged(funcIdChanged);
     
     // subscribe to the playlist service
     _playlistProxy->Subscribe();
 }
 
-void SampleMediaPlayer::ohNetGenericInitialEvent()
+void MediaPlayerIF::ohNetGenericInitialEvent()
 {
 }
 
-void SampleMediaPlayer::ohNetPlaylistIdChangedEvent()
+void MediaPlayerIF::ohNetPlaylistIdChangedEvent()
 {
 }
 
-void SampleMediaPlayer::playlistStop()
+void MediaPlayerIF::playlistStop()
 {
     _playlistProxy->SyncStop();
 }
 
-void SampleMediaPlayer::playlistPlay()
+void MediaPlayerIF::playlistPlay()
 {
     _playlistProxy->SyncPlay();
 }
 
-void SampleMediaPlayer::playlistPause()
+void MediaPlayerIF::playlistPause()
 {
     _playlistProxy->SyncPause();
 }
 
-TBool SampleMediaPlayer::setup ()
+TBool MediaPlayerIF::setup ()
 {
-    // Parse options.
-    options.Parse(0, nil);
-    
     // Create lib.
-    lib = BaseMediaPlayerInit::CreateLibrary(options.Loopback().Value(), options.Adapter().Value());
-    cookie = "BaseMediaPlayerMain";
+    lib = ExampleMediaPlayerInit::CreateLibrary(options.Loopback().Value(), options.Adapter().Value());
+    cookie = "ExampleMediaPlayer";
     adapter = lib->CurrentSubnetAdapter(cookie);
     lib->StartCombined(adapter->Subnet(), cpStack, dvStack);
     
-    // Seed random number generator.
-    BaseMediaPlayerInit::SeedRandomNumberGenerator(dvStack->Env(), options.Room().Value(), adapter->Address(), dvStack->ServerUpnp());
     adapter->RemoveRef(cookie);
-    
-    // Set/construct UDN.
-    Bwh udn;
-    BaseMediaPlayerInit::AppendUniqueId(dvStack->Env(), options.Udn().Value(), Brn("OsxMediaPlayer"), udn);
     
     // Create MediaPlayer.
     driver = nil;
-    mp = new BaseMediaPlayer(*dvStack, udn, options.Room().CString(), options.Name().CString(),
+    mp = new ExampleMediaPlayer(*dvStack, udn, options.Room().CString(), options.Name().CString(),
                              options.TuneIn().Value(), options.Tidal().Value(), options.Qobuz().Value(),
                              options.UserAgent().Value());
     
@@ -121,7 +112,7 @@ TBool SampleMediaPlayer::setup ()
 }
 
 
-void SampleMediaPlayer::shutdown() {
+void MediaPlayerIF::shutdown() {
     // we're shutting down so stop the current playlist if required
     playlistStop();
     
@@ -138,7 +129,7 @@ void SampleMediaPlayer::shutdown() {
     
 }
 
-TBool SampleMediaPlayer::play() {
+TBool MediaPlayerIF::play() {
     if (canPlay())
     {
         playlistPlay();
@@ -147,7 +138,7 @@ TBool SampleMediaPlayer::play() {
     return false;
 }
 
-TBool SampleMediaPlayer::pause() {
+TBool MediaPlayerIF::pause() {
     if (canPause())
     {
         playlistPause();
@@ -156,7 +147,7 @@ TBool SampleMediaPlayer::pause() {
     return false;
 }
 
-TBool SampleMediaPlayer::stop() {
+TBool MediaPlayerIF::stop() {
     if (canStop())
     {
         playlistStop();
@@ -165,39 +156,39 @@ TBool SampleMediaPlayer::stop() {
     return false;
 }
 
-TBool SampleMediaPlayer::canPlay() {
+TBool MediaPlayerIF::canPlay() {
     return (iState == EPipelinePaused || iState == EPipelineStopped);
 }
 
-TBool SampleMediaPlayer::canPause() {
+TBool MediaPlayerIF::canPause() {
     return (!iLive && iState == EPipelinePlaying);
 }
 
-TBool SampleMediaPlayer::canStop() {
+TBool MediaPlayerIF::canStop() {
     return (iState == EPipelinePlaying || iState == EPipelinePaused);
 }
 
 // Pipeline Observer callbacks.
-void SampleMediaPlayer::NotifyPipelineState(Media::EPipelineState aState)
+void MediaPlayerIF::NotifyPipelineState(Media::EPipelineState aState)
 {
     iState = aState;
     
     //Log::Print("Pipeline State: %d\n", aState);
 }
 
-void SampleMediaPlayer::NotifyTrack(Media::Track& /*aTrack*/, const Brx& /*aMode*/, TBool /*aStartOfStream*/)
+void MediaPlayerIF::NotifyTrack(Media::Track& /*aTrack*/, const Brx& /*aMode*/, TBool /*aStartOfStream*/)
 {
 }
 
-void SampleMediaPlayer::NotifyMetaText(const Brx& /*aText*/)
+void MediaPlayerIF::NotifyMetaText(const Brx& /*aText*/)
 {
 }
 
-void SampleMediaPlayer::NotifyTime(TUint /*aSeconds*/, TUint /*aTrackDurationSeconds*/)
+void MediaPlayerIF::NotifyTime(TUint /*aSeconds*/, TUint /*aTrackDurationSeconds*/)
 {
 }
 
-void SampleMediaPlayer::NotifyStreamInfo(const Media::DecodedStreamInfo& aStreamInfo)
+void MediaPlayerIF::NotifyStreamInfo(const Media::DecodedStreamInfo& aStreamInfo)
 {
     iLive = aStreamInfo.Live();
 }

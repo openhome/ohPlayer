@@ -13,7 +13,7 @@
 		EB40D92C1A9B23A20043722C /* sample.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = EB40D92A1A9B23A20043722C /* sample.xcdatamodeld */; };
 		EB40D92E1A9B23A20043722C /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EB40D92D1A9B23A20043722C /* Images.xcassets */; };
 		EB40D9311A9B23A20043722C /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EB40D92F1A9B23A20043722C /* Main.storyboard */; };
-		EB463CAD1ACA03FE002AF5B2 /* BaseMediaPlayer.h in Resources */ = {isa = PBXBuildFile; fileRef = EB463CAC1ACA03FE002AF5B2 /* BaseMediaPlayer.h */; };
+		EB463CAD1ACA03FE002AF5B2 /* ExampleMediaPlayer.h in Resources */ = {isa = PBXBuildFile; fileRef = EB463CAC1ACA03FE002AF5B2 /* ExampleMediaPlayer.h */; };
 		EB463CB21ACAD87D002AF5B2 /* RamStore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB463CB01ACAD87D002AF5B2 /* RamStore.cpp */; };
 		EB463CB51ACAE083002AF5B2 /* DriverOsx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB463CB31ACAE083002AF5B2 /* DriverOsx.cpp */; };
 		EB650A281B31B64300205BAC /* libohNetDevices.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A211B31B64300205BAC /* libohNetDevices.a */; };
@@ -49,11 +49,11 @@
 		EB650A651B32A24400205BAC /* libohNetGeneratedDevices.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A631B32A24400205BAC /* libohNetGeneratedDevices.a */; };
 		EB650A661B32A24400205BAC /* libohNetGeneratedProxies.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A641B32A24400205BAC /* libohNetGeneratedProxies.a */; };
 		EB698ADE1ADE517500B47100 /* OsxAudio.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB698ADC1ADE517500B47100 /* OsxAudio.cpp */; };
-		EB796A521AD2A7A200684025 /* BaseMediaPlayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB796A511AD2A7A200684025 /* BaseMediaPlayer.cpp */; };
+		EB796A521AD2A7A200684025 /* ExampleMediaPlayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB796A511AD2A7A200684025 /* ExampleMediaPlayer.cpp */; };
 		EB796A5A1AD2B2C700684025 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EB796A591AD2B2C700684025 /* SystemConfiguration.framework */; };
 		EB796A5D1AD2C14800684025 /* ConfigRamStore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB796A5B1AD2C14800684025 /* ConfigRamStore.cpp */; };
 		EB796A6A1AD5BA1C00684025 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EB796A691AD5BA1C00684025 /* AudioToolbox.framework */; };
-		EBA0E8EF1AC5D8AF00903A7F /* SampleMediaPlayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EBA0E8EE1AC5D8AF00903A7F /* SampleMediaPlayer.cpp */; };
+		EBA0E8EF1AC5D8AF00903A7F /* MediaPlayerIF.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EBA0E8EE1AC5D8AF00903A7F /* MediaPlayerIF.cpp */; };
 		EBD2C6781B30101900B39E08 /* Volume.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EBD2C6761B30101900B39E08 /* Volume.cpp */; };
 /* End PBXBuildFile section */
 
@@ -69,7 +69,7 @@
 		EB40D9301A9B23A20043722C /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		EB40D93B1A9B23A20043722C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		EB40D93C1A9B23A20043722C /* sampleTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = sampleTests.m; sourceTree = "<group>"; };
-		EB463CAC1ACA03FE002AF5B2 /* BaseMediaPlayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BaseMediaPlayer.h; sourceTree = "<group>"; };
+		EB463CAC1ACA03FE002AF5B2 /* ExampleMediaPlayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ExampleMediaPlayer.h; sourceTree = "<group>"; };
 		EB463CB01ACAD87D002AF5B2 /* RamStore.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RamStore.cpp; sourceTree = "<group>"; };
 		EB463CB11ACAD87D002AF5B2 /* RamStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RamStore.h; sourceTree = "<group>"; };
 		EB463CB31ACAE083002AF5B2 /* DriverOsx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DriverOsx.cpp; sourceTree = "<group>"; };
@@ -110,14 +110,14 @@
 		EB650A641B32A24400205BAC /* libohNetGeneratedProxies.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libohNetGeneratedProxies.a; path = "../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Release/lib/libohNetGeneratedProxies.a"; sourceTree = "<group>"; };
 		EB698ADC1ADE517500B47100 /* OsxAudio.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OsxAudio.cpp; sourceTree = "<group>"; };
 		EB698ADD1ADE517500B47100 /* OsxAudio.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OsxAudio.h; sourceTree = "<group>"; };
-		EB796A511AD2A7A200684025 /* BaseMediaPlayer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BaseMediaPlayer.cpp; sourceTree = "<group>"; };
+		EB796A511AD2A7A200684025 /* ExampleMediaPlayer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ExampleMediaPlayer.cpp; sourceTree = "<group>"; };
 		EB796A591AD2B2C700684025 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		EB796A5B1AD2C14800684025 /* ConfigRamStore.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ConfigRamStore.cpp; sourceTree = "<group>"; };
 		EB796A5C1AD2C14800684025 /* ConfigRamStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ConfigRamStore.h; sourceTree = "<group>"; };
 		EB796A681AD5744F00684025 /* PcmHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PcmHandler.h; sourceTree = "<group>"; };
 		EB796A691AD5BA1C00684025 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
-		EBA0E8EE1AC5D8AF00903A7F /* SampleMediaPlayer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SampleMediaPlayer.cpp; sourceTree = "<group>"; };
-		EBA0E8F01AC5D99800903A7F /* SampleMediaPlayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SampleMediaPlayer.h; sourceTree = "<group>"; };
+		EBA0E8EE1AC5D8AF00903A7F /* MediaPlayerIF.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MediaPlayerIF.cpp; sourceTree = "<group>"; };
+		EBA0E8F01AC5D99800903A7F /* MediaPlayerIF.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MediaPlayerIF.h; sourceTree = "<group>"; };
 		EBD2C6761B30101900B39E08 /* Volume.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Volume.cpp; sourceTree = "<group>"; };
 		EBD2C6771B30101900B39E08 /* Volume.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Volume.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -197,17 +197,17 @@
 				EB3670571ADEA86B00AC684B /* PcmHandler.cpp */,
 				EB796A5B1AD2C14800684025 /* ConfigRamStore.cpp */,
 				EB796A5C1AD2C14800684025 /* ConfigRamStore.h */,
-				EB796A511AD2A7A200684025 /* BaseMediaPlayer.cpp */,
+				EB796A511AD2A7A200684025 /* ExampleMediaPlayer.cpp */,
 				EB463CB31ACAE083002AF5B2 /* DriverOsx.cpp */,
 				EB463CB41ACAE083002AF5B2 /* DriverOsx.h */,
 				EB796A681AD5744F00684025 /* PcmHandler.h */,
 				EB463CB01ACAD87D002AF5B2 /* RamStore.cpp */,
 				EB463CB11ACAD87D002AF5B2 /* RamStore.h */,
 				EB40D9221A9B23A20043722C /* AppDelegate.h */,
-				EBA0E8F01AC5D99800903A7F /* SampleMediaPlayer.h */,
-				EB463CAC1ACA03FE002AF5B2 /* BaseMediaPlayer.h */,
+				EBA0E8F01AC5D99800903A7F /* MediaPlayerIF.h */,
+				EB463CAC1ACA03FE002AF5B2 /* ExampleMediaPlayer.h */,
 				EB40D9231A9B23A20043722C /* AppDelegate.mm */,
-				EBA0E8EE1AC5D8AF00903A7F /* SampleMediaPlayer.cpp */,
+				EBA0E8EE1AC5D8AF00903A7F /* MediaPlayerIF.cpp */,
 				EB40D92D1A9B23A20043722C /* Images.xcassets */,
 				EB40D92F1A9B23A20043722C /* Main.storyboard */,
 				EB40D92A1A9B23A20043722C /* sample.xcdatamodeld */,
@@ -340,7 +340,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EB463CAD1ACA03FE002AF5B2 /* BaseMediaPlayer.h in Resources */,
+				EB463CAD1ACA03FE002AF5B2 /* ExampleMediaPlayer.h in Resources */,
 				EB40D92E1A9B23A20043722C /* Images.xcassets in Resources */,
 				EB40D9311A9B23A20043722C /* Main.storyboard in Resources */,
 			);
@@ -357,13 +357,13 @@
 				EB463CB21ACAD87D002AF5B2 /* RamStore.cpp in Sources */,
 				EBD2C6781B30101900B39E08 /* Volume.cpp in Sources */,
 				EB3670581ADEA86B00AC684B /* PcmHandler.cpp in Sources */,
-				EB796A521AD2A7A200684025 /* BaseMediaPlayer.cpp in Sources */,
+				EB796A521AD2A7A200684025 /* ExampleMediaPlayer.cpp in Sources */,
 				EB40D92C1A9B23A20043722C /* sample.xcdatamodeld in Sources */,
 				EB698ADE1ADE517500B47100 /* OsxAudio.cpp in Sources */,
 				EB40D9261A9B23A20043722C /* main.m in Sources */,
 				EB40D9241A9B23A20043722C /* AppDelegate.mm in Sources */,
 				EB796A5D1AD2C14800684025 /* ConfigRamStore.cpp in Sources */,
-				EBA0E8EF1AC5D8AF00903A7F /* SampleMediaPlayer.cpp in Sources */,
+				EBA0E8EF1AC5D8AF00903A7F /* MediaPlayerIF.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

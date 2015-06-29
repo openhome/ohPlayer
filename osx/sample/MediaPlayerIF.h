@@ -18,11 +18,11 @@ namespace OpenHome {
 namespace Av {
 namespace Sample {
 
-class SampleMediaPlayer : private Media::IPipelineObserver
+class MediaPlayerIF : private Media::IPipelineObserver
 {
 public:
-    SampleMediaPlayer();
-    ~SampleMediaPlayer();
+    MediaPlayerIF();
+    ~MediaPlayerIF();
 
     TBool setup();
     void shutdown();
@@ -42,7 +42,7 @@ public:
     TBool canPlay();
     TBool canPause();
     TBool canStop();
-
+    
 private: // from Media::IPipelineObserver
     void NotifyPipelineState(Media::EPipelineState aState) override;
     void NotifyTrack(Media::Track& aTrack, const Brx& aMode, TBool aStartOfStream) override;

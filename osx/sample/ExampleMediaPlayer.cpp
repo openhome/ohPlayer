@@ -1,4 +1,4 @@
-#include "BaseMediaPlayer.h"
+#include "ExampleMediaPlayer.h"
 
 #include <OpenHome/Av/UpnpAv/UpnpAv.h>
 #include <OpenHome/Media/PipelineManager.h>
@@ -23,10 +23,10 @@ using namespace OpenHome::Net;
 using namespace OpenHome::TestFramework;
 using namespace OpenHome::Web;
 
-const Brn BaseMediaPlayer::kSongcastSenderIconFileName("SongcastSenderIcon");
+const Brn ExampleMediaPlayer::kSongcastSenderIconFileName("SongcastSenderIcon");
 
 
-BaseMediaPlayer::BaseMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName,
+ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName,
 const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, const Brx& aUserAgent)
 : iSemShutdown("TMPS", 0)
 , iDisabled("test", 0)
@@ -44,7 +44,7 @@ const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, con
     iDevice->SetAttribute("Upnp.Version", "1");
     iDevice->SetAttribute("Upnp.FriendlyName", friendlyName.PtrZ());
     iDevice->SetAttribute("Upnp.Manufacturer", "OpenHome");
-    iDevice->SetAttribute("Upnp.ModelName", "Avarice");
+    iDevice->SetAttribute("Upnp.ModelName", "ExampleMediaPlayer");
 
     // create separate UPnP device for standard MediaRenderer
     Bws<256> buf(aUdn);
@@ -65,7 +65,7 @@ const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, con
     friendlyName.Append(":MediaRenderer");
     iDeviceUpnpAv->SetAttribute("Upnp.FriendlyName", rendererName.PtrZ());
     iDeviceUpnpAv->SetAttribute("Upnp.Manufacturer", "OpenHome");
-    iDeviceUpnpAv->SetAttribute("Upnp.ModelName", "BaseMediaPlayer");
+    iDeviceUpnpAv->SetAttribute("Upnp.ModelName", "ExampleMediaPlayer");
 
     // create read/write store.  This creates a number of static (constant) entries automatically
     // FIXME - to be removed; this only exists to populate static data
@@ -103,7 +103,7 @@ const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, con
     
 }
 
-BaseMediaPlayer::~BaseMediaPlayer()
+ExampleMediaPlayer::~ExampleMediaPlayer()
 {
     ASSERT(!iDevice->Enabled());
     delete iMediaPlayer;
@@ -113,12 +113,12 @@ BaseMediaPlayer::~BaseMediaPlayer()
     delete iConfigRamStore;
 }
 
-void BaseMediaPlayer::AddAttribute(const TChar* aAttribute)
+void ExampleMediaPlayer::AddAttribute(const TChar* aAttribute)
 {
     iMediaPlayer->AddAttribute(aAttribute);
 }
 
-void BaseMediaPlayer::Run()
+void ExampleMediaPlayer::RunWithSemaphore(Net::CpStack& aCpStack)
 {
     // Register all of our supported plugin formats
     RegisterPlugins(iMediaPlayer->Env());
@@ -132,17 +132,17 @@ void BaseMediaPlayer::Run()
 
 }
 
-PipelineManager& BaseMediaPlayer::Pipeline()
+PipelineManager& ExampleMediaPlayer::Pipeline()
 {
     return iMediaPlayer->Pipeline();
 }
 
-DvDeviceStandard* BaseMediaPlayer::Device()
+DvDeviceStandard* ExampleMediaPlayer::Device()
 {
     return iDevice;
 }
 
-void BaseMediaPlayer::RegisterPlugins(Environment& aEnv)
+void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 {
     const Brn kSupportedProtocols(
     "http-get:*:audio/x-flac:*,"    // Flac
@@ -165,7 +165,7 @@ void BaseMediaPlayer::RegisterPlugins(Environment& aEnv)
     DoRegisterPlugins(aEnv, kSupportedProtocols);
 }
 
-void BaseMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSupportedProtocols)
+void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSupportedProtocols)
 {
     // Add codecs
     iMediaPlayer->Add(Codec::CodecFactory::NewAac());
@@ -195,7 +195,7 @@ void BaseMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSupported
 
 
 
-void BaseMediaPlayer::WriteResource(const Brx& aUriTail, TIpAddress /*aInterface*/, std::vector<char*>& /*aLanguageList*/, IResourceWriter& aResourceWriter)
+void ExampleMediaPlayer::WriteResource(const Brx& aUriTail, TIpAddress /*aInterface*/, std::vector<char*>& /*aLanguageList*/, IResourceWriter& aResourceWriter)
 {
     if (aUriTail == kSongcastSenderIconFileName) {
     aResourceWriter.WriteResourceBegin(sizeof(kIconDriverSongcastSender), kIconDriverSongcastSenderMimeType);
@@ -205,30 +205,30 @@ void BaseMediaPlayer::WriteResource(const Brx& aUriTail, TIpAddress /*aInterface
 }
 
 
-void BaseMediaPlayer::PresentationUrlChanged(const Brx& aUrl)
+void ExampleMediaPlayer::PresentationUrlChanged(const Brx& aUrl)
 {
     Bws<Uri::kMaxUriBytes+1> url(aUrl);   // +1 for '\0'
     iDevice->SetAttribute("Upnp.PresentationUrl", url.PtrZ());
 }
 
-TBool BaseMediaPlayer::TryDisable(DvDevice& aDevice)
+TBool ExampleMediaPlayer::TryDisable(DvDevice& aDevice)
 {
     if (aDevice.Enabled()) {
-    aDevice.SetDisabled(MakeFunctor(*this, &BaseMediaPlayer::Disabled));
+    aDevice.SetDisabled(MakeFunctor(*this, &ExampleMediaPlayer::Disabled));
     return true;
     }
     return false;
 }
 
-void BaseMediaPlayer::Disabled()
+void ExampleMediaPlayer::Disabled()
 {
     iDisabled.Signal();
 }
 
 
-// BaseMediaPlayerInit
+// ExampleMediaPlayerInit
 
-OpenHome::Net::Library* BaseMediaPlayerInit::CreateLibrary(TBool aLoopback, TUint aAdapter)
+OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TBool aLoopback, TUint aAdapter, TIpAddress subnet)
 {
     InitialisationParams* initParams = InitialisationParams::Create();
     initParams->SetDvEnableBonjour();

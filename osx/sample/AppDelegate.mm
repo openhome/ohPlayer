@@ -7,7 +7,7 @@
 
 #import "AppDelegate.h"
 
-#include "SampleMediaPlayer.h"
+#include "MediaPlayerIF.h"
 
 @interface AppDelegate ()
 
@@ -182,7 +182,7 @@ OpenHome::Av::Sample::SampleMediaPlayer *samplePlayer;
         if (error) {
             dict[NSUnderlyingErrorKey] = error;
         }
-        error = [NSError errorWithDomain:@"YOUR_ERROR_DOMAIN" code:9999 userInfo:dict];
+        error = [NSError errorWithDomain:@"Init Error" code:9999 userInfo:dict];
         [[NSApplication sharedApplication] presentError:error];
     }
     return _persistentStoreCoordinator;
