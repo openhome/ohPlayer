@@ -4,21 +4,13 @@
 
 #include <gtk/gtk.h>
 
-#include "MediaPlayerIF.h"
-#include "LitePipeTestApp.h"
-
 #include <OpenHome/Net/Private/DviStack.h>
 #include <OpenHome/Private/Printer.h>
 
-// Intermin includes
-#include <OpenHome/Av/MediaPlayer.h>
-#include <OpenHome/Media/Utils/DriverBasic.h>
-// End Df Interim
-
+#include "DriverAlsa.h"
 #include "ExampleMediaPlayer.h"
-#if 0
-#include "AudioDriver.h"
-#endif
+#include "LitePipeTestApp.h"
+#include "MediaPlayerIF.h"
 #include "UpdateCheck.h"
 
 using namespace OpenHome;
@@ -87,8 +79,7 @@ void InitAndRunMediaPlayer(gpointer args)
     NetworkAdapter *adapter = NULL;
     Net::CpStack   *cpStack = NULL;
     Net::DvStack   *dvStack = NULL;
-    //AudioDriver    *driver  = NULL;
-    DriverBasic    *driver  = NULL;
+    DriverAlsa     *driver  = NULL;
 
     // Create the library on the supplied subnet.
     g_lib  = ExampleMediaPlayerInit::CreateLibrary(subnet);
@@ -115,20 +106,14 @@ void InitAndRunMediaPlayer(gpointer args)
     g_emp = new ExampleMediaPlayer(*dvStack, Brn(aUdn), aRoom, aName,
                                    Brx::Empty()/*aUserAgent*/);
 
-#if 0
     // Add the audio driver to the pipeline.
-    driver = new AudioDriver(dvStack->Env(), g_emp->Pipeline(), hwnd);
+    driver = new DriverAlsa(g_emp->Pipeline(), 25000);
     if (driver == NULL)
     {
         goto cleanup;
     }
-#else
-    // Quick test before integrating ALSA driver.
-    driver = new Media::DriverBasic(dvStack->Env(), g_emp->Pipeline());
-#endif
 
-    // Create the timer queue for update checking.
-
+    // Create the timeout for update checking.
     if (subnet != InitArgs::NO_SUBNET)
     {
         // If we are restarting due to a user instigated subnet change we

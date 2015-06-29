@@ -17,7 +17,6 @@ typedef struct
 {
     static const TIpAddress NO_SUBNET = 0xFFFFFFFF;
 
-    //HWND       hwnd;                     // Main window handle
     TIpAddress subnet;                   // Requested subnet
 } InitArgs;
 
