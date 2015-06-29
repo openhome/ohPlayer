@@ -53,6 +53,8 @@
 		EB796A5A1AD2B2C700684025 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EB796A591AD2B2C700684025 /* SystemConfiguration.framework */; };
 		EB796A5D1AD2C14800684025 /* ConfigRamStore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB796A5B1AD2C14800684025 /* ConfigRamStore.cpp */; };
 		EB796A6A1AD5BA1C00684025 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EB796A691AD5BA1C00684025 /* AudioToolbox.framework */; };
+		EB8692A51B38695600C49C74 /* ConfigPersistentStore.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB8692A31B38695600C49C74 /* ConfigPersistentStore.mm */; };
+		EB8692B31B3AEEAE00C49C74 /* Prefs.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB8692B21B3AEEAE00C49C74 /* Prefs.mm */; };
 		EBA0E8EF1AC5D8AF00903A7F /* MediaPlayerIF.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EBA0E8EE1AC5D8AF00903A7F /* MediaPlayerIF.cpp */; };
 		EBD2C6781B30101900B39E08 /* Volume.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EBD2C6761B30101900B39E08 /* Volume.cpp */; };
 /* End PBXBuildFile section */
@@ -116,6 +118,10 @@
 		EB796A5C1AD2C14800684025 /* ConfigRamStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ConfigRamStore.h; sourceTree = "<group>"; };
 		EB796A681AD5744F00684025 /* PcmHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PcmHandler.h; sourceTree = "<group>"; };
 		EB796A691AD5BA1C00684025 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+		EB8692A31B38695600C49C74 /* ConfigPersistentStore.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ConfigPersistentStore.mm; sourceTree = "<group>"; };
+		EB8692A41B38695600C49C74 /* ConfigPersistentStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ConfigPersistentStore.h; sourceTree = "<group>"; };
+		EB8692B21B3AEEAE00C49C74 /* Prefs.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Prefs.mm; sourceTree = "<group>"; };
+		EB8692B41B3AEEBB00C49C74 /* Prefs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Prefs.h; sourceTree = "<group>"; };
 		EBA0E8EE1AC5D8AF00903A7F /* MediaPlayerIF.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MediaPlayerIF.cpp; sourceTree = "<group>"; };
 		EBA0E8F01AC5D99800903A7F /* MediaPlayerIF.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MediaPlayerIF.h; sourceTree = "<group>"; };
 		EBD2C6761B30101900B39E08 /* Volume.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Volume.cpp; sourceTree = "<group>"; };
@@ -190,6 +196,8 @@
 		EB40D91F1A9B23A20043722C /* sample */ = {
 			isa = PBXGroup;
 			children = (
+				EB8692A31B38695600C49C74 /* ConfigPersistentStore.mm */,
+				EB8692A41B38695600C49C74 /* ConfigPersistentStore.h */,
 				EBD2C6761B30101900B39E08 /* Volume.cpp */,
 				EBD2C6771B30101900B39E08 /* Volume.h */,
 				EB698ADC1ADE517500B47100 /* OsxAudio.cpp */,
@@ -212,6 +220,8 @@
 				EB40D92F1A9B23A20043722C /* Main.storyboard */,
 				EB40D92A1A9B23A20043722C /* sample.xcdatamodeld */,
 				EB40D9201A9B23A20043722C /* Supporting Files */,
+				EB8692B21B3AEEAE00C49C74 /* Prefs.mm */,
+				EB8692B41B3AEEBB00C49C74 /* Prefs.h */,
 			);
 			path = sample;
 			sourceTree = "<group>";
@@ -357,8 +367,10 @@
 				EB463CB21ACAD87D002AF5B2 /* RamStore.cpp in Sources */,
 				EBD2C6781B30101900B39E08 /* Volume.cpp in Sources */,
 				EB3670581ADEA86B00AC684B /* PcmHandler.cpp in Sources */,
+				EB8692A51B38695600C49C74 /* ConfigPersistentStore.mm in Sources */,
 				EB796A521AD2A7A200684025 /* ExampleMediaPlayer.cpp in Sources */,
 				EB40D92C1A9B23A20043722C /* sample.xcdatamodeld in Sources */,
+				EB8692B31B3AEEAE00C49C74 /* Prefs.mm in Sources */,
 				EB698ADE1ADE517500B47100 /* OsxAudio.cpp in Sources */,
 				EB40D9261A9B23A20043722C /* main.m in Sources */,
 				EB40D9241A9B23A20043722C /* AppDelegate.mm in Sources */,

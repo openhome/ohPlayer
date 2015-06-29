@@ -12,7 +12,7 @@
 #include <OpenHome/Av/Debug.h>
 #include <OpenHome/Net/Core/DvDevice.h>
 
-#include "ConfigRamStore.h"
+#include "ConfigPersistentStore.h"
 
 using namespace OpenHome;
 using namespace OpenHome::Av;
@@ -72,11 +72,11 @@ const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, con
     iRamStore = new RamStore();
 
     // create a read/write store using the new config framework
-    iConfigRamStore = new ConfigRamStore();
+    iConfigPersistentStore = new ConfigPersistentStore();
 
     // FIXME - available store keys should be listed somewhere
-    iConfigRamStore->Write(Brn("Product.Room"), Brn(aRoom));
-    iConfigRamStore->Write(Brn("Product.Name"), Brn(aProductName));
+    iConfigPersistentStore->Write(Brn("Product.Room"), Brn(aRoom));
+    iConfigPersistentStore->Write(Brn("Product.Name"), Brn(aProductName));
     
     // Volume Control
     VolumeProfile  volumeProfile;
@@ -93,7 +93,7 @@ const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, con
     iMediaPlayer = new MediaPlayer( aDvStack,
                                    *iDevice,
                                    *iRamStore,
-                                   *iConfigRamStore,
+                                   *iConfigPersistentStore,
                                    pipelineParams,
                                    volumeInit,
                                    volumeProfile,
@@ -110,7 +110,7 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
     delete iDevice;
     delete iDeviceUpnpAv;
     delete iRamStore;
-    delete iConfigRamStore;
+    delete iConfigPersistentStore;
 }
 
 void ExampleMediaPlayer::AddAttribute(const TChar* aAttribute)

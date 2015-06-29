@@ -44,7 +44,7 @@ namespace OpenHome {
         class IPullableClock;
     }
     namespace Configuration {
-        class ConfigRamStore;
+        class ConfigPersistentStore;
         class ConfigManager;
     }
     namespace Web {
@@ -84,7 +84,7 @@ namespace OpenHome {
                 Net::DvDeviceStandard* iDevice;
                 Net::DvDevice* iDeviceUpnpAv;
                 RamStore* iRamStore;
-                Configuration::ConfigRamStore* iConfigRamStore;
+                Configuration::ConfigPersistentStore* iConfigPersistentStore;
                 Semaphore iSemShutdown;
             private:
                 Semaphore iDisabled;
