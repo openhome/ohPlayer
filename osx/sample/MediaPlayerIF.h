@@ -43,6 +43,8 @@ public:
     TBool canPause();
     TBool canStop();
     
+    TChar * checkForUpdate(TUint major, TUint minor);
+
 private: // from Media::IPipelineObserver
     void NotifyPipelineState(Media::EPipelineState aState) override;
     void NotifyTrack(Media::Track& aTrack, const Brx& aMode, TBool aStartOfStream) override;

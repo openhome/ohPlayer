@@ -6,6 +6,7 @@
 //
 
 #include "MediaPlayerIF.h"
+#include "UpdateCheck.h"
 
 using namespace OpenHome;
 using namespace OpenHome::Av;
@@ -67,6 +68,30 @@ void MediaPlayerIF::playlistPause()
 {
     _playlistProxy->SyncPause();
 }
+
+TChar * MediaPlayerIF::checkForUpdate(TUint major, TUint minor)
+{
+    Bws<1024> urlBuf;
+    if (UpdateChecker::updateAvailable(dvStack->Env(),
+                                       "http://elmo/~alans/application.json",
+                                       urlBuf,
+                                       major,
+                                       minor))
+    {
+        // There is an update available. Obtain the URL of the download
+        // and notify the user via a system tray notification.
+        TChar *urlString = new TChar[urlBuf.Bytes() + 1];
+        if (urlString)
+        {
+            memcpy(urlString, urlBuf.Ptr(), urlBuf.Bytes());
+            urlString[urlBuf.Bytes()] = '\0';
+            return urlString;
+        }
+    }
+    
+    return nil;
+}
+
 
 TBool MediaPlayerIF::setup ()
 {
@@ -191,5 +216,10 @@ void MediaPlayerIF::NotifyTime(TUint /*aSeconds*/, TUint /*aTrackDurationSeconds
 void MediaPlayerIF::NotifyStreamInfo(const Media::DecodedStreamInfo& aStreamInfo)
 {
     iLive = aStreamInfo.Live();
+}
+
+TChar * updateCheck(TUint major, TUint minor)
+{
+    return nil;
 }
 

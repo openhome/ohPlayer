@@ -7,7 +7,9 @@
 
 #import "AppDelegate.h"
 
+#include "version.h"
 #include "MediaPlayerIF.h"
+#include "UpdateCheck.h"
 
 @interface AppDelegate ()
 
@@ -17,7 +19,33 @@
 
 @implementation AppDelegate
 
+NSTimer* _updateTimer;
+
 OpenHome::Av::Sample::SampleMediaPlayer *samplePlayer;
+
+
+- (void)getOSVersion:(long)major minor:(long)minor
+{
+    NSProcessInfo *pInfo = [NSProcessInfo processInfo];
+    NSOperatingSystemVersion osVer = [pInfo operatingSystemVersion];
+    
+    major = osVer.majorVersion;
+    minor = osVer.minorVersion;
+}
+
+- (void)checkUpdates:(id)sender
+{
+    if(samplePlayer != nil)
+    {
+        long _minor = 0;
+        long _major = 0;
+        [self getOSVersion:_major minor:_minor];
+        char *uri = samplePlayer->checkForUpdate(_major, _minor);
+        
+        printf("CHECK_UPDATE: uri=[%s]\n", uri==nil ? "nil" : uri);
+    }
+}
+
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     // we have finished launching the app so create our status menu
@@ -27,7 +55,7 @@ OpenHome::Av::Sample::SampleMediaPlayer *samplePlayer;
     [self setupStatusItem];
     
     samplePlayer = new OpenHome::Av::Sample::SampleMediaPlayer();
-}
+    _updateTimer = [NSTimer scheduledTimerWithTimeInterval:CHECK_INTERVAL target:self selector:@selector(checkUpdates:) userInfo:nil repeats:YES];}
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
     delete samplePlayer;
@@ -85,10 +113,6 @@ OpenHome::Av::Sample::SampleMediaPlayer *samplePlayer;
     return YES;
 }
 
-
-- (void)checkUpdates:(id)sender
-{
-}
 
 - (void)lp_play:(id)sender
 {
