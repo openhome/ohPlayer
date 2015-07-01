@@ -2,7 +2,9 @@
 #include <OpenHome/Av/VolumeManager.h>
 #include <OpenHome/Private/Printer.h>
 
-//#include "AudioDriver.h"
+#include <alsa/asoundlib.h>
+#include <math.h>
+
 #include "Volume.h"
 
 using namespace OpenHome;
@@ -49,10 +51,75 @@ TUint VolumeProfile::FadeMax() const
     return kFadeMax;
 }
 
+VolumeControl::VolumeControl()
+{
+    const TChar *CARD       = "default";
+    const TChar *SELEM_NAME = "PCM";
+
+    // Get the mixer element for the default sound card.
+    snd_mixer_open(&iHandle, 0);
+    snd_mixer_attach(iHandle, CARD);
+    snd_mixer_selem_register(iHandle, NULL, NULL);
+    snd_mixer_load(iHandle);
+
+    // Get the mixer element for the PCM control.
+    snd_mixer_selem_id_t *iSid;
+
+    snd_mixer_selem_id_alloca(&iSid);
+    snd_mixer_selem_id_set_index(iSid, 0);
+    snd_mixer_selem_id_set_name(iSid, SELEM_NAME);
+
+    iElem = snd_mixer_find_selem(iHandle, iSid);
+}
+
+VolumeControl::~VolumeControl()
+{
+    snd_mixer_close(iHandle);
+}
+
 void VolumeControl::SetVolume(TUint aVolume)
 {
-    // TBD Set the audio session volume.
-//    AudioDriver::SetVolume(float(aVolume)/100.0f);
+    const long MAX_LINEAR_DB_SCALE = 24;
+    double     volume              = double(aVolume/100.0f);
+    double     min_norm;
+    long       min, max, value;
+    TInt       err;
+
+    // Use the dB range to map the volume to a scale more in tune
+    // with the human ear, if possible.
+    err = snd_mixer_selem_get_playback_dB_range(iElem, &min, &max);
+
+    if (err < 0 || min >= max) {
+        // dB range not available, use a linear volume mapping.
+        err = snd_mixer_selem_get_playback_volume_range(iElem, &min, &max);
+        if (err < 0)
+        {
+            return;
+        }
+
+        value = lrint(floor(volume * (max - min))) + min;
+        snd_mixer_selem_set_playback_volume_all(iElem, value);
+
+        return;
+    }
+
+    if (max - min <= MAX_LINEAR_DB_SCALE * 100)
+    {
+        // dB range less than 24 dB, use a linear mapping
+        value = lrint(floor(volume * (max - min))) + min;
+        snd_mixer_selem_set_playback_dB_all(iElem, value, -1);
+
+        return;
+    }
+
+    if (min != SND_CTL_TLV_DB_GAIN_MUTE) {
+        min_norm = exp10((min - max) / 6000.0);
+        volume = volume * (1 - min_norm) + min_norm;
+    }
+    value = lrint(floor(6000.0 * log10(volume))) + max;
+    snd_mixer_selem_set_playback_dB_all(iElem, value, -1);
+
+    return;
 }
 
 void VolumeControl::SetBalance(TInt /*aBalance*/)

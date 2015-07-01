@@ -3,6 +3,8 @@
 #include <OpenHome/Av/VolumeManager.h>
 #include <OpenHome/Media/MuteManager.h>
 
+#include <alsa/asoundlib.h>
+
 namespace OpenHome {
 namespace Av {
 
@@ -29,6 +31,12 @@ private: // from IVolumeProfile
 
 class VolumeControl : public IVolume, public IBalance, public IFade
 {
+public:
+    VolumeControl();
+    ~VolumeControl();
+private:
+    snd_mixer_t          *iHandle;    // ALSA mixer handle.
+    snd_mixer_elem_t     *iElem;      // PCM mixer element
 private: // from IVolume
     void SetVolume(TUint aVolume) override;
 private: // from IBalance
