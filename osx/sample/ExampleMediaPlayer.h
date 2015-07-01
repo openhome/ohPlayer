@@ -2,7 +2,7 @@
 //  ExampleMediaPlayer.h
 //  LitePipe example media player class
 //
-//  Copyright (c) 2015 Linn Products Limited. All rights reserved.
+//  Copyright (c) 2015 OpenHome Limited. All rights reserved.
 //
 #pragma once
 
