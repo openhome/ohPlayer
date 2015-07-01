@@ -73,6 +73,13 @@ public:
     //   volume:      volume - from 0 to 1.0
     void setVolume(Float32 volume);
     
+    // Pause driver output
+    void pause();
+    
+    // Resume driver output
+    void resume();
+    
+    
 private: // from Thread
     // Run - the execution method for class's main thread
     void Run();

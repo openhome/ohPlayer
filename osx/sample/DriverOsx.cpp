@@ -171,6 +171,16 @@ Msg* DriverOsx::ProcessMsg(MsgQuit* aMsg)
     return NULL;
 }
 
+void DriverOsx::pause()
+{
+    iOsxAudio.pauseQueue();
+}
+
+void DriverOsx::resume()
+{
+    iOsxAudio.resumeQueue();
+}
+
 void DriverOsx::setVolume(Float32 volume)
 {
     iOsxAudio.setVolume(volume);

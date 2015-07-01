@@ -1,6 +1,6 @@
 //
-//  SampleMediaPlayer.h
-//  LitePipe Sample media player class
+//  MediaPlayerIF
+//  LitePipe OSX media player interfaceclass
 //
 //  Copyright (c) 2015 Linn Products Limited. All rights reserved.
 //
@@ -10,79 +10,83 @@
 #include <OpenHome/Net/Core/CpAvOpenhomeOrgPlaylist1.h>
 #include <OpenHome/Net/Core/CpDeviceDv.h>
 #include <OpenHome/Functor.h>
+#include <OpenHome/Private/Printer.h>
 
 #include "DriverOsx.h"
-#include "BaseMediaPlayer.h"
+#include "ExampleMediaPlayer.h"
+
+#include <string>
+#include <vector>
 
 namespace OpenHome {
 namespace Av {
-namespace Sample {
+namespace Example {
 
-class MediaPlayerIF : private Media::IPipelineObserver
+class MediaPlayerIF
 {
+public:
+    typedef struct
+    {
+        std::string     *menuString;  // Human readable string identifying
+        // network adapter and IP address.
+        TIpAddress       subnet;      // Subnet address
+        OpenHome::TBool  isCurrent;   // Is this the current active subnet
+    } SubnetRecord;
+    
+    typedef struct InitArgs
+    {
+        static const TIpAddress NO_SUBNET = 0xFFFFFFFF;
+        TIpAddress subnet;                   // Requested subnet
+    } InitArgs;
+
+    
 public:
     MediaPlayerIF();
     ~MediaPlayerIF();
 
-    TBool setup();
+    TBool setup(TIpAddress subnet);
     void shutdown();
-    TBool play();
-    TBool pause();
-    TBool stop();
-
-    void initialiseProxies();
-    void ohNetVolumeInitialEvent();
-    void ohNetGenericInitialEvent();
-    void ohNetPlaylistIdChangedEvent();
-
-    void playlistPlay();
-    void playlistPause();
-    void playlistStop();
     
-    TBool canPlay();
-    TBool canPause();
-    TBool canStop();
+    void PlayPipeLine();                     // Pipeline - Play
+    void PausePipeLine();                    // Pipeline - Pause
+    void StopPipeLine();                     // Pipeline - Stop
     
     TChar * checkForUpdate(TUint major, TUint minor);
 
-private: // from Media::IPipelineObserver
-    void NotifyPipelineState(Media::EPipelineState aState) override;
-    void NotifyTrack(Media::Track& aTrack, const Brx& aMode, TBool aStartOfStream) override;
-    void NotifyMetaText(const Brx& aText) override;
-    void NotifyTime(TUint aSeconds, TUint aTrackDurationSeconds) override;
-    void NotifyStreamInfo(const Media::DecodedStreamInfo& aStreamInfo) override;
+    Example::ExampleMediaPlayer* mediaPlayer() { return iExampleMediaPlayer; }
+    
+    // Get a list of available subnets
+    std::vector<SubnetRecord*> * GetSubnets();
+    
+    // Free up a list of available subnets.
+    void FreeSubnets(std::vector<SubnetRecord*> *subnetVector);
+
     
 private:
+ 
+    OpenHome::Net::Library* CreateLibrary(TIpAddress preferredSubnet);
     
     void volumeChanged();
     
-    TBool mute;
-    TUint volume;
-    TUint volumeLimit;
-    TUint playlistTrackId;
+    TBool iMute;
+    TUint iVolume;
+    TUint iVolumeLimit;
+    TUint iPlaylistTrackId;
     TBool iLive;
-    Media::EPipelineState iState;
     
-    Net::Library* lib;
-    const TChar* cookie;
-    NetworkAdapter* adapter;
-    Net::DvStack* dvStack;
-    Net::CpStack* cpStack;
-    Net::CpDeviceDv* cpPlayerVol;
-    Net::CpDeviceDv* cpPlayerPlaylist;
-    BaseMediaPlayerOptions options;
-    BaseMediaPlayer* mp;
-    Media::DriverOsx* driver;
-    
-    Functor funcGenericInitialEvent;
-    Functor funcIdChanged;
-    
-    // Create proxies to control the volume and playback
-    // of our local player
-    Net::CpProxyAvOpenhomeOrgPlaylist1 * _playlistProxy;
+    Net::Library* iLib;
+    const TChar* iCookie;
+    NetworkAdapter* iAdapter;
+    Net::DvStack* iDvStack;
+    Net::CpStack* iCpStack;
+    Net::CpDeviceDv* iCpPlayerVol;
+    Net::CpDeviceDv* iCpPlayerPlaylist;
+    Example::ExampleMediaPlayer* iExampleMediaPlayer;
+    Media::DriverOsx* iDriver;
+
 };
   
-}  // namespace Sample
+}  // namespace Example
 }  // namespace Av
 }  // namespace OpenHome
     

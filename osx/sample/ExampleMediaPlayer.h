@@ -4,6 +4,7 @@
 //
 //  Copyright (c) 2015 Linn Products Limited. All rights reserved.
 //
+#pragma once
 
 #include <OpenHome/Types.h>
 #include <OpenHome/Buffer.h>
@@ -28,6 +29,7 @@
 
 #include "RamStore.h"
 #include "Volume.h"
+#include "ControlPointProxy.h"
 
 namespace OpenHome {
     class PowerManager;
@@ -52,21 +54,33 @@ namespace OpenHome {
     }
     namespace Av {
         class RamStore;
-        namespace Sample {
+        namespace Example {
             
-            class ExampleMediaPlayer : private Net::IResourceManager
+            class ExampleMediaPlayer :  private Net::IResourceManager,
+                                        private Media::IPipelineObserver
             {
             private:
                 static const Brn kSongcastSenderIconFileName;
             public:
-                ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName,
-                                const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, const Brx& aUserAgent);
+                ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName, const Brx& aUserAgent);
                 virtual ~ExampleMediaPlayer();
                 void AddAttribute(const TChar* aAttribute); // FIXME - only required by Songcasting driver
                 virtual void RunWithSemaphore(Net::CpStack& aCpStack);
                 Media::PipelineManager& Pipeline();
                 Net::DvDeviceStandard* Device();
                 VolumeControl& VolumeControl() {return iVolume;}
+                
+                // Pipeline status and control
+                void                    StopPipeline();
+                TBool                   CanPlay();
+                void                    PlayPipeline();
+                TBool                   CanPause();
+                void                    PausePipeline();
+                TBool                   CanHalt();
+                void                    HaltPipeline();
+                
+                void                    SetHost(Media::DriverOsx *driver) { iDriver = driver; }
+                
             protected:
                 virtual void RegisterPlugins(Environment& aEnv);
                 void DoRegisterPlugins(Environment& aEnv, const Brx& aSupportedProtocols);
@@ -74,33 +88,36 @@ namespace OpenHome {
             private: // from Net::IResourceManager
                 void WriteResource(const Brx& aUriTail, TIpAddress aInterface, std::vector<char*>& aLanguageList, Net::IResourceWriter& aResourceWriter) override;
 
+            private: // from Media::IPipelineObserver
+                void NotifyPipelineState(Media::EPipelineState aState) override;
+                void NotifyTrack(Media::Track& aTrack, const Brx& aMode, TBool aStartOfStream) override;
+                void NotifyMetaText(const Brx& aText) override;
+                void NotifyTime(TUint aSeconds, TUint aTrackDurationSeconds) override;
+                void NotifyStreamInfo(const Media::DecodedStreamInfo& aStreamInfo) override;
+                
             private:
                 void PresentationUrlChanged(const Brx& aUrl);
                 TBool TryDisable(Net::DvDevice& aDevice);
                 void Disabled();
                 
             protected:
-                MediaPlayer* iMediaPlayer;
-                Net::DvDeviceStandard* iDevice;
-                Net::DvDevice* iDeviceUpnpAv;
-                RamStore* iRamStore;
+                MediaPlayer*            iMediaPlayer;
+                Net::DvDeviceStandard*  iDevice;
+                Net::DvDevice*          iDeviceUpnpAv;
+                RamStore*               iRamStore;
+                Semaphore               iSemShutdown;
+                Media::DriverOsx*              iDriver;
                 Configuration::ConfigPersistentStore* iConfigPersistentStore;
-                Semaphore iSemShutdown;
             private:
                 Semaphore iDisabled;
-                Av::VolumeControl iVolume;
-                ObservableBrx iObservableFriendlyName;
+                Av::VolumeControl       iVolume;
+                TBool                   iLive;
+                Media::EPipelineState   iState;
+                ObservableBrx           iObservableFriendlyName;
+                const Brx &             iUserAgent;
+                ControlPointProxy *     iCpProxy;
             };
-            
-            
-            // Not very nice, but only to allow reusable test functions.
-            class ExampleMediaPlayerInit
-            {
-            public:
-                static OpenHome::Net::Library* CreateLibrary(TBool aLoopback, TUint aAdapter);  // creates lib; client must start appropriate stacks
-            };
-            
-        } // namespace Test
+        } // namespace Example
     } // namespace Av
 } // namespace OpenHome
 

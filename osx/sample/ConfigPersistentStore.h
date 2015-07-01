@@ -6,12 +6,12 @@
 
 #include <map>
 
-#import <Foundation/Foundation.h>
-#import "Prefs.h"
+@class Prefs;
 
 namespace OpenHome {
 namespace Configuration {
 
+    
 // Provides a registry based read/write store.
 class ConfigPersistentStore : public IStoreReadWrite
 {

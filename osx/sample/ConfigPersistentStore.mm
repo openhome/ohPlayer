@@ -2,6 +2,7 @@
 #include <OpenHome/Private/Printer.h>
 
 #include "ConfigPersistentStore.h"
+#import "Prefs.h"
 
 using namespace OpenHome;
 using namespace OpenHome::Configuration;

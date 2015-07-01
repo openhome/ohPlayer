@@ -12,11 +12,11 @@
 #include <OpenHome/Av/Debug.h>
 #include <OpenHome/Net/Core/DvDevice.h>
 
-#include "ConfigPersistentStore.h"
+#import "ConfigPersistentStore.h"
 
 using namespace OpenHome;
 using namespace OpenHome::Av;
-using namespace OpenHome::Av::Sample;
+using namespace OpenHome::Av::Example;
 using namespace OpenHome::Configuration;
 using namespace OpenHome::Media;
 using namespace OpenHome::Net;
@@ -27,9 +27,11 @@ const Brn ExampleMediaPlayer::kSongcastSenderIconFileName("SongcastSenderIcon");
 
 
 ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName,
-const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, const Brx& aUserAgent)
+const Brx& aUserAgent)
 : iSemShutdown("TMPS", 0)
 , iDisabled("test", 0)
+, iLive(false)
+, iUserAgent(aUserAgent)
 , iObservableFriendlyName(new Bws<RaopDevice::kMaxNameBytes>())
 {
     Bws<256> friendlyName;
@@ -98,9 +100,11 @@ const Brx& aTuneInPartnerId, const Brx& aTidalId, const Brx& aQobuzIdSecret, con
                                    volumeInit,
                                    volumeProfile,
                                    aUdn,
-                                   Brn("Main Room"),
-                                   Brn("Softplayer"));
+                                   Brn(aRoom),
+                                   Brn(aProductName));
     
+    // Register an observer to monitor the pipeline status.
+    iMediaPlayer->Pipeline().AddObserver(*this);
 }
 
 ExampleMediaPlayer::~ExampleMediaPlayer()
@@ -130,6 +134,9 @@ void ExampleMediaPlayer::RunWithSemaphore(Net::CpStack& aCpStack)
     iDevice->SetEnabled();
     iDeviceUpnpAv->SetEnabled();
 
+    iCpProxy = new ControlPointProxy(aCpStack, *(Device()));
+    
+    iSemShutdown.Wait();
 }
 
 PipelineManager& ExampleMediaPlayer::Pipeline()
@@ -141,6 +148,71 @@ DvDeviceStandard* ExampleMediaPlayer::Device()
 {
     return iDevice;
 }
+
+void ExampleMediaPlayer::StopPipeline()
+{
+    TUint waitCount = 0;
+    
+    if (TryDisable(*iDevice))
+    {
+        waitCount++;
+    }
+    
+    if (TryDisable(*iDeviceUpnpAv))
+    {
+        waitCount++;
+    }
+    
+    while (waitCount > 0)
+    {
+        iDisabled.Wait();
+        waitCount--;
+    }
+    
+    iMediaPlayer->Quit();
+    iSemShutdown.Signal();
+}
+
+TBool ExampleMediaPlayer::CanPlay()
+{
+    return ((iState == EPipelineStopped) || (iState == EPipelinePaused));
+}
+
+TBool ExampleMediaPlayer::CanPause()
+{
+    return (!iLive &&
+            ((iState == EPipelinePlaying) || (iState == EPipelineBuffering)));
+}
+
+TBool ExampleMediaPlayer::CanHalt()
+{
+    return ((iState == EPipelinePlaying) || (iState == EPipelinePaused));
+}
+
+void ExampleMediaPlayer::PlayPipeline()
+{
+    if (CanPlay())
+    {
+        iCpProxy->playlistPlay();
+    }
+}
+
+void ExampleMediaPlayer::PausePipeline()
+{
+    if (CanPause())
+    {
+        iCpProxy->playlistPause();
+    }
+}
+
+void ExampleMediaPlayer::HaltPipeline()
+{
+    if (CanHalt())
+    {
+        iCpProxy->playlistStop();
+    }
+}
+
 
 void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 {
@@ -168,39 +240,55 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSupportedProtocols)
 {
     // Add codecs
+    Log::Print("Codec Registration: [\n");
+    
+    Log::Print("Codec\tAac\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewAac());
+    Log::Print("Codec\tAiff\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewAiff());
+    Log::Print("Codec\tAifc\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewAifc());
+    Log::Print("Codec\tAlac\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewAlac());
+    Log::Print("Codec\tAdts\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewAdts());
+    Log::Print("Codec:\tFlac\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewFlac());
+    Log::Print("Codec\tPcm\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewPcm());
+    Log::Print("Codec\tVorbis\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewVorbis());
+    Log::Print("Codec\tWav\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewWav());
-
-
+    
+    Log::Print("]\n");
+    
+    // Add protocol modules
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
+    
     // Add sources
-    iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer, aSupportedProtocols));
-    iMediaPlayer->Add(SourceFactory::NewUpnpAv(*iMediaPlayer, *iDeviceUpnpAv, aSupportedProtocols));
+    iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer,
+                                                 aSupportedProtocols));
+    
+    iMediaPlayer->Add(SourceFactory::NewUpnpAv(*iMediaPlayer,
+                                               *iDeviceUpnpAv,
+                                               aSupportedProtocols));
+    
+    iMediaPlayer->Add(SourceFactory::NewReceiver(*iMediaPlayer,
+                                                 NULL,
+                                                 NULL,
+                                                 kSongcastSenderIconFileName));
 
-    Bwh hostName(iDevice->Udn().Bytes()+1); // space for null terminator
-    hostName.Replace(iDevice->Udn());
-    const TChar* friendlyName;
-    iDevice->GetAttribute("Upnp.FriendlyName", &friendlyName);
-    iObservableFriendlyName.Replace(Brn(friendlyName));
-    iMediaPlayer->Add(SourceFactory::NewRaop(*iMediaPlayer, hostName.PtrZ(), iObservableFriendlyName, macAddr));
-
-    iMediaPlayer->Add(SourceFactory::NewReceiver(*iMediaPlayer, NULL, NULL, kSongcastSenderIconFileName)); // FIXME - will want to replace timestamper with access to a driver on embedded platforms
 }
-
 
 
 void ExampleMediaPlayer::WriteResource(const Brx& aUriTail, TIpAddress /*aInterface*/, std::vector<char*>& /*aLanguageList*/, IResourceWriter& aResourceWriter)
 {
-    if (aUriTail == kSongcastSenderIconFileName) {
-    aResourceWriter.WriteResourceBegin(sizeof(kIconDriverSongcastSender), kIconDriverSongcastSenderMimeType);
-    aResourceWriter.WriteResource(kIconDriverSongcastSender, sizeof(kIconDriverSongcastSender));
-    aResourceWriter.WriteResourceEnd();
+    if (aUriTail == kSongcastSenderIconFileName)
+    {
+        aResourceWriter.WriteResourceBegin(sizeof(kIconDriverSongcastSender), kIconDriverSongcastSenderMimeType);
+        aResourceWriter.WriteResource(kIconDriverSongcastSender, sizeof(kIconDriverSongcastSender));
+        aResourceWriter.WriteResourceEnd();
     }
 }
 
@@ -213,9 +301,10 @@ void ExampleMediaPlayer::PresentationUrlChanged(const Brx& aUrl)
 
 TBool ExampleMediaPlayer::TryDisable(DvDevice& aDevice)
 {
-    if (aDevice.Enabled()) {
-    aDevice.SetDisabled(MakeFunctor(*this, &ExampleMediaPlayer::Disabled));
-    return true;
+    if (aDevice.Enabled())
+    {
+        aDevice.SetDisabled(MakeFunctor(*this, &ExampleMediaPlayer::Disabled));
+        return true;
     }
     return false;
 }
@@ -225,37 +314,60 @@ void ExampleMediaPlayer::Disabled()
     iDisabled.Signal();
 }
 
-
-// ExampleMediaPlayerInit
-
-OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TBool aLoopback, TUint aAdapter, TIpAddress subnet)
+// Pipeline Observer callbacks.
+void ExampleMediaPlayer::NotifyPipelineState(Media::EPipelineState aState)
 {
-    InitialisationParams* initParams = InitialisationParams::Create();
-    initParams->SetDvEnableBonjour();
-    if (aLoopback == true) {
-        initParams->SetUseLoopbackNetworkAdapter();
+    
+    switch (aState)
+    {
+        case EPipelineStopped:
+            Log::Print("Pipeline State: Stopped\n");
+            break;
+        case EPipelinePaused:
+            Log::Print("Pipeline State: Paused\n");
+            break;
+        case EPipelinePlaying:
+            Log::Print("Pipeline State: Playing\n");
+            break;
+        case EPipelineBuffering:
+            Log::Print("Pipeline State: Buffering\n");
+            break;
+        case EPipelineWaiting:
+            Log::Print("Pipeline State: Waiting\n");
+            break;
+        default:
+            Log::Print("Pipeline State: UNKNOWN\n");
+            break;
     }
-
-    Debug::SetLevel(Debug::kSongcast | Debug::kPipeline);
-    Net::Library* lib = new Net::Library(initParams);
-
-    std::vector<NetworkAdapter*>* subnetList = lib->CreateSubnetList();
-    const TUint adapterIndex = aAdapter;
-    if (subnetList->size() <= adapterIndex) {
-        Log::Print("ERROR: adapter %u doesn't exist\n", adapterIndex);
-        ASSERTS();
+    
+    if(iDriver != NULL)
+    {
+        if(aState==EPipelinePaused)
+            iDriver->pause();
+        else if(aState==EPipelinePlaying)
+            iDriver->resume();
     }
-    Log::Print ("adapter list:\n");
-    for (unsigned i=0; i<subnetList->size(); ++i) {
-        TIpAddress addr = (*subnetList)[i]->Address();
-        Log::Print ("  %d: %d.%d.%d.%d\n", i, addr&0xff, (addr>>8)&0xff, (addr>>16)&0xff, (addr>>24)&0xff);
-    }
-
-    TIpAddress subnet = (*subnetList)[adapterIndex]->Subnet();
-    Library::DestroySubnetList(subnetList);
-    lib->SetCurrentSubnet(subnet);
-    Log::Print("using subnet %d.%d.%d.%d\n", subnet&0xff, (subnet>>8)&0xff, (subnet>>16)&0xff, (subnet>>24)&0xff);
-    return lib;
+    
+    iState = aState;
 }
+
+void ExampleMediaPlayer::NotifyTrack(Media::Track& /*aTrack*/, const Brx& /*aMode*/, TBool /*aStartOfStream*/)
+{
+}
+
+void ExampleMediaPlayer::NotifyMetaText(const Brx& /*aText*/)
+{
+}
+
+void ExampleMediaPlayer::NotifyTime(TUint /*aSeconds*/, TUint /*aTrackDurationSeconds*/)
+{
+}
+
+void ExampleMediaPlayer::NotifyStreamInfo(const Media::DecodedStreamInfo& aStreamInfo)
+{
+    iLive = aStreamInfo.Live();
+}
+
+
 
 

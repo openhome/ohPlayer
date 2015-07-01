@@ -9,6 +9,7 @@
 
 #include "version.h"
 #include "MediaPlayerIF.h"
+#include "ExampleMediaPlayer.h"
 #include "UpdateCheck.h"
 
 @interface AppDelegate ()
@@ -21,7 +22,7 @@
 
 NSTimer* _updateTimer;
 
-OpenHome::Av::Sample::SampleMediaPlayer *samplePlayer;
+OpenHome::Av::Example::MediaPlayerIF *samplePlayer;
 
 
 - (void)getOSVersion:(long)major minor:(long)minor
@@ -54,7 +55,7 @@ OpenHome::Av::Sample::SampleMediaPlayer *samplePlayer;
     // and not having a main window or view controller
     [self setupStatusItem];
     
-    samplePlayer = new OpenHome::Av::Sample::SampleMediaPlayer();
+    samplePlayer = new OpenHome::Av::Example::MediaPlayerIF();
     _updateTimer = [NSTimer scheduledTimerWithTimeInterval:CHECK_INTERVAL target:self selector:@selector(checkUpdates:) userInfo:nil repeats:YES];}
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
@@ -99,14 +100,15 @@ OpenHome::Av::Sample::SampleMediaPlayer *samplePlayer;
     // note that we must check with the player as it may have been paused/played
     // by external controlpoints, and the mediaplayer monitors the playback
     // state directly so should always be up to date
+    OpenHome::Av::Example::ExampleMediaPlayer * mp = samplePlayer ? samplePlayer->mediaPlayer() : NULL;
     if (theAction == @selector(lp_pause:)) {
-        return( samplePlayer->canPause() ? YES : NO );
+        return( (mp && mp->CanPause()) ? YES : NO );
     }
     else if (theAction == @selector(lp_play:)) {
-        return( samplePlayer->canPlay() ? YES : NO );
+        return( (mp && mp->CanPlay()) ? YES : NO );
     }
     else if (theAction == @selector(lp_stop:)) {
-        return( samplePlayer->canStop() ? YES : NO );
+        return( (mp && mp->CanHalt()) ? YES : NO );
     }
     
     // all our other menu items should always be enabled
@@ -117,19 +119,19 @@ OpenHome::Av::Sample::SampleMediaPlayer *samplePlayer;
 - (void)lp_play:(id)sender
 {
     if(samplePlayer != nil)
-        samplePlayer->play();
+        samplePlayer->PlayPipeLine();
 }
 
 - (void)lp_pause:(id)sender
 {
     if(samplePlayer != nil)
-        samplePlayer->pause();
+        samplePlayer->PausePipeLine();
 }
 
 - (void)lp_stop:(id)sender
 {
     if(samplePlayer != nil)
-        samplePlayer->stop();
+        samplePlayer->StopPipeLine();
 }
 
 - (void)about:(id) sender

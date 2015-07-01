@@ -298,15 +298,31 @@ void OsxAudio::startQueue()
 void OsxAudio::pauseQueue()
 {
     // stop host AudioQueue playback immediately and indicate that we have stopped
-    AudioQueuePause(iAudioQueue);
-    iPlaying = false;
+    if(iPlaying)
+    {
+        AudioQueuePause(iAudioQueue);
+        iPlaying = false;
+    }
+}
+
+void OsxAudio::resumeQueue()
+{
+    // stop host AudioQueue playback immediately and indicate that we have stopped
+    if(!iPlaying)
+    {
+        AudioQueueStart(iAudioQueue, NULL);
+        iPlaying = true;
+    }
 }
 
 void OsxAudio::stopQueue()
 {
     // stop host AudioQueue playback immediately and indicate that we have stopped
-    AudioQueueStop(iAudioQueue, TRUE);
-    iPlaying = false;
+    if(iPlaying)
+    {
+        AudioQueueStop(iAudioQueue, TRUE);
+        iPlaying = false;
+    }
 }
 
 void OsxAudio::setVolume(Float32 volume)
