@@ -172,7 +172,7 @@ TBool MediaPlayerIF::setup (TIpAddress subnet)
     // and hook up the mediaplayer to the host for control of host audio queue state
     iExampleMediaPlayer->SetHost(iDriver);
   
-    iExampleMediaPlayer->RunWithSemaphore(*iCpStack);
+    iExampleMediaPlayer->Run(*iCpStack);
         
     return true;
     

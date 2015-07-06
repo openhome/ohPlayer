@@ -23,6 +23,7 @@
 #include <OpenHome/Av/SourceFactory.h>
 #include <OpenHome/Av/KvpStore.h>
 #include <OpenHome/Av/Raop/Raop.h>
+#include <OpenHome/Av/Songcast/OhmTimestamp.h>
 #include <OpenHome/PowerManager.h>
 #include <OpenHome/Web/WebAppFramework.h>
 #include <OpenHome/Av/VolumeManager.h>
@@ -65,10 +66,12 @@ namespace OpenHome {
                 ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName, const Brx& aUserAgent);
                 virtual ~ExampleMediaPlayer();
                 void AddAttribute(const TChar* aAttribute); // FIXME - only required by Songcasting driver
-                virtual void RunWithSemaphore(Net::CpStack& aCpStack);
+                virtual void Run(Net::CpStack& aCpStack);
                 Media::PipelineManager& Pipeline();
                 Net::DvDeviceStandard* Device();
                 VolumeControl& VolumeControl() {return iVolume;}
+                void SetSongcastTimestampers(IOhmTimestamper& aTxTimestamper, IOhmTimestamper& aRxTimestamper);
+                void SetSongcastTimestampMappers(IOhmTimestamper& aTxTsMapper, IOhmTimestamper& aRxTsMapper);
                 
                 // Pipeline status and control
                 void                    StopPipeline();
@@ -116,6 +119,10 @@ namespace OpenHome {
                 ObservableBrx           iObservableFriendlyName;
                 const Brx &             iUserAgent;
                 ControlPointProxy *     iCpProxy;
+                IOhmTimestamper*        iTxTimestamper;
+                IOhmTimestamper*        iRxTimestamper;
+                IOhmTimestamper*        iTxTsMapper;
+                IOhmTimestamper*        iRxTsMapper;
             };
         } // namespace Example
     } // namespace Av

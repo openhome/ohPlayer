@@ -33,6 +33,8 @@ const Brx& aUserAgent)
 , iLive(false)
 , iUserAgent(aUserAgent)
 , iObservableFriendlyName(new Bws<RaopDevice::kMaxNameBytes>())
+, iTxTimestamper(NULL)
+, iRxTimestamper(NULL)
 {
     Bws<256> friendlyName;
     friendlyName.Append(aRoom);
@@ -122,7 +124,7 @@ void ExampleMediaPlayer::AddAttribute(const TChar* aAttribute)
     iMediaPlayer->AddAttribute(aAttribute);
 }
 
-void ExampleMediaPlayer::RunWithSemaphore(Net::CpStack& aCpStack)
+void ExampleMediaPlayer::Run(Net::CpStack& aCpStack)
 {
     // Register all of our supported plugin formats
     RegisterPlugins(iMediaPlayer->Env());
@@ -135,8 +137,6 @@ void ExampleMediaPlayer::RunWithSemaphore(Net::CpStack& aCpStack)
     iDeviceUpnpAv->SetEnabled();
 
     iCpProxy = new ControlPointProxy(aCpStack, *(Device()));
-    
-    iSemShutdown.Wait();
 }
 
 PipelineManager& ExampleMediaPlayer::Pipeline()
@@ -148,6 +148,19 @@ DvDeviceStandard* ExampleMediaPlayer::Device()
 {
     return iDevice;
 }
+
+void ExampleMediaPlayer::SetSongcastTimestampers(IOhmTimestamper& aTxTimestamper, IOhmTimestamper& aRxTimestamper)
+{
+    iTxTimestamper = &aTxTimestamper;
+    iRxTimestamper = &aRxTimestamper;
+}
+
+void ExampleMediaPlayer::SetSongcastTimestampMappers(IOhmTimestamper& aTxTsMapper, IOhmTimestamper& aRxTsMapper)
+{
+    iTxTsMapper = &aTxTsMapper;
+    iRxTsMapper = &aRxTsMapper;
+}
+
 
 void ExampleMediaPlayer::StopPipeline()
 {
@@ -276,9 +289,9 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
     
     iMediaPlayer->Add(SourceFactory::NewReceiver(*iMediaPlayer,
                                                  NULL,
-                                                 NULL,
+                                                 iTxTimestamper,
+                                                 iRxTimestamper,
                                                  kSongcastSenderIconFileName));
-
 }
 
 
