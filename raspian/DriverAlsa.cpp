@@ -625,6 +625,20 @@ Msg* DriverAlsa::ProcessMsg(MsgTrack* /*aMsg*/)
     return NULL;
 }
 
+Msg* DriverAlsa::ProcessMsg(MsgChangeInput * aMsg)
+{
+    // This method is called when we want to change
+    // to an input which cannot share the pipeline with
+    // other sources. What we should really do is wait until
+    // our host has completed outstanding audio packets
+    // then call ReadyToChange().
+    // Here we just signal that we're good to go (not best practice)
+    aMsg->ReadyToChange();
+    aMsg->RemoveRef();
+
+    return NULL;
+}
+
 Msg* DriverAlsa::ProcessMsg(MsgDelay* /*aMsg*/)
 {
     ASSERTS();
@@ -644,6 +658,12 @@ Msg* DriverAlsa::ProcessMsg(MsgAudioEncoded* /*aMsg*/)
 }
 
 Msg* DriverAlsa::ProcessMsg(MsgMetaText* /*aMsg*/)
+{
+    ASSERTS();
+    return NULL;
+}
+
+Msg* DriverAlsa::ProcessMsg(MsgStreamInterrupted * /*aMsg*/)
 {
     ASSERTS();
     return NULL;

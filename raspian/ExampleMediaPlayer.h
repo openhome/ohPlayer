@@ -3,6 +3,7 @@
 #include <OpenHome/Av/MediaPlayer.h>
 #include <OpenHome/Av/Utils/DriverSongcastSender.h>
 #include <OpenHome/Media/PipelineManager.h>
+#include <OpenHome/Av/Songcast/OhmTimestamp.h>
 #include <OpenHome/Av/VolumeManager.h>
 
 #include "Volume.h"
@@ -45,6 +46,8 @@ public:
     void                    HaltPipeline();
     void                    AddAttribute(const TChar* aAttribute);
     virtual void            RunWithSemaphore(Net::CpStack& aCpStack);
+    void                    SetSongcastTimestampers(IOhmTimestamper& aTxTimestamper, IOhmTimestamper& aRxTimestamper);
+    void                    SetSongcastTimestampMappers(IOhmTimestamper& aTxTsMapper, IOhmTimestamper& aRxTsMapper);
     Media::PipelineManager &Pipeline();
     Net::DvDeviceStandard  *Device();
 protected:
@@ -72,6 +75,10 @@ private:
     Media::EPipelineState  iPState;
     TBool                  iLive;
     ControlPointProxy     *iCpProxy;
+    IOhmTimestamper       *iTxTimestamper;
+    IOhmTimestamper       *iRxTimestamper;
+    IOhmTimestamper       *iTxTsMapper;
+    IOhmTimestamper       *iRxTsMapper;
     const Brx             &iUserAgent;
 private: // from Media::IPipelineObserver
     void NotifyPipelineState(Media::EPipelineState aState) override;

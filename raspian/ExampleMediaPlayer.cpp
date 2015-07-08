@@ -39,6 +39,8 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
     , iPState(EPipelineStopped)
     , iLive(false)
     , iCpProxy(NULL)
+    , iTxTimestamper(NULL)
+    , iRxTimestamper(NULL)
     , iUserAgent(aUserAgent)
 {
     Bws<256> friendlyName;
@@ -117,6 +119,20 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
 Environment& ExampleMediaPlayer::Env()
 {
     return iMediaPlayer->Env();
+}
+
+void ExampleMediaPlayer::SetSongcastTimestampers(
+               IOhmTimestamper& aTxTimestamper, IOhmTimestamper& aRxTimestamper)
+{
+    iTxTimestamper = &aTxTimestamper;
+    iRxTimestamper = &aRxTimestamper;
+}
+
+void ExampleMediaPlayer::SetSongcastTimestampMappers(
+               IOhmTimestamper& aTxTsMapper, IOhmTimestamper& aRxTsMapper)
+{
+    iTxTsMapper = &aTxTsMapper;
+    iRxTsMapper = &aRxTsMapper;
 }
 
 void ExampleMediaPlayer::StopPipeline()
@@ -271,7 +287,8 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
 
     iMediaPlayer->Add(SourceFactory::NewReceiver(*iMediaPlayer,
                                                   NULL,
-                                                  NULL,
+                                                  iTxTimestamper,
+                                                  iRxTimestamper,
                                                   kSongcastSenderIconFileName));
 }
 
