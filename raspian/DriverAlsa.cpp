@@ -372,6 +372,7 @@ public:
     virtual ~Pimpl();
     void ProcessDecodedStream(MsgDecodedStream* aMsg);
     void ProcessPlayable(MsgPlayable* aMsg);
+    void ProcessChangeInput();
     void LogPCMState();
     TUint DriverDelayJiffies(TUint aSampleRateFrom, TUint aSampleRateTo);
 public:
@@ -422,6 +423,21 @@ void DriverAlsa::Pimpl::ProcessPlayable(MsgPlayable* aMsg)
 {
     if (! iDitch)
     	aMsg->Read(iProfiles[iProfileIndex].GetPcmProcessor());
+}
+
+void DriverAlsa::Pimpl::ProcessChangeInput()
+{
+    // Drain and stop the PCM.
+    if (iProfileIndex != -1)
+    {
+        auto err = snd_pcm_drain(iHandle);
+        if (err < 0)
+        {
+            Log::Print("DriverAlsa: snd_pcm_drain() error : %s\n",
+                       snd_strerror(err));
+            ASSERTS();
+        }
+    }
 }
 
 void DriverAlsa::Pimpl::Write(const Brx& aData)
@@ -720,14 +736,10 @@ Msg* DriverAlsa::ProcessMsg(MsgTrack* /*aMsg*/)
 
 Msg* DriverAlsa::ProcessMsg(MsgChangeInput * aMsg)
 {
-    // This method is called when we want to change
-    // to an input which cannot share the pipeline with
-    // other sources. What we should really do is wait until
-    // our host has completed outstanding audio packets
-    // then call ReadyToChange().
-    // Here we just signal that we're good to go (not best practice)
+    // Ensure the ALSA audio buffer is emptied.
+    iPimpl->ProcessChangeInput();
+
     aMsg->ReadyToChange();
-    aMsg->RemoveRef();
 
     return NULL;
 }
