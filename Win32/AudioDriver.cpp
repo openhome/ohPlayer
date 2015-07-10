@@ -87,12 +87,28 @@ Msg* AudioDriver::ProcessMsg(MsgTrack* /*aMsg*/)
 
 Msg* AudioDriver::ProcessMsg(MsgChangeInput * aMsg)
 {
-    // This method is called when we want to change
-    // to an input which cannot share the pipeline with
-    // other sources. What we should really do is wait until
-    // our host has completed outstanding audio packets
-    // then call ReadyToChange().
-    // Here we just signal that we're good to go (not best practice)
+    TUint32        padding;
+    REFERENCE_TIME defaultPeriod;
+    DWORD          periodMs;
+
+    if (iAudioClient->GetDevicePeriod(&defaultPeriod, NULL) == S_OK)
+    {
+        // Convert the period from 100ns units to ms.
+        periodMs = (DWORD)((defaultPeriod / 10000) + 1);
+
+        // Loop until the render buffer is empty.
+        while (iAudioClient->GetCurrentPadding(&padding) == S_OK)
+        {
+            if (padding == 0)
+            {
+                break;
+            }
+
+            // Check again in the next device period.
+            Sleep(periodMs);
+        }
+    }
+
     aMsg->ReadyToChange();
     aMsg->RemoveRef();
 
