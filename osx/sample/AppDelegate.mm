@@ -41,7 +41,7 @@ OpenHome::Av::Example::MediaPlayerIF *samplePlayer;
         long _minor = 0;
         long _major = 0;
         [self getOSVersion:_major minor:_minor];
-        char *uri = samplePlayer->checkForUpdate(_major, _minor);
+        char *uri = samplePlayer->checkForUpdate(_major & 0xffff, _minor & 0xffff);
         
         printf("CHECK_UPDATE: uri=[%s]\n", uri==nil ? "nil" : uri);
     }

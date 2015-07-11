@@ -137,7 +137,7 @@ TBool UpdateChecker::updateAvailable(Environment& aEnv,
                 jsonKey     = Brn("version");
                 Brn version = ReadValue(readerUntil, jsonKey);
 
-                if (isOlderVersion(CURRENT_VERSION, (TChar *)(version.Ptr())))
+                if (isOlderVersion((TChar*)CURRENT_VERSION, (TChar *)(version.Ptr())))
                 {
                     jsonKey = Brn("uri");
                     Brn uri = ReadValue(readerUntil, jsonKey);
