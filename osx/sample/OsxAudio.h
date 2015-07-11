@@ -64,6 +64,9 @@ public:
     // Pause the Host Audio playback
     void resumeQueue();
     
+    // Flush any outstanding host audio buffers
+    void flushQueue();
+    
     // Stop playing the Host Audio
     void stopQueue();
     

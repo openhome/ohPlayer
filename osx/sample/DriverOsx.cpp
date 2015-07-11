@@ -84,12 +84,9 @@ Msg* DriverOsx::ProcessMsg(MsgTrack* /*aMsg*/)
 
 Msg* DriverOsx::ProcessMsg(MsgChangeInput * aMsg)
 {
-    // This method is called when we want to change
-    // to an input which cannot share the pipeline with
-    // other sources. What we should really do is wait until
-    // our host has completed outstanding audio packets
-    // then call ReadyToChange().
-    // Here we just signal that we're good to go (not best practice)
+    // Terminate playback immediately, flushing any
+    // active audio buffers
+    iOsxAudio.flushQueue();
     aMsg->ReadyToChange();
     aMsg->RemoveRef();
 

@@ -315,6 +315,14 @@ void OsxAudio::resumeQueue()
     }
 }
 
+void OsxAudio::flushQueue()
+{
+    // flush host AudioQueue buffers immediately
+    // NOTE: this also resets DSP state so resuming audio playback could
+    // potentially result in a minor audio glitch
+    AudioQueueReset(iAudioQueue);
+}
+
 void OsxAudio::stopQueue()
 {
     // stop host AudioQueue playback immediately and indicate that we have stopped
