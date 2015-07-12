@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="6751" systemVersion="14C1510" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
+<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="7706" systemVersion="14E46" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="6751"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="7706"/>
     </dependencies>
     <scenes>
         <!--Application-->
@@ -10,7 +10,7 @@
                 <application id="hnw-xV-0zn" sceneMemberID="viewController">
                     <menu key="mainMenu" title="Main Menu" systemMenu="main" id="AYu-sK-qS6">
                         <items>
-                            <menuItem title="sample" image="LinnLogo" onStateImage="LinnLogo" offStateImage="LinnLogo" mixedStateImage="LinnLogo" id="1Xt-HY-uBw">
+                            <menuItem title="sample" image="OpenHomeLogo" onStateImage="OpenHomeLogo" offStateImage="OpenHomeLogo" mixedStateImage="OpenHomeLogo" id="1Xt-HY-uBw">
                                 <attributedString key="attributedTitle"/>
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <menu key="submenu" title="sample" systemMenu="apple" id="uQy-DD-JDr">
@@ -649,6 +649,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="LinnLogo" width="64" height="64"/>
+        <image name="OpenHomeLogo" width="48" height="48"/>
     </resources>
 </document>
