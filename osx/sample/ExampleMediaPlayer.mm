@@ -91,7 +91,7 @@ const Brx& aUserAgent)
     
     
     PipelineInitParams* pipelineParams = PipelineInitParams::New();
-    pipelineParams->SetThreadPriorityMax(kPriorityHighest);
+    pipelineParams->SetThreadPriorityMax(kPrioritySystemHighest-1);
     
     // create MediaPlayer
     iMediaPlayer = new MediaPlayer( aDvStack,
@@ -107,11 +107,17 @@ const Brx& aUserAgent)
     
     // Register an observer to monitor the pipeline status.
     iMediaPlayer->Pipeline().AddObserver(*this);
+    
+    // Set up config app.
+    static const TUint addr = 0;    // Bind to all addresses.
+    static const TUint port = 0;    // Bind to whatever free port the OS allocates to the framework server.
+    iAppFramework = new WebAppFramework(aDvStack.Env(), addr, port, kMaxUiTabs, kUiSendQueueSize);
 }
 
 ExampleMediaPlayer::~ExampleMediaPlayer()
 {
     ASSERT(!iDevice->Enabled());
+    delete iAppFramework;
     delete iMediaPlayer;
     delete iDevice;
     delete iDeviceUpnpAv;
@@ -131,12 +137,36 @@ void ExampleMediaPlayer::Run(Net::CpStack& aCpStack)
     
     // now we are ready to start our mediaplayer
     iMediaPlayer->Start();
-    
+
+    AddConfigApp();
+    iAppFramework->Start();
+
     // now enable our UPNP devices
     iDevice->SetEnabled();
     iDeviceUpnpAv->SetEnabled();
 
     iCpProxy = new ControlPointProxy(aCpStack, *(Device()));
+}
+
+
+void ExampleMediaPlayer::AddConfigApp()
+{
+    std::vector<const Brx*> sourcesBufs;
+    Product& product = iMediaPlayer->Product();
+    for (TUint i=0; i<product.SourceCount(); i++) {
+        Bws<ISource::kMaxSystemNameBytes> systemName;
+        Bws<ISource::kMaxSourceNameBytes> name;
+        Bws<ISource::kMaxSourceTypeBytes> type;
+        TBool visible;
+        product.GetSourceDetails(i, systemName, type, name, visible);
+        sourcesBufs.push_back(new Brh(systemName));
+    }
+    // FIXME - take resource dir as param or copy res dir to build dir
+    iConfigApp = new ConfigAppMediaPlayer(iMediaPlayer->ConfigManager(), sourcesBufs, Brn("Softplayer"), Brn("res/"), kMaxUiTabs, kUiSendQueueSize);
+    iAppFramework->Add(iConfigApp, MakeFunctorGeneric(*this, &ExampleMediaPlayer::PresentationUrlChanged));
+    for (TUint i=0;i<sourcesBufs.size(); i++) {
+        delete sourcesBufs[i];
+    }
 }
 
 PipelineManager& ExampleMediaPlayer::Pipeline()

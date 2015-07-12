@@ -62,6 +62,9 @@ namespace OpenHome {
             {
             private:
                 static const Brn kSongcastSenderIconFileName;
+                static const TUint kMaxUiTabs = 4;
+                static const TUint kUiSendQueueSize = 32;
+
             public:
                 ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName, const Brx& aUserAgent);
                 virtual ~ExampleMediaPlayer();
@@ -99,6 +102,7 @@ namespace OpenHome {
                 void NotifyStreamInfo(const Media::DecodedStreamInfo& aStreamInfo) override;
                 
             private:
+                void AddConfigApp();
                 void PresentationUrlChanged(const Brx& aUrl);
                 TBool TryDisable(Net::DvDevice& aDevice);
                 void Disabled();
@@ -108,6 +112,7 @@ namespace OpenHome {
                 Net::DvDeviceStandard*  iDevice;
                 Net::DvDevice*          iDeviceUpnpAv;
                 RamStore*               iRamStore;
+                Web::WebAppFramework*   iAppFramework;
                 Semaphore               iSemShutdown;
                 Media::DriverOsx*              iDriver;
                 Configuration::ConfigPersistentStore* iConfigPersistentStore;
@@ -123,6 +128,8 @@ namespace OpenHome {
                 IOhmTimestamper*        iRxTimestamper;
                 IOhmTimestamper*        iTxTsMapper;
                 IOhmTimestamper*        iRxTsMapper;
+                Web::ConfigAppMediaPlayer* iConfigApp;
+
             };
         } // namespace Example
     } // namespace Av
