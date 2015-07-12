@@ -87,7 +87,7 @@ OpenHome::Av::Example::MediaPlayerIF *samplePlayer;
     [menu addItemWithTitle:@"Stop" action:@selector(lp_stop:) keyEquivalent:@""];
     
     [menu addItem:[NSMenuItem separatorItem]];
-    [menu addItemWithTitle:@"Quit Linn Sample" action:@selector(terminate:) keyEquivalent:@""];
+    [menu addItemWithTitle:@"Quit OpenHome" action:@selector(terminate:) keyEquivalent:@""];
     
     self.statusItem.menu = menu;
 }
