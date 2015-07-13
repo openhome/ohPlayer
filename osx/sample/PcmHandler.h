@@ -24,8 +24,19 @@ public:
      */
     void setBuffer(AudioQueueBufferRef buf);
     
+    /**
+     * Fill the current audio output buffer using data
+     * read from the PipelineAnimator
+     */
     void fillBuffer(AudioQueueBufferRef inBuffer);
     
+    /**
+     * Set the audio output state.
+     * If output is false then we will terminate any
+     * outstanding data buffer filling and push the buffer
+     */
+    void setOutputActive(bool active);
+
     /**
      * get the size of data in the buffer
      */
@@ -106,8 +117,10 @@ private:
     TUint32 iBytesToRead;
     TUint8  iFrameSize;
     Mutex iSampleBufferLock;
+    Mutex iOutputLock;
     Semaphore iSemHostReady;
     MsgQueue queue;
+    bool    iOutputActive;
 };
 
 } // namespace Media

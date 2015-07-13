@@ -6,6 +6,7 @@ using namespace OpenHome::Media;
 
 OsxPcmProcessor::OsxPcmProcessor() : IPcmProcessor()
 , iSampleBufferLock("SBLK")
+, iOutputLock("OPLK")
 , iSemHostReady("HRDY", 0)
 {
     iReadIndex = iWriteIndex = iBytesToRead = 0;
@@ -37,25 +38,45 @@ void OsxPcmProcessor::setBuffer(AudioQueueBufferRef buf)
     iBytesToRead = iBuffsize;
 }
 
+void OsxPcmProcessor::setOutputActive(bool active)
+{
+    AutoMutex _(iOutputLock);
+
+    iOutputActive = active;
+}
+
 void OsxPcmProcessor::fillBuffer(AudioQueueBufferRef inBuffer)
 {
+    Msg *remains = nil;
+
     // if no data is available then signal the animator to provide some
     if(queue.NumMsgs() == 0)
         iSemHostReady.Signal();
     
-    MsgPlayable *msg = dequeue();
-    
-    Msg *remains = nil;
-    // read the packet, release and remove
-    if(msg->Bytes() > iBytesToRead)
-        remains = msg->Split(iBytesToRead);
-    msg->Read(*this);
-    msg->RemoveRef();
+    setOutputActive(true);
+    // loop round processing data until the buffer is full
+    // or until we have been signalled to stop
+    while((iBytesToRead > 0) && iOutputActive)
+    {
+        // if no data is available then signal the animator to provide some
+        MsgPlayable *msg = dequeue();
+        
+        // read the packet, release and remove
+        if(msg->Bytes() > iBytesToRead)
+            remains = msg->Split(iBytesToRead);
+        msg->Read(*this);
+        msg->RemoveRef();
+        
+        if(remains == nil)
+            iSemHostReady.Signal();
+    }
 
     // requeue the remaining bytes
     if(remains != nil)
         queue.EnqueueAtHead(remains);
-    
+
+    iSemHostReady.Signal();
+
     inBuffer->mAudioDataByteSize = size();
 }
 

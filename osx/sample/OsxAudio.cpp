@@ -262,11 +262,11 @@ void OsxAudio::initAudioBuffers()
 {
     // We allocate a number of buffers for the host AudioQueue.
     // Allocate the number of buffers required, and figure out a size for them
-    // based on buffering 0.2 seconds of audio per buffer
+    // based on buffering 0.25 seconds of audio per buffer
     for (int t = 0; t < kNumDataBuffers; ++t)
     {
         AudioQueueAllocateBuffer(iAudioQueue,
-                                 iAudioFormat.mBytesPerFrame * (iAudioFormat.mSampleRate) / 5,  // approximately 0.2s
+                                 iAudioFormat.mBytesPerFrame * (iAudioFormat.mSampleRate) / 4,  // 0.25 second
                                  &iAudioQueueBuffers[t]);
     }
 }
@@ -291,6 +291,9 @@ void OsxAudio::startQueue()
     // to PlayCallback to refill the buffers.
     AudioQueueStart(iAudioQueue, NULL);
 
+    if(iPcmHandler)
+        iPcmHandler->setOutputActive(true);
+    
     // indicate that we're now playing
     iPlaying = true;
 }
@@ -301,6 +304,9 @@ void OsxAudio::pauseQueue()
     if(iPlaying)
     {
         AudioQueuePause(iAudioQueue);
+        if(iPcmHandler)
+            iPcmHandler->setOutputActive(false);
+        
         iPlaying = false;
     }
 }
@@ -311,6 +317,9 @@ void OsxAudio::resumeQueue()
     if(!iPlaying)
     {
         AudioQueueStart(iAudioQueue, NULL);
+        if(iPcmHandler)
+            iPcmHandler->setOutputActive(true);
+        
         iPlaying = true;
     }
 }
@@ -328,14 +337,17 @@ void OsxAudio::stopQueue()
     // stop host AudioQueue playback immediately and indicate that we have stopped
     if(iPlaying)
     {
-        AudioQueueStop(iAudioQueue, TRUE);
+        AudioQueueStop(iAudioQueue, true);
+        if(iPcmHandler)
+            iPcmHandler->setOutputActive(false);
+        
         iPlaying = false;
     }
 }
 
 void OsxAudio::setVolume(Float32 volume)
 {
-    // if the voluem has changed then inform our AudioQueue
+    // if the volume has changed then inform our AudioQueue
     if (iVolume != volume)
     {
         iVolume = volume;
