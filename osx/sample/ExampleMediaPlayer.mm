@@ -162,7 +162,7 @@ void ExampleMediaPlayer::AddConfigApp()
         sourcesBufs.push_back(new Brh(systemName));
     }
     // FIXME - take resource dir as param or copy res dir to build dir
-    iConfigApp = new ConfigAppMediaPlayer(iMediaPlayer->ConfigManager(), sourcesBufs, Brn("Softplayer"), Brn("res/"), kMaxUiTabs, kUiSendQueueSize);
+    iConfigApp = new ConfigAppMediaPlayer(iMediaPlayer->ConfigManager(), sourcesBufs, Brn("SoftPlayer"), Brn(""), kMaxUiTabs, kUiSendQueueSize);
     iAppFramework->Add(iConfigApp, MakeFunctorGeneric(*this, &ExampleMediaPlayer::PresentationUrlChanged));
     for (TUint i=0;i<sourcesBufs.size(); i++) {
         delete sourcesBufs[i];
