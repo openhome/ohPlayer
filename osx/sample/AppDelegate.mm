@@ -20,10 +20,15 @@
 
 @implementation AppDelegate
 
+using namespace OpenHome::Av::Example;
+
 NSTimer* _updateTimer;
 
 OpenHome::Av::Example::MediaPlayerIF *samplePlayer;
 
+static const TIpAddress NO_SUBNET = 0xFFFFFFFF;
+std::vector<MediaPlayerIF::SubnetRecord*> *subnetList = nil;
+NSMenuItem *subnetItem =  nil;
 
 - (void)getOSVersion:(long)major minor:(long)minor
 {
@@ -55,7 +60,7 @@ OpenHome::Av::Example::MediaPlayerIF *samplePlayer;
     // and not having a main window or view controller
     [self setupStatusItem];
     
-    samplePlayer = new OpenHome::Av::Example::MediaPlayerIF();
+    samplePlayer = new OpenHome::Av::Example::MediaPlayerIF( NO_SUBNET );
     _updateTimer = [NSTimer scheduledTimerWithTimeInterval:CHECK_INTERVAL target:self selector:@selector(checkUpdates:) userInfo:nil repeats:YES];}
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
@@ -79,6 +84,8 @@ OpenHome::Av::Example::MediaPlayerIF *samplePlayer;
     // create a menu 
     NSMenu *menu = [[NSMenu alloc] init];
     [menu addItemWithTitle:@"Check for updates" action:@selector(checkUpdates:) keyEquivalent:@""];
+    subnetItem = [menu addItemWithTitle:@"Subnet" action:@selector(subnet:) keyEquivalent:@""];
+    
     [menu addItemWithTitle:@"About" action:@selector(about:) keyEquivalent:@""];
 
     [menu addItem:[NSMenuItem separatorItem]];
@@ -90,6 +97,48 @@ OpenHome::Av::Example::MediaPlayerIF *samplePlayer;
     [menu addItemWithTitle:@"Quit OpenHome" action:@selector(terminate:) keyEquivalent:@""];
     
     self.statusItem.menu = menu;
+}
+
+- (void)createSubnetPopup
+{
+    if (samplePlayer && subnetItem)
+    {
+        // create a submenu for the subnet lists
+        NSMenu *submenu = [[NSMenu alloc] init];
+        
+        // get subnet list
+        if(subnetList)
+            samplePlayer->FreeSubnets(subnetList);
+        subnetList = samplePlayer->GetSubnets();
+        
+        int index = 0;
+        std::vector<MediaPlayerIF::SubnetRecord*>::iterator it;
+        
+        // Put each subnet in our popup menu.
+        for (it=subnetList->begin(); it < subnetList->end(); it++)
+        {
+            NSString  *str = [NSString stringWithUTF8String: (*it)->menuString->c_str() ];
+            
+            // add a subnet menu entry for each subnet
+            NSMenuItem *item = [submenu addItemWithTitle:str action:@selector(selectNet:) keyEquivalent:@""];
+            
+            // set the item to represent the current index value
+            NSNumber *num = [NSNumber numberWithInt:index];
+            [item setRepresentedObject:num];
+            
+            // If this is the subnet we are currently using disable it's selection.
+            if ((*it)->isCurrent)
+                [item setTag:0];
+            else
+                [item setTag:1];
+            
+            // Add the menu item.
+            index++;
+        }
+
+        // add the submenu to our main menu
+        [subnetItem setSubmenu:submenu];
+    }
 }
 
 - (BOOL)validateUserInterfaceItem:(id <NSValidatedUserInterfaceItem>)anItem
@@ -110,11 +159,43 @@ OpenHome::Av::Example::MediaPlayerIF *samplePlayer;
     else if (theAction == @selector(lp_stop:)) {
         return( (mp && mp->CanHalt()) ? YES : NO );
     }
+    else if (theAction == @selector(subnet:)) {
+        [self createSubnetPopup];
+        return( mp ? YES : NO );
+    }
+    else if (theAction == @selector(selectNet:)) {
+        return( ([anItem tag]==1) ? YES : NO );
+    }
     
     // all our other menu items should always be enabled
     return YES;
 }
 
+- (void)subnet:(id)sender
+{
+}
+
+- (void)selectNet:(id)sender
+{
+    if(!subnetList)
+        return;
+    
+    // retrieve the desired subnet index in the list
+    NSMenuItem *item = (NSMenuItem *)sender;
+    NSNumber *num = [item representedObject];
+
+    int index = [num intValue];
+    if(index < subnetList->size())
+    {
+        MediaPlayerIF::SubnetRecord *rec = subnetList->at(index);
+        
+        if(rec)
+        {
+            delete samplePlayer;
+            samplePlayer = new OpenHome::Av::Example::MediaPlayerIF( rec->subnet );
+        }
+    }
+}
 
 - (void)lp_play:(id)sender
 {

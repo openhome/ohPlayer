@@ -41,7 +41,7 @@ public:
 
     
 public:
-    MediaPlayerIF();
+    MediaPlayerIF(TIpAddress subnet);
     ~MediaPlayerIF();
 
     TBool setup(TIpAddress subnet);

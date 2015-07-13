@@ -17,10 +17,8 @@ using namespace OpenHome::Media;
 using namespace OpenHome::Net;
 
 
-MediaPlayerIF::MediaPlayerIF()
-{
-    TIpAddress subnet = InitArgs::NO_SUBNET;
-    
+MediaPlayerIF::MediaPlayerIF(TIpAddress subnet)
+{    
     // set up our media player
     setup(subnet);
 }
