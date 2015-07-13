@@ -18,7 +18,7 @@ TARGET       = LitePipeTestApp
 CC           = g++
 CFLAGS       = -c -Wall -std=c++11 $(GTK_CFLAGS)
 DEBUG_CFLAGS = -g -O0 -DDEBUG -fstack-protector
-LIBS         = $(GTK_LIBS) -lnotify -lpthread -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lohMediaPlayer -lohMediaPlayerTestUtils -lohNetCore -lohNetmon -lssl -lcrypto -ldl -lCodecAac -lCodecAacBase -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecAdts -lCodecFlac -lCodecWav -lohPipeline
+LIBS         = $(GTK_LIBS) -lnotify -lpthread -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lohMediaPlayer -lohMediaPlayerTestUtils -lohNetCore -lohNetmon  -lCodecAac -lCodecAacBase -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecAdts -lCodecFlac -lCodecWav -lohPipeline -lssl -lcrypto -ldl
 INCLUDES     = -I../dependencies/Linux-armhf/ohMediaPlayer/include -I../dependencies/Linux-armhf/ohNetmon/include -I../dependencies/Linux-armhf/openssl/include -I../dependencies/Linux-armhf/ohNetGenerated-Linux-armhf-Release/include/ohnet/OpenHome/Net/Core
 
 REL_TARGET    = LitePipeTestApp
@@ -41,7 +41,7 @@ LIBS     += -L../dependencies/Linux-armhf/ohNet-Linux-armhf-Debug/lib
 INCLUDES += -I../dependencies/Linux-armhf/ohNet-Linux-armhf-Debug/include/ohnet
 else
 LIBS     += -L../dependencies/Linux-armhf/ohNet-Linux-armhf-Release/lib
-INCLUDES += -I../dependencies/Linux-armhf/ohNetGenerated-Linux-armhf-Release/include/ohnet/OpenHome/Net/Core
+INCLUDES += -I../dependencies/Linux-armhf/ohNet-Linux-armhf-Release/include/ohnet
 endif
 
 ifdef NVWA_DIR
