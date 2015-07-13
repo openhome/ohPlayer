@@ -13,9 +13,9 @@
 		EB40D92C1A9B23A20043722C /* sample.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = EB40D92A1A9B23A20043722C /* sample.xcdatamodeld */; };
 		EB40D92E1A9B23A20043722C /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EB40D92D1A9B23A20043722C /* Images.xcassets */; };
 		EB40D9311A9B23A20043722C /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EB40D92F1A9B23A20043722C /* Main.storyboard */; };
-		EB463CAD1ACA03FE002AF5B2 /* ExampleMediaPlayer.h in Resources */ = {isa = PBXBuildFile; fileRef = EB463CAC1ACA03FE002AF5B2 /* ExampleMediaPlayer.h */; };
 		EB463CB21ACAD87D002AF5B2 /* RamStore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB463CB01ACAD87D002AF5B2 /* RamStore.cpp */; };
 		EB463CB51ACAE083002AF5B2 /* DriverOsx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB463CB31ACAE083002AF5B2 /* DriverOsx.cpp */; };
+		EB553D0B1B52D75300B0D17D /* SoftPlayer in Resources */ = {isa = PBXBuildFile; fileRef = EB553D0A1B52D75300B0D17D /* SoftPlayer */; };
 		EB650A281B31B64300205BAC /* libohNetDevices.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A211B31B64300205BAC /* libohNetDevices.a */; };
 		EB650A291B31B64300205BAC /* libohNetProxies.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A221B31B64300205BAC /* libohNetProxies.a */; };
 		EB650A2A1B31B64300205BAC /* ohNetTestsCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A231B31B64300205BAC /* ohNetTestsCore.a */; };
@@ -78,6 +78,7 @@
 		EB463CB11ACAD87D002AF5B2 /* RamStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RamStore.h; sourceTree = "<group>"; };
 		EB463CB31ACAE083002AF5B2 /* DriverOsx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DriverOsx.cpp; sourceTree = "<group>"; };
 		EB463CB41ACAE083002AF5B2 /* DriverOsx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DriverOsx.h; sourceTree = "<group>"; };
+		EB553D0A1B52D75300B0D17D /* SoftPlayer */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SoftPlayer; path = sample/SoftPlayer; sourceTree = "<group>"; };
 		EB650A211B31B64300205BAC /* libohNetDevices.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libohNetDevices.a; path = "../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib/libohNetDevices.a"; sourceTree = "<group>"; };
 		EB650A221B31B64300205BAC /* libohNetProxies.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libohNetProxies.a; path = "../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib/libohNetProxies.a"; sourceTree = "<group>"; };
 		EB650A231B31B64300205BAC /* ohNetTestsCore.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = ohNetTestsCore.a; path = "../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib/ohNetTestsCore.a"; sourceTree = "<group>"; };
@@ -183,6 +184,7 @@
 		EB40D9141A9B23A20043722C = {
 			isa = PBXGroup;
 			children = (
+				EB553D0A1B52D75300B0D17D /* SoftPlayer */,
 				EB650A621B32A09500205BAC /* ohNetLibs */,
 				EB796A691AD5BA1C00684025 /* AudioToolbox.framework */,
 				EB796A591AD2B2C700684025 /* SystemConfiguration.framework */,
@@ -362,7 +364,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EB463CAD1ACA03FE002AF5B2 /* ExampleMediaPlayer.h in Resources */,
+				EB553D0B1B52D75300B0D17D /* SoftPlayer in Resources */,
 				EB40D92E1A9B23A20043722C /* Images.xcassets in Resources */,
 				EB40D9311A9B23A20043722C /* Main.storyboard in Resources */,
 			);
