@@ -1,6 +1,6 @@
 //
 //  MediaPlayerIF
-//  LitePipe OSX media player interfaceclass
+//  OSX media player interface class
 //
 //  Copyright (c) 2015 OpenHome Limited. All rights reserved.
 //

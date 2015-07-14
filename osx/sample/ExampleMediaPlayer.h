@@ -1,6 +1,6 @@
 //
 //  ExampleMediaPlayer.h
-//  LitePipe example media player class
+//  Example media player class
 //
 //  Copyright (c) 2015 OpenHome Limited. All rights reserved.
 //

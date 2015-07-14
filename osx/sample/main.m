@@ -1,6 +1,6 @@
 //
 //  main.m
-//  LitePipe sample app main entrypoint
+//  Mediaplayer example app main entrypoint
 //
 //  Copyright (c) 2015 OpenHome Limited. All rights reserved.
 //

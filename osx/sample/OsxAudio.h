@@ -94,7 +94,7 @@ private:
     // Finalise the AudioQueue's buffers, releasing system resources
     void finaliseAudioBuffers();
     
-    // Prime the allocated AudioQueueBuffers with data from the LitePipe pipeline
+    // Prime the allocated AudioQueueBuffers with data from the pipeline
     void primeAudioBuffers();
     
 private:

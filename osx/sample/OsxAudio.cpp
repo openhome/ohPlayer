@@ -163,7 +163,7 @@ void OsxAudio::fillBuffer(AudioQueueBufferRef inBuffer)
     // set the PcmHandler to use inBuffer as the target for the next read requests
     iPcmHandler->setBuffer(inBuffer);
 
-    // copy from the litepipe cache buffer
+    // copy from the pipeline cache buffer
     while(inBuffer->mAudioDataByteSize < inBuffer->mAudioDataBytesCapacity)
         iPcmHandler->fillBuffer(inBuffer);
 }
@@ -230,7 +230,7 @@ void OsxAudio::initAudioQueue()
 #else /* TEST_BUFFER */
     
     // create a new AudioQueue output stream and supply our PlayCallback
-    // to fill the host buffers with PCM data from the LitePipe pipeline
+    // to fill the host buffers with PCM data from the pipeline
     AudioQueueNewOutput(
                         &iAudioFormat,
                         PlayCallback,

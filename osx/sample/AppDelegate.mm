@@ -1,6 +1,6 @@
 //
 //  AppDelegate.m
-//  LitePipe Sample app delegate
+//  Sample app delegate
 //
 //  Copyright (c) 2015 OpenHome Limited. All rights reserved.
 //

@@ -20,15 +20,15 @@ namespace OpenHome {
 
 namespace Media {
 
-// DriverOsx is a LitePipe pipeline animator which renders audio messages
+// DriverOsx is a pipeline animator which renders audio messages
 // via the Osx AudioKit
 //
-// The driver is used by MediaPlayer to animate the LitePipe pipeline
+// The driver is used by MediaPlayer to animate the pipeline
 // extracting MsgDecodedAudio messgaes to configure the host audio stream
 // and feeding MsgPlayable messages to the host audio buffer(s)
 //
 // Our OSX Driver implementation consists of 3 main classes operating on 2 threads.
-// DriverOsx runs a pipeline animator thread, pulling data from LitePipe pipeline
+// DriverOsx runs a pipeline animator thread, pulling data from pipeline
 // on request, and enqueuing the data in a queue managed by the PcmHandler class.
 // Pipeline pull requests are throttled by the OsxAudio thread which handles the
 // host AudioQueue and associated buffers.
@@ -56,14 +56,14 @@ public:
     // DriverOsx - constructor
     // Parameters:
     //   aEnv:      OpenHome execution environment
-    //   aPipeline: The LitePipe pipeline to animate
+    //   aPipeline: The pipeline to animate
     DriverOsx(Environment& aEnv, IPipeline& aPipeline);
     
     // DriverOsx - destructor
     ~DriverOsx();
     
     // isPlaying - inform callers whether then Driver is currently animating
-    //             the LitePipe pipeline
+    //             the pipeline
     // Return:
     //   true if the pipeline is being animated, false otherwise
     TBool isPlaying() { return iPlaying; }
@@ -110,7 +110,7 @@ private: // from IPipelineAnimator
     TUint PipelineDriverDelayJiffies(TUint aSampleRateFrom, TUint aSampleRateTo) override;
     
 private:
-    // A reference to the LitePipe pipeline being animated
+    // A reference to the pipeline being animated
     IPipeline&      iPipeline;
     
     // The Os Context for the OpenHome enironment

@@ -63,7 +63,7 @@
 
 /* Begin PBXFileReference section */
 		EB3670571ADEA86B00AC684B /* PcmHandler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PcmHandler.cpp; sourceTree = "<group>"; };
-		EB40D91D1A9B23A20043722C /* OpenHome LitePipe Sample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "OpenHome LitePipe Sample.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		EB40D91D1A9B23A20043722C /* OSX.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OSX.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EB40D9211A9B23A20043722C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		EB40D9221A9B23A20043722C /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		EB40D9231A9B23A20043722C /* AppDelegate.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
@@ -197,7 +197,7 @@
 		EB40D91E1A9B23A20043722C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				EB40D91D1A9B23A20043722C /* OpenHome LitePipe Sample.app */,
+				EB40D91D1A9B23A20043722C /* OSX.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -310,9 +310,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		EB40D91C1A9B23A20043722C /* OpenHome LitePipe Sample */ = {
+		EB40D91C1A9B23A20043722C /* mediaplayer */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EB40D9401A9B23A20043722C /* Build configuration list for PBXNativeTarget "OpenHome LitePipe Sample" */;
+			buildConfigurationList = EB40D9401A9B23A20043722C /* Build configuration list for PBXNativeTarget "mediaplayer" */;
 			buildPhases = (
 				EB40D9191A9B23A20043722C /* Sources */,
 				EB40D91A1A9B23A20043722C /* Frameworks */,
@@ -322,9 +322,9 @@
 			);
 			dependencies = (
 			);
-			name = "OpenHome LitePipe Sample";
+			name = mediaplayer;
 			productName = sample;
-			productReference = EB40D91D1A9B23A20043722C /* OpenHome LitePipe Sample.app */;
+			productReference = EB40D91D1A9B23A20043722C /* OSX.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -354,7 +354,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				EB40D91C1A9B23A20043722C /* OpenHome LitePipe Sample */,
+				EB40D91C1A9B23A20043722C /* mediaplayer */,
 			);
 		};
 /* End PBXProject section */
@@ -567,7 +567,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EB40D9401A9B23A20043722C /* Build configuration list for PBXNativeTarget "OpenHome LitePipe Sample" */ = {
+		EB40D9401A9B23A20043722C /* Build configuration list for PBXNativeTarget "mediaplayer" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EB40D9411A9B23A20043722C /* Debug */,
