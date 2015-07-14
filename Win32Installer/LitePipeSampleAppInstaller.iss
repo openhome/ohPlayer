@@ -8,11 +8,18 @@
 #define MyAppExeName "LitePipetestApp.exe"
 
 ; MySrcDir *must* be defined on the 'iscc' command line, via the '/d' option
-; to give the full path to the directory holdinf the WIn32 and Win32Insatller
+; to give the full path to the directory holdinf the Win32 and Win32Insatller
 ; directories.
 #ifndef MySrcDir
 #error ERROR: The 'MySrcDir' location must be defined. 
 #endif 
+
+; Default to a Release build unless a Debug build is explicittly asked for.
+#ifdef Debug
+#define ReleaseType "Debug"
+#else
+#define ReleaseType "Release"
+#endif
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
@@ -41,7 +48,9 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "{#MySrcDir}\Win32\Win32\Debug\LitePipetestApp.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MySrcDir}\Win32\Win32\{#ReleaseType}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MySrcDir}\dependencies\Windows-x86\ohMediaPlayer\res\*"; DestDir: "{app}\res"; Flags: ignoreversion recursesubdirs createallsubdirs
+
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
