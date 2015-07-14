@@ -312,9 +312,9 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
     iMediaPlayer->Add(SourceFactory::NewReceiver(*iMediaPlayer,
                                                   NULL,
                                                   iTxTimestamper,
-                                                  NULL,
+                                                  iTxTsMapper,
                                                   iRxTimestamper,
-                                                  NULL,
+                                                  iRxTsMapper,
                                                   kSongcastSenderIconFileName));
 }
 
