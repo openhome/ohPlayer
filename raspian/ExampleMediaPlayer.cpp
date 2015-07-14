@@ -506,6 +506,10 @@ void ExampleMediaPlayer::NotifyPipelineState(Media::EPipelineState aState)
     }
 }
 
+void ExampleMediaPlayer::NotifyMode(const Brx& /*aMode*/, const Media::ModeInfo& /*aInfo*/)
+{
+}
+
 void ExampleMediaPlayer::NotifyTrack(Media::Track& /*aTrack*/,
                                      const Brx&    /*aMode*/,
                                      TBool         /*aStartOfStream*/)
