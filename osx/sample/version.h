@@ -13,6 +13,9 @@
 #define CURRENT_VERSION "1.0.0"
 
 // update check interval in seconds
+#define INITIAL_CHECK_INTERVAL  30 // 30 seconds
+
+// update check interval in seconds
 #define CHECK_INTERVAL  6 * 60 * 60 // 6 hours
 
 #endif
