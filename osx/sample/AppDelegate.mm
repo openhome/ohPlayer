@@ -48,10 +48,13 @@ NSMenuItem *subnetItem =  nil;
         [self getOSVersion:_major minor:_minor];
         char *uri = samplePlayer->checkForUpdate(_major & 0xffff, _minor & 0xffff);
         
-        printf("CHECK_UPDATE: uri=[%s]\n", uri==nil ? "nil" : uri);
+        if(uri !=nil)
+        {
+            NSString * uriString = [NSString stringWithUTF8String:uri];
+            [self showUpdateNotification:self updateUri:uriString];
+        }
     }
 }
-
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     // we have finished launching the app so create our status menu
@@ -60,8 +63,66 @@ NSMenuItem *subnetItem =  nil;
     // and not having a main window or view controller
     [self setupStatusItem];
     
+    // schedule a repeating timer to periodically check for updates
+    // to mediaplayer
     samplePlayer = new OpenHome::Av::Example::MediaPlayerIF( NO_SUBNET );
-    _updateTimer = [NSTimer scheduledTimerWithTimeInterval:CHECK_INTERVAL target:self selector:@selector(checkUpdates:) userInfo:nil repeats:YES];}
+    _updateTimer = [NSTimer scheduledTimerWithTimeInterval:CHECK_INTERVAL target:self selector:@selector(checkUpdates:) userInfo:nil repeats:YES];
+    
+    // schedule an initial (short) timer to check for updates
+    [NSTimer scheduledTimerWithTimeInterval:INITIAL_CHECK_INTERVAL target:self selector:@selector(checkUpdates:) userInfo:nil repeats:NO];
+    
+    // register self to receive UserNotification actions
+    [[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:self];
+}
+
+- (void)updateAvailable:(NSString *)uri
+{
+    NSAlert *alert = [[NSAlert alloc] init];
+    [alert setMessageText:@"Update available"];
+    [alert setInformativeText:@"An update is available for the OpenHome mediaplayer. Do you want to download and install it?"];
+    [alert addButtonWithTitle:@"Yes"];
+    [alert addButtonWithTitle:@"No"];
+    
+    NSInteger answer = [alert runModal];
+    
+    if (answer == NSAlertFirstButtonReturn) {
+        // download the new app
+        NSURL *url = [NSURL URLWithString:uri];
+        [[NSWorkspace sharedWorkspace] openURL:url];
+    }
+}
+
+- (void) userNotificationCenter:(NSUserNotificationCenter *)center didActivateNotification:(NSUserNotification *)notification
+{
+    if( [notification.title isEqual:@"OpenHome OSX Player"] )
+    {
+        NSDictionary *dict = [notification userInfo];
+        NSString *uri = [dict valueForKey:@"uri"];
+        [self updateAvailable:uri];
+    }
+    [center removeDeliveredNotification: notification];
+}
+
+- (void) userNotificationCenter:(NSUserNotificationCenter *)center didDeliverNotification:(NSUserNotification *)notification
+{
+}
+
+- (BOOL)userNotificationCenter:(NSUserNotificationCenter *)center shouldPresentNotification:(NSUserNotification *)notification
+{
+    return YES;
+}
+
+- (IBAction)showUpdateNotification:(id)sender updateUri:(NSString *)uri{
+    NSUserNotification *notification = [[NSUserNotification alloc] init];
+    notification.title = @"OpenHome OSX Player";
+    notification.informativeText = @"An update is available for your player. Click this message to download it.";
+    notification.soundName = NSUserNotificationDefaultSoundName;
+    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+    [dict setValue:uri forKey:@"uri"];
+    notification.userInfo = dict;
+    
+    [[NSUserNotificationCenter defaultUserNotificationCenter] deliverNotification:notification ];
+}
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
     delete samplePlayer;
@@ -232,9 +293,9 @@ NSMenuItem *subnetItem =  nil;
 
 
 - (NSURL *)applicationDocumentsDirectory {
-    // The directory the application uses to store the Core Data store file. This code uses a directory named "com.openhome.litepipe.sample" in the user's Application Support directory.
+    // The directory the application uses to store the Core Data store file. This code uses a directory named "com.openhome.mediaplayer" in the user's Application Support directory.
     NSURL *appSupportURL = [[[NSFileManager defaultManager] URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask] lastObject];
-    return [appSupportURL URLByAppendingPathComponent:@"com.openhome.litepipe.sample"];
+    return [appSupportURL URLByAppendingPathComponent:@"com.openhome.mediaplayer"];
 }
 
 - (NSManagedObjectModel *)managedObjectModel {
