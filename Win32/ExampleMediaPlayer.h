@@ -5,6 +5,7 @@
 #include <OpenHome/Media/PipelineManager.h>
 #include <OpenHome/Av/Songcast/OhmTimestamp.h>
 #include <OpenHome/Av/VolumeManager.h>
+#include <OpenHome/Web/WebAppFramework.h>
 
 #include <Windows.h>
 
@@ -24,6 +25,9 @@ namespace Configuration {
     class ConfigRegStore;
     class ConfigManager;
 }
+namespace Web {
+    class ConfigAppMediaPlayer;
+}
 namespace Av {
     class RamStore;
     class ControlPointProxy;
@@ -32,6 +36,9 @@ class ExampleMediaPlayer : private Net::IResourceManager,
                            private Media::IPipelineObserver
 {
     static const Brn kSongcastSenderIconFileName;
+    static const TUint kMaxUiTabs       = 4;
+    static const TUint kUiSendQueueSize = 32;
+
 public:
     ExampleMediaPlayer(HWND hwnd, Net::DvStack& aDvStack, const Brx& aUdn,
                        const TChar* aRoom, const TChar* aProductName,
@@ -52,8 +59,8 @@ public:
                                                IOhmTimestamper& aTxTimestamper,
                                                IOhmTimestamper& aRxTimestamper);
     void                    SetSongcastTimestampMappers(
-                                               IOhmTimestamper& aTxTsMapper,
-                                               IOhmTimestamper& aRxTsMapper);
+                                              IOhmTimestampMapper& aTxTsMapper,
+                                              IOhmTimestampMapper& aRxTsMapper);
     Media::PipelineManager &Pipeline();
     Net::DvDeviceStandard  *Device();
 protected:
@@ -65,6 +72,8 @@ private: // from Net::IResourceManager
                        std::vector<char*>& aLanguageList,
                        Net::IResourceWriter& aResourceWriter) override;
 private:
+    void  AddConfigApp();
+    void  PresentationUrlChanged(const Brx& aUrl);
     TBool TryDisable(Net::DvDevice& aDevice);
     void  Disabled();
 protected:
@@ -75,18 +84,20 @@ protected:
     RamStore                      *iRamStore;
     Configuration::ConfigRegStore *iConfigRegStore;
     Semaphore                      iSemShutdown;
+    Web::WebAppFramework          *iAppFramework;
 private:
-    Semaphore              iDisabled;
-    Av::VolumeControl      iVolume;
-    Media::EPipelineState  iPState;
-    TBool                  iLive;
-    ControlPointProxy     *iCpProxy;
-    IOhmTimestamper       *iTxTimestamper;
-    IOhmTimestamper       *iRxTimestamper;
-    IOhmTimestamper       *iTxTsMapper;
-    IOhmTimestamper       *iRxTsMapper;
-    const Brx             &iUserAgent;
-    HWND                   iHwnd; // Main window handle
+    Semaphore                  iDisabled;
+    Av::VolumeControl          iVolume;
+    Media::EPipelineState      iPState;
+    TBool                      iLive;
+    ControlPointProxy         *iCpProxy;
+    IOhmTimestamper           *iTxTimestamper;
+    IOhmTimestamper           *iRxTimestamper;
+    IOhmTimestampMapper       *iTxTsMapper;
+    IOhmTimestampMapper       *iRxTsMapper;
+    const Brx                 &iUserAgent;
+    Web::ConfigAppMediaPlayer *iConfigApp;
+    HWND                       iHwnd; // Main window handle
 private: // from Media::IPipelineObserver
     void NotifyPipelineState(Media::EPipelineState aState) override;
     void NotifyTrack(Media::Track& aTrack, const Brx& aMode,

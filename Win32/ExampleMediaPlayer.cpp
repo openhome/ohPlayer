@@ -2,6 +2,7 @@
 
 #include <OpenHome/Media/Codec/CodecFactory.h>
 #include <OpenHome/Media/Protocol/ProtocolFactory.h>
+#include <OpenHome/Av/Product.h>
 #include <OpenHome/Av/SourceFactory.h>
 #include <OpenHome/Av/UpnpAv/UpnpAv.h>
 #include <OpenHome/Av/Utils/IconDriverSongcastSender.h>
@@ -9,6 +10,8 @@
 #include <OpenHome/Av/Debug.h>
 #include <OpenHome/Media/Pipeline/Pipeline.h>
 #include <OpenHome/Private/Printer.h>
+#include <OpenHome/Web/WebAppFramework.h>
+#include <OpenHome/Web/ConfigUi/ConfigUi.h>
 
 #include "ConfigRegStore.h"
 #include "ControlPointProxy.h"
@@ -23,6 +26,7 @@ using namespace OpenHome::Av;
 using namespace OpenHome::Configuration;
 using namespace OpenHome::Media;
 using namespace OpenHome::Net;
+using namespace OpenHome::Web;
 
 // ExampleMediaPlayer
 
@@ -40,6 +44,8 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
     , iCpProxy(NULL)
     , iTxTimestamper(NULL)
     , iRxTimestamper(NULL)
+    , iTxTsMapper(NULL)
+    , iRxTsMapper(NULL)
     , iPState(EPipelineStopped)
     , iLive(false)
     , iUserAgent(aUserAgent)
@@ -105,11 +111,23 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
 
     // Register an observer, primarily to monitor the pipeline status.
     iMediaPlayer->Pipeline().AddObserver(*this);
+
+    // Set up config app.
+    static const TUint addr = 0;    // Bind to all addresses.
+    static const TUint port = 0;    // Bind to whatever free port the OS
+                                    // allocates to the framework server.
+
+    iAppFramework = new WebAppFramework(aDvStack.Env(),
+                                        addr,
+                                        port,
+                                        kMaxUiTabs,
+                                        kUiSendQueueSize);
 }
 
 ExampleMediaPlayer::~ExampleMediaPlayer()
 {
     ASSERT(!iDevice->Enabled());
+    delete iAppFramework;
     delete iCpProxy;
     delete iMediaPlayer;
     delete iDevice;
@@ -196,6 +214,8 @@ void ExampleMediaPlayer::RunWithSemaphore(Net::CpStack& aCpStack)
 {
     RegisterPlugins(iMediaPlayer->Env());
     iMediaPlayer->Start();
+    AddConfigApp();
+    iAppFramework->Start();
     iDevice->SetEnabled();
     iDeviceUpnpAv->SetEnabled();
 
@@ -213,8 +233,8 @@ void ExampleMediaPlayer::SetSongcastTimestampers(
 }
 
 void ExampleMediaPlayer::SetSongcastTimestampMappers(
-                                               IOhmTimestamper& aTxTsMapper,
-                                               IOhmTimestamper& aRxTsMapper)
+                                              IOhmTimestampMapper& aTxTsMapper,
+                                              IOhmTimestampMapper& aRxTsMapper)
 {
     iTxTsMapper = &aTxTsMapper;
     iRxTsMapper = &aRxTsMapper;
@@ -311,6 +331,40 @@ void ExampleMediaPlayer::WriteResource(const Brx&          aUriTail,
                                       sizeof(kIconDriverSongcastSender));
         aResourceWriter.WriteResourceEnd();
     }
+}
+
+void ExampleMediaPlayer::AddConfigApp()
+{
+    std::vector<const Brx*> sourcesBufs;
+    Product& product = iMediaPlayer->Product();
+    for (TUint i=0; i<product.SourceCount(); i++) {
+        Bws<ISource::kMaxSystemNameBytes> systemName;
+        Bws<ISource::kMaxSourceNameBytes> name;
+        Bws<ISource::kMaxSourceTypeBytes> type;
+        TBool visible;
+        product.GetSourceDetails(i, systemName, type, name, visible);
+        sourcesBufs.push_back(new Brh(systemName));
+    }
+
+    iConfigApp = new ConfigAppMediaPlayer(iMediaPlayer->ConfigManager(),
+                                          sourcesBufs,
+                                          Brn("Softplayer"),
+                                          Brn("res/"),
+                                          kMaxUiTabs,
+                                          kUiSendQueueSize);
+
+    iAppFramework->Add(iConfigApp,              // iAppFramework takes ownership
+                       MakeFunctorGeneric(*this, &ExampleMediaPlayer::PresentationUrlChanged));
+
+    for (TUint i=0;i<sourcesBufs.size(); i++) {
+        delete sourcesBufs[i];
+    }
+}
+
+void ExampleMediaPlayer::PresentationUrlChanged(const Brx& aUrl)
+{
+    Bws<Uri::kMaxUriBytes+1> url(aUrl);   // +1 for '\0'
+    iDevice->SetAttribute("Upnp.PresentationUrl", url.PtrZ());
 }
 
 TBool ExampleMediaPlayer::TryDisable(DvDevice& aDevice)
