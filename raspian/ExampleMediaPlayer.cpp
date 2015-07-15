@@ -347,7 +347,8 @@ void ExampleMediaPlayer::AddConfigApp()
     iConfigApp = new ConfigAppMediaPlayer(iMediaPlayer->ConfigManager(),
                                           sourcesBufs,
                                           Brn("Softplayer"),
-                                          Brn("res/"),
+                                          Brn("/usr/local/share/"
+                                              "litepipe-test-app/res/"),
                                           kMaxUiTabs,
                                           kUiSendQueueSize);
 

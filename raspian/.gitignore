@@ -11,5 +11,4 @@ objs/
 debug-objs/
 
 # Executables
-LitePipeTestApp
-LitePipeTestAppDebug
+litepipe-test-app

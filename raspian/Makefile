@@ -14,20 +14,28 @@
 GTK_CFLAGS := $(shell pkg-config --cflags gtk+-3.0)
 GTK_LIBS   := $(shell pkg-config --libs gtk+-3.0)
 
-TARGET       = LitePipeTestApp
 CC           = g++
 CFLAGS       = -c -Wall -std=c++11 $(GTK_CFLAGS)
 DEBUG_CFLAGS = -g -O0 -DDEBUG -fstack-protector
 LIBS         = $(GTK_LIBS) -lnotify -lpthread -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lohMediaPlayer -lohMediaPlayerTestUtils -lWebAppFramework -lConfigUi -lohNetCore -lohNetmon  -lCodecAac -lCodecAacBase -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecAdts -lCodecFlac -lCodecWav -lohPipeline -lssl -lcrypto -ldl
 INCLUDES     = -I../dependencies/Linux-armhf/ohMediaPlayer/include -I../dependencies/Linux-armhf/ohNetmon/include -I../dependencies/Linux-armhf/openssl/include -I../dependencies/Linux-armhf/ohNetGenerated-Linux-armhf-Release/include/ohnet/OpenHome/Net/Core
 
-REL_TARGET    = LitePipeTestApp
-DEBUG_TARGET  = LitePipeTestAppDebug
-TARGET        = $(REL_TARGET)
+TARGET    = litepipe-test-app
 
 REL_OBJ_DIR   = objs
 DEBUG_OBJ_DIR = debug-objs/
 OBJ_DIR       = $(REL_OBJ_DIR)
+
+INSTALL      = install
+RESOURCEDIR  = ../dependencies/Linux-armhf/ohMediaPlayer/res
+
+PREFIX = /usr/local
+
+# The directory to install the application to
+BINDIR = $(PREFIX)/bin
+
+# The directory to install the resource files to.
+RESDIR = $(PREFIX)/share/litepipe-test-app
 
 # If 'DEBUG=0 is specified on the command line build a debug biuld.
 
@@ -36,7 +44,6 @@ LIBS += -L../dependencies/Linux-armhf/ohMediaPlayer/lib -L../dependencies/Linux-
 ifdef DEBUG
 OBJ_DIR   = $(DEBUG_OBJ_DIR)
 CFLAGS   += $(DEBUG_CFLAGS)
-TARGET    = $(DEBUG_TARGET)
 LIBS     += -L../dependencies/Linux-armhf/ohNet-Linux-armhf-Debug/lib
 INCLUDES += -I../dependencies/Linux-armhf/ohNet-Linux-armhf-Debug/include/ohnet
 else
@@ -51,7 +58,7 @@ INCLUDES += -I$(NVWA_DIR)
 HEADERS  += $(wildcard $(NVWA_DIR)/*.h)
 endif
 
-.PHONY: default all clean build
+.PHONY: default all clean build install uninstall
 
 default: build $(TARGET)
 all: default
@@ -77,7 +84,17 @@ build:
 
 clean:
 	rm -rf $(REL_OBJ_DIR) $(DEBUG_OBJ_DIR)
-	rm -f $(REL_TARGET) $(DEBUG_TARGET)
+	rm -f $(TARGET)
 ifdef NVWA_DIR
 	rm $(NVWA_DIR)/*.o
 endif
+
+install:
+	$(INSTALL) -d $(BINDIR) $(RESDIR) $(RESDIR)/res
+	$(INSTALL) -m 755 $(TARGET) $(BINDIR)
+	$(INSTALL) -m 644 OpenHome-48x48.png $(RESDIR)
+	cp -R $(RESOURCEDIR)  $(RESDIR)
+
+uninstall:
+	rm $(BINDIR)/$(TARGET)
+	rm -rf $(RESDIR)
