@@ -30,13 +30,15 @@ static const TIpAddress NO_SUBNET = 0xFFFFFFFF;
 std::vector<MediaPlayerIF::SubnetRecord*> *subnetList = nil;
 NSMenuItem *subnetItem =  nil;
 
-- (void)getOSVersion:(long)major minor:(long)minor
+- (void)getOSVersion:(long *)major minor:(long *)minor
 {
     NSProcessInfo *pInfo = [NSProcessInfo processInfo];
     NSOperatingSystemVersion osVer = [pInfo operatingSystemVersion];
     
-    major = osVer.majorVersion;
-    minor = osVer.minorVersion;
+    if(major)
+        *major = osVer.majorVersion;
+    if(minor)
+        *minor = osVer.minorVersion;
 }
 
 - (void)checkUpdates:(id)sender
@@ -45,7 +47,7 @@ NSMenuItem *subnetItem =  nil;
     {
         long _minor = 0;
         long _major = 0;
-        [self getOSVersion:_major minor:_minor];
+        [self getOSVersion:&_major minor:&_minor];
         char *uri = samplePlayer->checkForUpdate(_major & 0xffff, _minor & 0xffff);
         
         if(uri !=nil)

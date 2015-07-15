@@ -89,7 +89,7 @@ void ConfigPersistentStore::Write(const Brx& aKey, const Brx& aSource)
     
     const char *encoded = encodePref(aSource);
     NSString *_value=[NSString stringWithUTF8String:encoded];
-    delete encoded;
+    delete[] encoded;
     
     [prefs setPref:_key value:_value];
 }
