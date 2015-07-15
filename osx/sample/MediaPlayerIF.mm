@@ -25,6 +25,17 @@ MediaPlayerIF::MediaPlayerIF(TIpAddress subnet)
 
 MediaPlayerIF::~MediaPlayerIF()
 {
+    if (iExampleMediaPlayer != NULL)
+    {
+        iExampleMediaPlayer->StopPipeline();
+        delete iExampleMediaPlayer;
+    }
+    
+    if (iDriver != NULL)
+        delete iDriver;
+    
+    if (iLib != NULL)
+        delete iLib;
 }
 
 TChar * MediaPlayerIF::checkForUpdate(TUint major, TUint minor)

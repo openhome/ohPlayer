@@ -8,6 +8,7 @@ OsxPcmProcessor::OsxPcmProcessor() : IPcmProcessor()
 , iSampleBufferLock("SBLK")
 , iOutputLock("OPLK")
 , iSemHostReady("HRDY", 0)
+, iQuit(false)
 {
     iReadIndex = iWriteIndex = iBytesToRead = 0;
 }
@@ -16,7 +17,9 @@ void OsxPcmProcessor::enqueue(MsgPlayable *msg)
 {
     iSemHostReady.Wait();
     iSemHostReady.Clear();
-    queue.Enqueue(msg);
+    
+    if(!iQuit)
+        queue.Enqueue(msg);
 }
 
 MsgPlayable * OsxPcmProcessor::dequeue()
@@ -24,6 +27,14 @@ MsgPlayable * OsxPcmProcessor::dequeue()
     MsgPlayable *msg = static_cast<MsgPlayable *>(queue.Dequeue());
     
     return msg;
+}
+
+void OsxPcmProcessor::quit()
+{
+    iQuit = true;
+    
+    // signal pending enqueue operations that we're finishing
+    iSemHostReady.Signal();
 }
 
 /**

@@ -151,6 +151,11 @@ OsxAudio::~OsxAudio()
 {
     // indicate to the main loop that we're done
     quit();
+    
+    // we may be waiting on these signals and they're never
+    // going to happen, so signal them and let the thread exit
+    iStreamCompleted.Signal();
+    iStreamInitialised.Signal();
 
     // we're done here, so finalise our host audio resources
     finalise();
@@ -361,6 +366,7 @@ void OsxAudio::quit()
     // that we wish to exit
     iQuit = true;
     iStreamCompleted.Signal();
+    iStreamInitialised.Signal();
 }
 
 void OsxAudio::Run()
@@ -373,13 +379,16 @@ void OsxAudio::Run()
             iStreamInitialised.Wait();
             iStreamInitialised.Clear();
             
-            // start the host audio queue
-            startQueue();
-            
-            // wait until our stream is terminated
-            // this can happen due to a halt or when we switch audio formats
-            iStreamCompleted.Wait();
-            iStreamCompleted.Clear();
+            if(!iQuit)
+            {
+                // start the host audio queue
+                startQueue();
+                
+                // wait until our stream is terminated
+                // this can happen due to a halt or when we switch audio formats
+                iStreamCompleted.Wait();
+                iStreamCompleted.Clear();
+            }
         }
     }
     catch (ThreadKill &e) {}

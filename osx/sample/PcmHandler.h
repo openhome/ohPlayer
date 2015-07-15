@@ -43,6 +43,11 @@ public:
     TUint32 size() { return iWriteIndex; }
     
     /**
+     * quit outstanding processing
+     */
+    void quit();
+    
+    /**
      * Called once per call to MsgPlayable::Read.
      *
      * Will be called before any calls to ProcessFragment or ProcessSample.
@@ -121,6 +126,7 @@ private:
     Semaphore iSemHostReady;
     MsgQueue queue;
     bool    iOutputActive;
+    bool    iQuit;
 };
 
 } // namespace Media

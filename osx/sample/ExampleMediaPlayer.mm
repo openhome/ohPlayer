@@ -118,6 +118,7 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
 {
     ASSERT(!iDevice->Enabled());
     delete iAppFramework;
+    delete iCpProxy;
     delete iMediaPlayer;
     delete iDevice;
     delete iDeviceUpnpAv;

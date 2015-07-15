@@ -25,6 +25,8 @@ DriverOsx::DriverOsx(Environment& aEnv, IPipeline& aPipeline)
 
 DriverOsx::~DriverOsx()
 {
+    quit();
+    iPcmHandler.quit();
 }
 
 void DriverOsx::Run()
@@ -44,7 +46,7 @@ void DriverOsx::Run()
                 iQuit = true;
             }
             
-            if((msg != nil))
+            if(!iQuit && (msg != nil))
                 (void)msg->Process(*this);
         }
     }
