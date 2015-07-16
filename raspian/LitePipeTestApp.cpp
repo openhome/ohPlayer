@@ -45,6 +45,9 @@ static guint     g_mediaOptions     = 0;     // Available media playback options
 static GThread  *g_mplayerThread    = NULL;  // Media Player thread
 static InitArgs  g_mPlayerArgs;              // Media Player arguments.
 
+static const gchar *g_icon_path =
+                        "/usr/local/share/litepipe-test-app/OpenHome-48x48.png";
+
 const gchar     *g_appName          = "LitePipeTestApp";
 
 static void displayNotification(const gchar *summary,
@@ -104,7 +107,7 @@ static void stopSelectionHandler()
 
 static void aboutSelectionHandler()
 {
-    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file("OpenHome-48x48.png", NULL);
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(g_icon_path, NULL);
 
     GtkWidget *dialog = gtk_about_dialog_new();
 
@@ -323,7 +326,7 @@ static void create_tray_icon()
 {
     GtkStatusIcon *tray_icon;
 
-    tray_icon = gtk_status_icon_new_from_file("OpenHome-48x48.png");
+    tray_icon = gtk_status_icon_new_from_file(g_icon_path);
 
     gtk_status_icon_set_tooltip_text(tray_icon, g_appName);
 
