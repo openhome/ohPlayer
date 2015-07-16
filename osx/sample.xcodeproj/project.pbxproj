@@ -88,7 +88,6 @@
 		EB650A271B31B64300205BAC /* libohNetCore.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libohNetCore.a; path = "../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib/libohNetCore.a"; sourceTree = "<group>"; };
 		EB650A2F1B31B65800205BAC /* libcrypto.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libcrypto.a; path = "../dependencies/Mac-x64/openssl/lib/libcrypto.a"; sourceTree = "<group>"; };
 		EB650A301B31B65800205BAC /* libssl.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libssl.a; path = "../dependencies/Mac-x64/openssl/lib/libssl.a"; sourceTree = "<group>"; };
-		EB650A331B31B66300205BAC /* libohNetmon.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libohNetmon.a; path = "../dependencies/Mac-x64/ohNetmon/lib/libohNetmon.a"; sourceTree = "<group>"; };
 		EB650A351B31B68600205BAC /* libCodecAlac.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCodecAlac.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libCodecAlac.a"; sourceTree = "<group>"; };
 		EB650A361B31B68600205BAC /* libSourceRaop.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libSourceRaop.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libSourceRaop.a"; sourceTree = "<group>"; };
 		EB650A371B31B68600205BAC /* libCodecAac.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCodecAac.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libCodecAac.a"; sourceTree = "<group>"; };
@@ -295,7 +294,6 @@
 				EB650A481B31B68600205BAC /* libConfigUi.a */,
 				EB650A491B31B68600205BAC /* liblibOgg.a */,
 				EB650A4A1B31B68600205BAC /* libWebAppFramework.a */,
-				EB650A331B31B66300205BAC /* libohNetmon.a */,
 				EB650A2F1B31B65800205BAC /* libcrypto.a */,
 				EB650A301B31B65800205BAC /* libssl.a */,
 				EB650A211B31B64300205BAC /* libohNetDevices.a */,
@@ -508,7 +506,6 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/include",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Debug/include/ohnet",
-					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohnetmon/include",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/include",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Debug/include/ohnet/OpenHome/Net/Core",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Release/include/ohnet",
@@ -521,7 +518,7 @@
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/lib",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Release/lib",
-					"/Users/simonc/SampleApps/LitePipeSampleApps/dependencies/Mac-x64/ohMediaPlayer/lib",
+					"(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -538,7 +535,6 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/include",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Release/include/ohnet",
-					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohnetmon/include",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/include",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Release/include/ohnet/OpenHome/Net/Core",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Release/include/ohnet",
@@ -551,7 +547,7 @@
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Release/lib",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/lib",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Release/lib",
-					"/Users/simonc/SampleApps/LitePipeSampleApps/dependencies/Mac-x64/ohMediaPlayer/lib",
+					"(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
