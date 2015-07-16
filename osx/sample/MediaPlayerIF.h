@@ -75,6 +75,8 @@ private:
     TBool iLive;
     
     Net::Library* iLib;
+    Media::PriorityArbitratorDriver* iArbDriver;
+    Media::PriorityArbitratorPipeline* iArbPipeline;
     const TChar* iCookie;
     NetworkAdapter* iAdapter;
     Net::DvStack* iDvStack;

@@ -8,6 +8,7 @@
 #include "MediaPlayerIF.h"
 #include "UpdateCheck.h"
 #import "ConfigPersistentStore.h"
+#include <OpenHome/Media/Pipeline/Pipeline.h>
 
 using namespace OpenHome;
 using namespace OpenHome::Av;
@@ -31,11 +32,10 @@ MediaPlayerIF::~MediaPlayerIF()
         delete iExampleMediaPlayer;
     }
     
-    if (iDriver != NULL)
-        delete iDriver;
-    
-    if (iLib != NULL)
-        delete iLib;
+    delete iDriver;
+    delete iLib;
+    delete iArbDriver;
+    delete iArbPipeline;
 }
 
 TChar * MediaPlayerIF::checkForUpdate(TUint major, TUint minor)
@@ -73,6 +73,11 @@ OpenHome::Net::Library* MediaPlayerIF::CreateLibrary(TIpAddress preferredSubnet)
     initParams->SetDvEnableBonjour();
     
     Net::Library* lib = new Net::Library(initParams);
+    iArbDriver = new Media::PriorityArbitratorDriver(kPrioritySystemHighest);
+    ThreadPriorityArbitrator& priorityArbitrator = lib->Env().PriorityArbitrator();
+    priorityArbitrator.Add(*iArbDriver);
+    iArbPipeline = new Media::PriorityArbitratorPipeline(kPrioritySystemHighest-1);
+    priorityArbitrator.Add(*iArbPipeline);
     
     std::vector<NetworkAdapter*>* subnetList = lib->CreateSubnetList();
     

@@ -276,7 +276,8 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
     "http-get:*:audio/ogg:*,"       // Vorbis
     "http-get:*:audio/x-ogg:*,"     // Vorbis
     "http-get:*:application/ogg:*," // Vorbis
-    "tidalhifi.com:*:*:*,"          // Tidal
+    //"tidalhifi.com:*:*:*,"          // Tidal
+    //"qobuz.com:*:*:*,"              // Qobuz
     );
     DoRegisterPlugins(aEnv, kSupportedProtocols);
 }
@@ -286,8 +287,9 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
     // Add codecs
     Log::Print("Codec Registration: [\n");
     
-    Log::Print("Codec\tAac\n");
-    iMediaPlayer->Add(Codec::CodecFactory::NewAac());
+    //Log::Print("Codec\tAac\n");
+    // disabled - requires a patent license
+    //iMediaPlayer->Add(Codec::CodecFactory::NewAac());
     Log::Print("Codec\tAiff\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewAiff());
     Log::Print("Codec\tAifc\n");
@@ -309,6 +311,11 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
     
     // Add protocol modules
     iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHls(aEnv, iUserAgent));
     
     // Add sources
     iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer,
