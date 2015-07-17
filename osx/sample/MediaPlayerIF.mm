@@ -5,6 +5,8 @@
 //  Copyright (c) 2015 OpenHome Limited. All rights reserved.
 //
 
+#import <Cocoa/Cocoa.h>
+
 #include "MediaPlayerIF.h"
 #include "UpdateCheck.h"
 #import "ConfigPersistentStore.h"
@@ -17,6 +19,7 @@ using namespace OpenHome::Configuration;
 using namespace OpenHome::Media;
 using namespace OpenHome::Net;
 
+static NSString *const kUpdateUri = OPENHOME_UPDATE_URI;
 
 MediaPlayerIF::MediaPlayerIF(TIpAddress subnet)
 {    
@@ -41,8 +44,9 @@ MediaPlayerIF::~MediaPlayerIF()
 TChar * MediaPlayerIF::checkForUpdate(TUint major, TUint minor)
 {
     Bws<1024> urlBuf;
+    
     if (UpdateChecker::updateAvailable(iDvStack->Env(),
-                                       "http://elmo/~alans/application.json",
+                                       [kUpdateUri cStringUsingEncoding:NSASCIIStringEncoding],
                                        urlBuf,
                                        major,
                                        minor))

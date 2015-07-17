@@ -437,6 +437,7 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
+					"OPENHOME_UPDATE_URI=@\\\"$(OPENHOME_UPDATE_URI)\\\"",
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -480,6 +481,7 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_PREPROCESSOR_DEFINITIONS = "OPENHOME_UPDATE_URI=@\\\"$(OPENHOME_UPDATE_URI)\\\"";
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -502,6 +504,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited)";
 				HEADERMAP_INCLUDES_FLAT_ENTRIES_FOR_TARGET_BEING_BUILT = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -523,6 +526,7 @@
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Release/lib",
 					"/Users/simonc/SampleApps/LitePipeSampleApps/dependencies/Mac-x64/ohMediaPlayer/lib",
 				);
+				OPENHOME_UPDATE_URI = "http://www.torino.plus.com/ohmediaplayer/application.json";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -553,6 +557,7 @@
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Release/lib",
 					"/Users/simonc/SampleApps/LitePipeSampleApps/dependencies/Mac-x64/ohMediaPlayer/lib",
 				);
+				OPENHOME_UPDATE_URI = "http://openhome.org";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
