@@ -52,9 +52,17 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
     TIpAddress  subnet = args->subnet;          // Preferred subnet.
 
     // Pipeline configuration.
-    static const TChar *aRoom  = "ExampleTestRoom";
-    static const TChar *aName  = "ExamplePlayer";
-    static const TChar *aUdn   = "ExampleDevice";
+    char computerName[MAX_COMPUTERNAME_LENGTH + 1];
+    DWORD len = sizeof(computerName)/sizeof(computerName[0]);
+    if (!GetComputerNameA(computerName, &len))
+    {
+        return 0;
+    }
+    static const TChar *room  = computerName;
+    static const TChar *name  = "SoftPlayer";
+    char udn[1024];
+    strcpy_s(udn, "4c494e4e-WinPlayer-"); // 4c494e4e- prefix is a temporary measure to allow recognition by Linn Konfig
+    strcat_s(udn, computerName);
     static const TChar *cookie = "ExampleMediaPlayer";
 
     NetworkAdapter *adapter = NULL;
@@ -94,7 +102,7 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
     adapter->RemoveRef(cookie);
 
     // Create the ExampleMediaPlayer instance.
-    g_emp = new ExampleMediaPlayer(hwnd, *dvStack, Brn(aUdn), aRoom, aName,
+    g_emp = new ExampleMediaPlayer(hwnd, *dvStack, Brn(udn), room, name,
                                    Brx::Empty()/*aUserAgent*/);
 
     // Add the audio driver to the pipeline.
@@ -145,20 +153,9 @@ cleanup:
         DeleteTimerQueue(hTimerQueue);
     }
 
-    if (driver != NULL)
-    {
-        delete driver;
-    }
-
-    if (g_emp != NULL)
-    {
-        delete g_emp;
-    }
-
-    if (g_lib != NULL)
-    {
-        delete g_lib;
-    }
+    delete driver;
+    delete g_emp;
+    delete g_lib;
 
     return 1;
 }

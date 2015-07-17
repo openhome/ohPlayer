@@ -213,8 +213,8 @@ void ExampleMediaPlayer::AddAttribute(const TChar* aAttribute)
 void ExampleMediaPlayer::RunWithSemaphore(Net::CpStack& aCpStack)
 {
     RegisterPlugins(iMediaPlayer->Env());
-    iMediaPlayer->Start();
     AddConfigApp();
+    iMediaPlayer->Start();
     iAppFramework->Start();
     iDevice->SetEnabled();
     iDeviceUpnpAv->SetEnabled();
@@ -268,6 +268,8 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
         "http-get:*:audio/ogg:*,"       // Vorbis
         "http-get:*:audio/x-ogg:*,"     // Vorbis
         "http-get:*:application/ogg:*," // Vorbis
+        //"tidalhifi.com:*:*:*,"          // Tidal
+        //"qobuz.com:*:*:*"               // Qobuz
         );
     DoRegisterPlugins(aEnv, kSupportedProtocols);
 }
@@ -277,8 +279,9 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
     // Add codecs
     Log::Print("Codec Registration: [\n");
 
-    Log::Print("Codec\tAac\n");
-    iMediaPlayer->Add(Codec::CodecFactory::NewAac());
+    // Disabled by default - requires patent license
+    //Log::Print("Codec\tAac\n");
+    //iMediaPlayer->Add(Codec::CodecFactory::NewAac());
     Log::Print("Codec\tAiff\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewAiff());
     Log::Print("Codec\tAifc\n");
@@ -289,6 +292,9 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
     iMediaPlayer->Add(Codec::CodecFactory::NewAdts());
     Log::Print("Codec:\tFlac\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewFlac());
+    // Disabled by default - requires patent and copyright licenses
+    //Log::Print("Codec:\tMP3\n");
+    //iMediaPlayer->Add(Codec::CodecFactory::NewMp3());
     Log::Print("Codec\tPcm\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewPcm());
     Log::Print("Codec\tVorbis\n");
@@ -300,6 +306,11 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
 
     // Add protocol modules
     iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHls(aEnv, iUserAgent));
 
     // Add sources
     iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer,
@@ -363,8 +374,17 @@ void ExampleMediaPlayer::AddConfigApp()
 
 void ExampleMediaPlayer::PresentationUrlChanged(const Brx& aUrl)
 {
-    Bws<Uri::kMaxUriBytes+1> url(aUrl);   // +1 for '\0'
-    iDevice->SetAttribute("Upnp.PresentationUrl", url.PtrZ());
+    if (!iDevice->Enabled()) {
+        // FIXME - can only set Product attribute once (meaning no updates on subnet change)
+        const TBool firstChange = (iPresentationUrl.Bytes() == 0);
+        iPresentationUrl.Replace(aUrl);
+        iDevice->SetAttribute("Upnp.PresentationUrl", iPresentationUrl.PtrZ());
+        if (firstChange) {
+            Bws<128> configAtt("App:Config=");
+            configAtt.Append(iPresentationUrl);
+            iMediaPlayer->Product().AddAttribute(configAtt);
+        }
+    }
 }
 
 TBool ExampleMediaPlayer::TryDisable(DvDevice& aDevice)
