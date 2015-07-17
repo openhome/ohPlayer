@@ -17,7 +17,7 @@ GTK_LIBS   := $(shell pkg-config --libs gtk+-3.0)
 CC           = g++
 CFLAGS       = -c -Wall -std=c++11 $(GTK_CFLAGS)
 DEBUG_CFLAGS = -g -O0 -DDEBUG -fstack-protector
-LIBS         = $(GTK_LIBS) -lnotify -lpthread -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lohMediaPlayer -lohMediaPlayerTestUtils -lWebAppFramework -lConfigUi -lohNetCore -lohNetmon  -lCodecAac -lCodecAacBase -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecAdts -lCodecFlac -lCodecWav -lohPipeline -lssl -lcrypto -ldl
+LIBS         = $(GTK_LIBS) -lnotify -lpthread -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lohMediaPlayer -lohMediaPlayerTestUtils -lWebAppFramework -lConfigUi -lohNetCore  -lCodecAac -lCodecAacBase -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecAdts -lCodecFlac -lCodecWav -lohPipeline -lssl -lcrypto -ldl
 INCLUDES     = -I../dependencies/Linux-armhf/ohMediaPlayer/include -I../dependencies/Linux-armhf/ohNetmon/include -I../dependencies/Linux-armhf/openssl/include -I../dependencies/Linux-armhf/ohNetGenerated-Linux-armhf-Release/include/ohnet/OpenHome/Net/Core
 
 TARGET    = litepipe-test-app
@@ -29,7 +29,7 @@ OBJ_DIR       = $(REL_OBJ_DIR)
 INSTALL      = install
 RESOURCEDIR  = ../dependencies/Linux-armhf/ohMediaPlayer/res
 
-PREFIX = /usr/local
+PREFIX = /usr
 
 # The directory to install the application to
 BINDIR = $(PREFIX)/bin
@@ -90,11 +90,11 @@ ifdef NVWA_DIR
 endif
 
 install:
-	$(INSTALL) -d $(BINDIR) $(RESDIR) $(RESDIR)/res
-	$(INSTALL) -m 755 $(TARGET) $(BINDIR)
-	$(INSTALL) -m 644 OpenHome-48x48.png $(RESDIR)
-	cp -R $(RESOURCEDIR)  $(RESDIR)
+	$(INSTALL) -m 755 -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(RESDIR) $(DESTDIR)$(RESDIR)/res
+	$(INSTALL) -m 755 $(TARGET) $(DESTDIR)$(BINDIR)
+	$(INSTALL) -m 644 OpenHome-48x48.png $(DESTDIR)$(RESDIR)
+	cp -R $(RESOURCEDIR) $(DESTDIR)$(RESDIR)
 
 uninstall:
-	rm $(BINDIR)/$(TARGET)
-	rm -rf $(RESDIR)
+	rm $(DESTDIR)$(BINDIR)/$(TARGET)
+	rm -rf $(DESTDIR)$(RESDIR)
