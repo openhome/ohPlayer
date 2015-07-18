@@ -22,7 +22,15 @@ using namespace OpenHome::Net;
 static NSString *const kUpdateUri = OPENHOME_UPDATE_URI;
 
 MediaPlayerIF::MediaPlayerIF(TIpAddress subnet)
-{    
+{
+#ifdef DEBUG
+    Debug::SetLevel(Debug::kBonjour);
+    Debug::SetLevel(Debug::kDvDevice);
+    Debug::SetLevel(Debug::kError);
+    Debug::SetLevel(Debug::kHttp);
+    Debug::SetLevel(Debug::BreakBeforeThrow());
+#endif  // DEBUG
+    
     // set up our media player
     setup(subnet);
 }
@@ -153,9 +161,11 @@ TBool MediaPlayerIF::setup (TIpAddress subnet)
 {
     
     // Pipeline configuration.
-    static const TChar *aRoom  = "ExampleTestRoom";
-    static const TChar *aName  = "ExamplePlayer";
-    static const TChar *aUdn   = "ExampleDevice";
+    NSString *computerName = [[NSHost currentHost] name];
+    const TChar *room  = [computerName cStringUsingEncoding:NSUTF8StringEncoding];
+    static const TChar *name  = "SoftPlayer";
+    // 4c494e4e- prefix is a temporary measure to allow recognition by Linn Konfig
+    NSString *udn = [NSString stringWithFormat:@"4c494e4e-OsxPlayer-%@",computerName];
     static const TChar *cookie = "ExampleMediaPlayer";
 
     // Create the library on the supplied subnet.
@@ -174,7 +184,10 @@ TBool MediaPlayerIF::setup (TIpAddress subnet)
     
     // Create MediaPlayer.
     iDriver = nil;
-    iExampleMediaPlayer = new ExampleMediaPlayer(*iDvStack, Brn(aUdn), aRoom, aName,
+    iExampleMediaPlayer = new ExampleMediaPlayer(*iDvStack,
+                                                 Brn([udn cStringUsingEncoding:NSUTF8StringEncoding]),
+                                                 room,
+                                                 name,
                                                  Brx::Empty()/*aUserAgent*/);
     if(iExampleMediaPlayer == nil)
         goto cleanup;
@@ -195,14 +208,9 @@ TBool MediaPlayerIF::setup (TIpAddress subnet)
     return true;
     
 cleanup:
-    if (iDriver != NULL)
-        delete iDriver;
-    
-    if (iExampleMediaPlayer != NULL)
-        delete iExampleMediaPlayer;
-    
-    if (iLib != NULL)
-        delete iLib;
+    delete iDriver;
+    delete iExampleMediaPlayer;
+    delete iLib;
 
     return false;
 }
@@ -328,9 +336,6 @@ void MediaPlayerIF::shutdown() {
     delete iLib;
     iLib = nil;
 }
-
-
-
 
 
 TChar * updateCheck(TUint major, TUint minor)
