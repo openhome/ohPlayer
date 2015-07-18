@@ -92,6 +92,7 @@ const Brx& aUserAgent)
     
     PipelineInitParams* pipelineParams = PipelineInitParams::New();
     pipelineParams->SetThreadPriorityMax(kPrioritySystemHighest-1);
+    pipelineParams->SetStarvationMonitorMaxSize(100 * Jiffies::kPerMs);
     
     // create MediaPlayer
     iMediaPlayer = new MediaPlayer( aDvStack,
