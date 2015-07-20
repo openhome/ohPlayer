@@ -81,7 +81,7 @@ OpenHome::Net::Library* MediaPlayerIF::CreateLibrary(TIpAddress preferredSubnet)
     TIpAddress            lastSubnet    = InitArgs::NO_SUBNET;
     const TChar          *lastSubnetStr = "Subnet.LastUsed";
     
-    initParams->SetDvEnableBonjour();
+    //initParams->SetDvEnableBonjour();
     
     Net::Library* lib = new Net::Library(initParams);
     iArbDriver = new Media::PriorityArbitratorDriver(kPrioritySystemHighest);
