@@ -22,10 +22,6 @@ class OsxAudio : public Thread
     // number of OS buffers to allocate for AudioQueue
     static const TInt32 kNumDataBuffers = 3;
     
-    // number of milliseconds for semaphores to wait between
-    // checks for thread shutdown requests
-    static const TInt32 kWaitTime = 250;
-    
 public:
     OsxAudio();
     ~OsxAudio();
