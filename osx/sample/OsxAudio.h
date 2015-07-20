@@ -97,15 +97,11 @@ private:
     // The PCM handler object which will parse PCM data into host buffers
     OsxPcmProcessor *   iPcmHandler;
     
-    // Semaphore to indicate to the main loop when stream initialisation has completed
-    Semaphore           iStreamInitialised;
-    
-    // Semaphore to indicate to the main loop when the current stream has completed
-    Semaphore           iStreamCompleted;
+    // Semaphore to indicate to the main loop when buffers need primed
+    Semaphore           iPrimeBuffers;
     
     // Mutex to ensure serialised access to host buffers
     Mutex               iHostLock;
-    
     
     // Flag to indicate when the main thread should exit
     bool                iQuit;

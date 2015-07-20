@@ -184,8 +184,10 @@ Msg* DriverOsx::ProcessMsg(MsgDecodedStream* aMsg)
     iAudioFormat.mBytesPerPacket   = iAudioFormat.mBytesPerFrame * iAudioFormat.mFramesPerPacket;
     iAudioFormat.mFormatFlags      = kLinearPCMFormatFlagIsBigEndian | kLinearPCMFormatFlagIsSignedInteger | kLinearPCMFormatFlagIsPacked;
     
+    iOsxAudio.stopQueue();
     iOsxAudio.initialise(&iPcmHandler, &iAudioFormat);
-    
+    iOsxAudio.startQueue();
+
     aMsg->RemoveRef();
     return NULL;
 }

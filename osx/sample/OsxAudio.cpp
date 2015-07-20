@@ -135,8 +135,7 @@ static void PlayCallback(void *inUserData, AudioQueueRef inAudioQueue, AudioQueu
 #endif /* TEST_BUFFER */
 
 OsxAudio::OsxAudio() : Thread("OsxAudio", kPriorityHigher )
-    , iStreamInitialised("TINI", 0)
-    , iStreamCompleted("TCOM", 0)
+    , iPrimeBuffers("TPRI", 0)
     , iHostLock("HLCK")
 {
     iQuit = false;
@@ -152,10 +151,8 @@ OsxAudio::~OsxAudio()
     // indicate to the main loop that we're done
     quit();
     
-    // we may be waiting on these signals and they're never
-    // going to happen, so signal them and let the thread exit
-    iStreamCompleted.Signal();
-    iStreamInitialised.Signal();
+    // we will be waiting on PrimeBuffers, so signal it and let the thread exit
+    iPrimeBuffers.Signal();
 
     // we're done here, so finalise our host audio resources
     finalise();
@@ -188,10 +185,6 @@ void OsxAudio::initialise(OsxPcmProcessor *aPcmHandler, AudioStreamBasicDescript
     
     // allocate a set of buffers of an appropriate size to handle the new stream
     initAudioBuffers();
-    
-    // signal to the main loop that we have initialised the AudioQueue
-    iStreamInitialised.Signal();
-
 }
 
 
@@ -254,8 +247,6 @@ void OsxAudio::finaliseAudioQueue()
     // dispose of the prevailing AudioQueue, terminating immediately
     AudioQueueDispose(iAudioQueue, true);
     iAudioQueue = NULL;
-    // indicate to the main loop that we're finished with this stream
-    iStreamCompleted.Signal();
 }
 
 void OsxAudio::initAudioBuffers()
@@ -284,26 +275,18 @@ void OsxAudio::primeAudioBuffers()
 
 void OsxAudio::startQueue()
 {
-    // we want to strat the audio queue so prime the buffers for a smooth start
-    primeAudioBuffers();
-    
-    // start the host AudioQueue. this will play audio from the buffers then start callbacks
-    // to PlayCallback to refill the buffers.
-    AudioQueueStart(iAudioQueue, NULL);
-
-    if(iPcmHandler)
-        iPcmHandler->setOutputActive(true);
-    
+    // signal to the main loop that we want to
+    iPrimeBuffers.Signal();
 }
 
 void OsxAudio::pauseQueue()
 {
-        AudioQueuePause(iAudioQueue);
+    AudioQueuePause(iAudioQueue);
 }
 
 void OsxAudio::resumeQueue()
 {
-        AudioQueueStart(iAudioQueue, NULL);
+    AudioQueueStart(iAudioQueue, NULL);
 }
 
 void OsxAudio::flushQueue()
@@ -334,8 +317,7 @@ void OsxAudio::quit()
     // we are done here, so set the iQuit flag and signal the main loop
     // that we wish to exit
     iQuit = true;
-    iStreamCompleted.Signal();
-    iStreamInitialised.Signal();
+    iPrimeBuffers.Signal();
 }
 
 void OsxAudio::Run()
@@ -345,18 +327,16 @@ void OsxAudio::Run()
         while(!iQuit)
         {
             // wait for a start signal
-            iStreamInitialised.Wait();
-            iStreamInitialised.Clear();
+            iPrimeBuffers.Wait();
             
             if(!iQuit)
             {
-                // start the host audio queue
-                startQueue();
+                // prime audio buffers
+                primeAudioBuffers();
                 
-                // wait until our stream is terminated
-                // this can happen due to a halt or when we switch audio formats
-                iStreamCompleted.Wait();
-                iStreamCompleted.Clear();
+                // start the host AudioQueue. this will play audio from the buffers then start callbacks
+                // to PlayCallback to refill the buffers.
+                AudioQueueStart(iAudioQueue, NULL);
             }
         }
     }
