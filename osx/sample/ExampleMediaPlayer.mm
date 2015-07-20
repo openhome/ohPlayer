@@ -134,10 +134,9 @@ void ExampleMediaPlayer::Run(Net::CpStack& aCpStack)
     // Register all of our supported plugin formats
     RegisterPlugins(iMediaPlayer->Env());
     
+    AddConfigApp();
     // now we are ready to start our mediaplayer
     iMediaPlayer->Start();
-
-    AddConfigApp();
     iAppFramework->Start();
 
     // now enable our UPNP devices
