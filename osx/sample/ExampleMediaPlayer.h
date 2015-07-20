@@ -114,7 +114,6 @@ namespace OpenHome {
                 Net::DvDevice*          iDeviceUpnpAv;
                 RamStore*               iRamStore;
                 Web::WebAppFramework*   iAppFramework;
-                Semaphore               iSemShutdown;
                 Media::DriverOsx*              iDriver;
                 Configuration::ConfigPersistentStore* iConfigPersistentStore;
             private:

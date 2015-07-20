@@ -26,10 +26,8 @@ using namespace OpenHome::Web;
 const Brn ExampleMediaPlayer::kSongcastSenderIconFileName("SongcastSenderIcon");
 
 
-ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName,
-const Brx& aUserAgent)
-: iSemShutdown("TMPS", 0)
-, iDisabled("test", 0)
+ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName, const Brx& aUserAgent) :
+  iDisabled("test", 0)
 , iLive(false)
 , iUserAgent(aUserAgent)
 , iObservableFriendlyName(new Bws<RaopDevice::kMaxNameBytes>())
@@ -88,7 +86,6 @@ const Brx& aUserAgent)
     volumeInit.SetVolume(iVolume);
     volumeInit.SetBalance(iVolume);
     volumeInit.SetFade(iVolume);
-    
     
     PipelineInitParams* pipelineParams = PipelineInitParams::New();
     pipelineParams->SetThreadPriorityMax(kPrioritySystemHighest-1);
@@ -215,7 +212,6 @@ void ExampleMediaPlayer::StopPipeline()
     }
     
     iMediaPlayer->Quit();
-    iSemShutdown.Signal();
 }
 
 TBool ExampleMediaPlayer::CanPlay()
