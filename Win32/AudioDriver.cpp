@@ -208,9 +208,9 @@ TUint AudioDriver::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/,
     return 0;
 }
 
-TBool AudioDriver::CheckMixFormat(TUint iSampleRate,
-                                  TUint iNumChannels,
-                                  TUint iBitDepth)
+TBool AudioDriver::CheckMixFormat(TUint aSampleRate,
+                                  TUint aNumChannels,
+                                  TUint aBitDepth)
 {
     HRESULT       hr;
     WAVEFORMATEX *closestMix;
@@ -233,11 +233,11 @@ TBool AudioDriver::CheckMixFormat(TUint iSampleRate,
 
     // Verify the Audio Engine supports the pipeline format.
     iMixFormat->wFormatTag      = WAVE_FORMAT_PCM;
-    iMixFormat->nChannels       = (WORD)iNumChannels;
-    iMixFormat->nSamplesPerSec  = iSampleRate;
-    iMixFormat->nBlockAlign     = WORD((iNumChannels * iBitDepth)/8);
-    iMixFormat->nAvgBytesPerSec = DWORD(iSampleRate * iMixFormat->nBlockAlign);
-    iMixFormat->wBitsPerSample  = (WORD)iBitDepth;
+    iMixFormat->nChannels       = (WORD)aNumChannels;
+    iMixFormat->nSamplesPerSec  = aSampleRate;
+    iMixFormat->nBlockAlign     = WORD((aNumChannels * aBitDepth)/8);
+    iMixFormat->nAvgBytesPerSec = DWORD(aSampleRate * iMixFormat->nBlockAlign);
+    iMixFormat->wBitsPerSample  = (WORD)aBitDepth;
     iMixFormat->cbSize          = 0;
 
     hr = iAudioClient->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED,
@@ -250,13 +250,13 @@ TBool AudioDriver::CheckMixFormat(TUint iSampleRate,
 
         // Check to see if the issue is the number of channels.
         // We can duplicate a channel to play mono as stereo.
-        if (iNumChannels == 1 && closestMix->nChannels == 2)
+        if (aNumChannels == 1 && closestMix->nChannels == 2)
         {
             iMixFormat->nChannels   = closestMix->nChannels;
             iMixFormat->nBlockAlign =
-                                   WORD((iMixFormat->nChannels * iBitDepth)/8);
+                                   WORD((iMixFormat->nChannels * aBitDepth)/8);
             iMixFormat->nAvgBytesPerSec =
-                                   DWORD(iSampleRate * iMixFormat->nBlockAlign);
+                                   DWORD(aSampleRate * iMixFormat->nBlockAlign);
 
             CoTaskMemFree(closestMix);
 

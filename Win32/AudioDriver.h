@@ -3,6 +3,7 @@
 #include <Mmdeviceapi.h>
 
 #include "AudioSessionEvents.h"
+#include <OpenHome/Media/Utils/Aggregator.h>
 
 namespace OpenHome {
     class Environment;

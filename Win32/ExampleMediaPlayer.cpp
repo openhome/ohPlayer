@@ -102,6 +102,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
     // Set pipeline thread priority just below the pipeline animator.
     iInitParams = PipelineInitParams::New();
     iInitParams->SetThreadPriorityMax(kPriorityHighest);
+    iInitParams->SetStarvationMonitorMaxSize(Jiffies::kPerMs * 100);
 
     // create MediaPlayer
     iMediaPlayer = new MediaPlayer( aDvStack, *iDevice, *iRamStore,
@@ -111,6 +112,9 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
 
     // Register an observer, primarily to monitor the pipeline status.
     iMediaPlayer->Pipeline().AddObserver(*this);
+
+    iPipelineStateLogger = new LoggingPipelineObserver();
+    iMediaPlayer->Pipeline().AddObserver(*iPipelineStateLogger);
 
     // Set up config app.
     static const TUint addr = 0;    // Bind to all addresses.
@@ -129,6 +133,7 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
     ASSERT(!iDevice->Enabled());
     delete iAppFramework;
     delete iCpProxy;
+    delete iPipelineStateLogger;
     delete iMediaPlayer;
     delete iDevice;
     delete iDeviceUpnpAv;
@@ -412,9 +417,10 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
     TIpAddress            lastSubnet    = InitArgs::NO_SUBNET;;
     const TChar          *lastSubnetStr = "Subnet.LastUsed";
 
-    initParams->SetDvEnableBonjour();
+    //initParams->SetDvEnableBonjour();
 
     Net::Library* lib = new Net::Library(initParams);
+    Debug::SetLevel(/*Debug::kError | */Debug::kPipeline);
 
     std::vector<NetworkAdapter*>* subnetList = lib->CreateSubnetList();
 
