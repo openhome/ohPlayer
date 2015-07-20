@@ -92,9 +92,6 @@ public:
     // Resume driver output
     void resume();
     
-    // Quit the driver
-    void quit() { iQuit = true; }
-    
     
 private: // from Thread
     // Run - the execution method for class's main thread

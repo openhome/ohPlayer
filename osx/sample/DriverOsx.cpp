@@ -51,7 +51,6 @@ DriverOsx::DriverOsx(Environment& aEnv, IPipeline& aPipeline)
 
 DriverOsx::~DriverOsx()
 {
-    quit();
     iPcmHandler.quit();
 }
 
