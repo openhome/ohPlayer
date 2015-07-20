@@ -115,6 +115,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
 ExampleMediaPlayer::~ExampleMediaPlayer()
 {
     ASSERT(!iDevice->Enabled());
+    Pipeline().Quit();
     delete iAppFramework;
     delete iCpProxy;
     delete iMediaPlayer;

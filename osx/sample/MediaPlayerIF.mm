@@ -39,7 +39,6 @@ MediaPlayerIF::~MediaPlayerIF()
 {
     if (iExampleMediaPlayer != NULL)
     {
-        iExampleMediaPlayer->StopPipeline();
         delete iExampleMediaPlayer;
     }
     
