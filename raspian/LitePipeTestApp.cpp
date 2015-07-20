@@ -46,7 +46,7 @@ static GThread  *g_mplayerThread    = NULL;  // Media Player thread
 static InitArgs  g_mPlayerArgs;              // Media Player arguments.
 
 static const gchar *g_icon_path =
-                        "/usr/local/share/litepipe-test-app/OpenHome-48x48.png";
+                        "/usr/share/litepipe-test-app/OpenHome-48x48.png";
 
 const gchar     *g_appName          = "LitePipeTestApp";
 

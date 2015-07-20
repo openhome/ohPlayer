@@ -12,3 +12,6 @@ debug-objs/
 
 # Executables
 litepipe-test-app
+
+# Generated install packages
+*.deb
