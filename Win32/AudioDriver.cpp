@@ -189,6 +189,7 @@ TUint AudioDriver::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/,
     // Plug the requested sample rate into the existing mix format and
     // query the Audio Engine.
     mixFormat->nSamplesPerSec = aSampleRateTo;
+    mixFormat->nAvgBytesPerSec = mixFormat->nSamplesPerSec * mixFormat->nBlockAlign;
 
     hr = iAudioClient->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED,
                                          mixFormat,
