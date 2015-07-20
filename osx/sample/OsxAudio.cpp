@@ -183,9 +183,6 @@ void OsxAudio::initialise(OsxPcmProcessor *aPcmHandler, AudioStreamBasicDescript
     iPcmHandler = aPcmHandler;
     iAudioFormat = *aFormat;
     
-    // indicate that we're not playing the stream yet; this will be done in startQueue
-    iPlaying = false;
-    
     // set up a new AudioQueue object in the format specified by aFormat
     initAudioQueue();
     
@@ -257,8 +254,6 @@ void OsxAudio::finaliseAudioQueue()
     // dispose of the prevailing AudioQueue, terminating immediately
     AudioQueueDispose(iAudioQueue, true);
     iAudioQueue = NULL;
-    iPlaying = false;
-    
     // indicate to the main loop that we're finished with this stream
     iStreamCompleted.Signal();
 }
@@ -299,34 +294,16 @@ void OsxAudio::startQueue()
     if(iPcmHandler)
         iPcmHandler->setOutputActive(true);
     
-    // indicate that we're now playing
-    iPlaying = true;
 }
 
 void OsxAudio::pauseQueue()
 {
-    // stop host AudioQueue playback immediately and indicate that we have stopped
-    if(iPlaying)
-    {
         AudioQueuePause(iAudioQueue);
-        if(iPcmHandler)
-            iPcmHandler->setOutputActive(false);
-        
-        iPlaying = false;
-    }
 }
 
 void OsxAudio::resumeQueue()
 {
-    // stop host AudioQueue playback immediately and indicate that we have stopped
-    if(!iPlaying)
-    {
         AudioQueueStart(iAudioQueue, NULL);
-        if(iPcmHandler)
-            iPcmHandler->setOutputActive(true);
-        
-        iPlaying = true;
-    }
 }
 
 void OsxAudio::flushQueue()
@@ -339,15 +316,7 @@ void OsxAudio::flushQueue()
 
 void OsxAudio::stopQueue()
 {
-    // stop host AudioQueue playback immediately and indicate that we have stopped
-    if(iPlaying)
-    {
-        AudioQueueStop(iAudioQueue, true);
-        if(iPcmHandler)
-            iPcmHandler->setOutputActive(false);
-        
-        iPlaying = false;
-    }
+    AudioQueueStop(iAudioQueue, false);
 }
 
 void OsxAudio::setVolume(Float32 volume)

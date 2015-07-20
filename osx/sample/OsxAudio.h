@@ -106,8 +106,6 @@ private:
     // Mutex to ensure serialised access to host buffers
     Mutex               iHostLock;
     
-    // Flag to indicate when the stream is in 'play' mode
-    bool                iPlaying;
     
     // Flag to indicate when the main thread should exit
     bool                iQuit;
