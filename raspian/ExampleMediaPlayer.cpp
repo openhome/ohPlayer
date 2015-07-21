@@ -103,10 +103,12 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
     iInitParams->SetThreadPriorityMax(kPriorityHighest);
 
     // create MediaPlayer
+    //
+    // FIXME If volume is unavailable pass NULL to MediaPlayer.
     iMediaPlayer = new MediaPlayer( aDvStack, *iDevice, *iRamStore,
                                    *iConfigStore, iInitParams,
-                                    volumeInit, volumeProfile, aUdn, Brn(aRoom),
-                                    Brn(aProductName));
+                                    volumeInit, volumeProfile, aUdn,
+                                    Brn(aRoom), Brn(aProductName));
 
     // Register an observer, primarily to monitor the pipeline status.
     iMediaPlayer->Pipeline().AddObserver(*this);

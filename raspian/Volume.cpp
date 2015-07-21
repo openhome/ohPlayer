@@ -53,8 +53,8 @@ TUint VolumeProfile::FadeMax() const
 
 VolumeControl::VolumeControl()
 {
-    const TChar *CARD       = "default";
-    const TChar *SELEM_NAME = "PCM";
+    const TChar *CARD          = "default";
+    const TChar *SELEM_NAMES[] = {"Digital", "PCM"};
 
     // Get the mixer element for the default sound card.
     snd_mixer_open(&iHandle, 0);
@@ -62,19 +62,37 @@ VolumeControl::VolumeControl()
     snd_mixer_selem_register(iHandle, NULL, NULL);
     snd_mixer_load(iHandle);
 
-    // Get the mixer element for the PCM control.
+    // Get the mixer element for the most relevant control.
     snd_mixer_selem_id_t *iSid;
 
     snd_mixer_selem_id_alloca(&iSid);
     snd_mixer_selem_id_set_index(iSid, 0);
-    snd_mixer_selem_id_set_name(iSid, SELEM_NAME);
 
-    iElem = snd_mixer_find_selem(iHandle, iSid);
+    int nelems = sizeof(SELEM_NAMES)/sizeof(TChar*);
+
+    for (int i=0; i<nelems; i++)
+    {
+        snd_mixer_selem_id_set_name(iSid, SELEM_NAMES[i]);
+
+        iElem = snd_mixer_find_selem(iHandle, iSid);
+
+        // Quit the loop if control found.
+        if (iElem > NULL)
+        {
+            break;
+        }
+    }
+
 }
 
 VolumeControl::~VolumeControl()
 {
     snd_mixer_close(iHandle);
+}
+
+TBool VolumeControl::VolumeSupported()
+{
+    return (iElem != NULL);
 }
 
 void VolumeControl::SetVolume(TUint aVolume)
@@ -84,6 +102,12 @@ void VolumeControl::SetVolume(TUint aVolume)
     double     min_norm;
     long       min, max, value;
     TInt       err;
+
+    // Sanity Check
+    if (!VolumeSupported())
+    {
+        return;
+    }
 
     // Use the dB range to map the volume to a scale more in tune
     // with the human ear, if possible.

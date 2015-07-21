@@ -116,7 +116,12 @@ void InitAndRunMediaPlayer(gpointer args)
                                    Brx::Empty()/*aUserAgent*/);
 
     // Add the audio driver to the pipeline.
-    driver = new DriverAlsa(g_emp->Pipeline(), 25000);
+    //
+    // The 22052ms value a is a bit of a magic number which get's
+    // things going for the Hifiberry Digi+ card.
+    //
+    // FIXME This should be calculated.
+    driver = new DriverAlsa(g_emp->Pipeline(), 22052);
     if (driver == NULL)
     {
         goto cleanup;

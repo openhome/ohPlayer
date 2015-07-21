@@ -6,6 +6,9 @@
 
 #include "DriverAlsa.h"
 
+// Comment out this line for targets without 32 bit audio support.
+#define S32_BIT_SUPPORT
+
 using namespace OpenHome;
 using namespace OpenHome::Media;
 
@@ -202,11 +205,19 @@ TBool PcmProcessorLe::ProcessFragment24(const Brx& aData, TUint aNumChannels)
     TByte *nData;
     TUint  bytes;
 
+#ifdef S32_BIT_SUPPORT
+    // 24 bit audio is not supported on the platform so it is converted
+    // to signed 32 bit audio for playback.
+    //
+    // Accordingly we allocate room for 4 byte samples.
+    bytes = (aData.Bytes() * 4) / 3;
+#else /* S32_BIT_SUPPORT */
     // 24 bit audio is not supported on the platform so it is converted
     // to signed 16 bit audio for playback.
     //
     // Accordingly one third of the input data is discarded.
     bytes = (aData.Bytes() * 2) / 3;
+#endif /* S32_BIT_SUPPORT */
 
     // If we are manually converting mono to stereo the data will double.
     if (iDuplicateChannel)
@@ -229,12 +240,20 @@ TBool PcmProcessorLe::ProcessFragment24(const Brx& aData, TUint aNumChannels)
 
     while (ptr1 < endp)
     {
-        // Store the S16 data in little endian format.
+        // Store the data in little endian format.
+#ifdef S32_BIT_SUPPORT
+        *ptr1++ = 0;
+        *ptr1++ = *(ptr+2);
+#endif /* S32_BIT_SUPPORT */
         *ptr1++ = *(ptr+1);
         *ptr1++ = *(ptr+0);
 
         if (iDuplicateChannel)
         {
+#ifdef S32_BIT_SUPPORT
+            *ptr1++ = 0;
+            *ptr1++ = *(ptr+2);
+#endif /* S32_BIT_SUPPORT */
             *ptr1++ = *(ptr+1);
             *ptr1++ = *(ptr+0);
         }
@@ -295,19 +314,37 @@ void PcmProcessorLe::ProcessSample16(const TByte* aSample, TUint aNumChannels)
 void PcmProcessorLe::ProcessSample24(const TByte* aSample, TUint aNumChannels)
 {
     TUint byteIndex = 0;
+#ifdef S32_BIT_SUPPORT
+    TByte subsample[4];   // Store for S32 sample data.
+#else /* S32_BIT_SUPPORT */
     TByte subsample[2];   // Store for S16 sample data.
+#endif /* S32_BIT_SUPPORT */
 
     for (TUint i = 0; i < aNumChannels; ++i)
     {
+#ifdef S32_BIT_SUPPORT
+        // Store the S32 data in little endian format.
+        subsample[0] = 0;
+        subsample[1] = aSample[byteIndex+2];
+        subsample[2] = aSample[byteIndex+1];
+        subsample[3] = aSample[byteIndex+0];
+
+        Append(subsample, 4);
+#else /* S32_BIT_SUPPORT */
         // Store the S16 data in little endian format.
         subsample[0] = aSample[byteIndex+1];
         subsample[1] = aSample[byteIndex+0];
 
         Append(subsample, 2);
+#endif /* S32_BIT_SUPPORT */
 
         if (iDuplicateChannel)
         {
+#ifdef S32_BIT_SUPPORT
+            Append(subsample, 4);
+#else /* S32_BIT_SUPPORT */
             Append(subsample, 2);
+#endif /* S32_BIT_SUPPORT */
         }
 
         byteIndex += 3;
@@ -408,7 +445,11 @@ DriverAlsa::Pimpl::Pimpl(const TChar* aAlsaDevice, TUint aBufferUs)
     ASSERT(err == 0);
 
     iProfiles.emplace_back(new PcmProcessorLe(*this, iSampleBuffer),
+#ifdef S32_BIT_SUPPORT
+            OutputFormat(SND_PCM_FORMAT_S32_LE, 4),  // S24 -> S32
+#else /* S32_BIT_SUPPORT */
             OutputFormat(SND_PCM_FORMAT_S16_LE, 2),  // S24 -> S16
+#endif /* S32_BIT_SUPPORT */
             OutputFormat(SND_PCM_FORMAT_S16_LE, 2),  // S16
             OutputFormat(SND_PCM_FORMAT_S16_LE, 2)); // U8 -> S16
 }
