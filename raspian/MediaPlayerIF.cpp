@@ -7,6 +7,8 @@
 
 #include <OpenHome/Net/Private/DviStack.h>
 #include <OpenHome/Private/Printer.h>
+#include <OpenHome/Av/Debug.h>
+#include <OpenHome/Media/Debug.h>
 
 #include "DriverAlsa.h"
 #include "ExampleMediaPlayer.h"
@@ -83,6 +85,10 @@ void InitAndRunMediaPlayer(gpointer args)
     Net::CpStack   *cpStack = NULL;
     Net::DvStack   *dvStack = NULL;
     DriverAlsa     *driver  = NULL;
+
+    Debug::SetLevel(Debug::kPipeline);
+    Debug::SetLevel(Debug::kSongcast);
+    //Debug::SetLevel(Debug::kError);
 
     // Create the library on the supplied subnet.
     g_lib  = ExampleMediaPlayerInit::CreateLibrary(subnet);
