@@ -3,6 +3,7 @@
 // End of Extras
 
 #include <gtk/gtk.h>
+#include <unistd.h>
 
 #include <OpenHome/Net/Private/DviStack.h>
 #include <OpenHome/Private/Printer.h>
@@ -71,11 +72,13 @@ void InitAndRunMediaPlayer(gpointer args)
     TIpAddress  subnet = iArgs->subnet;          // Preferred subnet.
 
     // Pipeline configuration.
-    static const TChar *aRoom  = "ExampleTestRoom";
-    static const TChar *aName  = "ExamplePlayer";
-    static const TChar *aUdn   = "ExampleDevice";
+    static const TChar *name  = "SoftPlayer";
+    static char udn[1024];
+    static char hostname[512];
+    gethostname(hostname, 512);
+    sprintf(udn, "4c494e4e-PiPlayer-%s", hostname);
     static const TChar *cookie = "ExampleMediaPlayer";
-
+    static const TChar *room  = hostname;
     NetworkAdapter *adapter = NULL;
     Net::CpStack   *cpStack = NULL;
     Net::DvStack   *dvStack = NULL;
@@ -103,7 +106,7 @@ void InitAndRunMediaPlayer(gpointer args)
     adapter->RemoveRef(cookie);
 
     // Create the ExampleMediaPlayer instance.
-    g_emp = new ExampleMediaPlayer(*dvStack, Brn(aUdn), aRoom, aName,
+    g_emp = new ExampleMediaPlayer(*dvStack, Brn(udn), room, name,
                                    Brx::Empty()/*aUserAgent*/);
 
     // Add the audio driver to the pipeline.
