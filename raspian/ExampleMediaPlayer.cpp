@@ -409,7 +409,7 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
     TIpAddress            lastSubnet    = InitArgs::NO_SUBNET;;
     const TChar          *lastSubnetStr = "Subnet.LastUsed";
 
-    initParams->SetDvEnableBonjour();
+    //initParams->SetDvEnableBonjour();
 
     Net::Library* lib = new Net::Library(initParams);
 
