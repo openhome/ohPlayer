@@ -231,8 +231,8 @@ void ExampleMediaPlayer::AddAttribute(const TChar* aAttribute)
 void ExampleMediaPlayer::RunWithSemaphore(Net::CpStack& aCpStack)
 {
     RegisterPlugins(iMediaPlayer->Env());
-    iMediaPlayer->Start();
     AddConfigApp();
+    iMediaPlayer->Start();
     iAppFramework->Start();
     iDevice->SetEnabled();
     iDeviceUpnpAv->SetEnabled();
@@ -302,6 +302,11 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
 
     // Add protocol modules
     iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHls(aEnv, iUserAgent));
 
     // Add sources
     iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer,
@@ -366,8 +371,17 @@ void ExampleMediaPlayer::AddConfigApp()
 
 void ExampleMediaPlayer::PresentationUrlChanged(const Brx& aUrl)
 {
-    Bws<Uri::kMaxUriBytes+1> url(aUrl);   // +1 for '\0'
-    iDevice->SetAttribute("Upnp.PresentationUrl", url.PtrZ());
+    if (!iDevice->Enabled()) {
+        // FIXME - can only set Product attribute once (meaning no updates on subnet change)
+        const TBool firstChange = (iPresentationUrl.Bytes() == 0);
+        iPresentationUrl.Replace(aUrl);
+        iDevice->SetAttribute("Upnp.PresentationUrl", iPresentationUrl.PtrZ());
+        if (firstChange) {
+            Bws<128> configAtt("App:Config=");
+            configAtt.Append(iPresentationUrl);
+            iMediaPlayer->Product().AddAttribute(configAtt);
+        }
+    }
 }
 
 TBool ExampleMediaPlayer::TryDisable(DvDevice& aDevice)
