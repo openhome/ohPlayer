@@ -111,6 +111,9 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
     // Register an observer, primarily to monitor the pipeline status.
     iMediaPlayer->Pipeline().AddObserver(*this);
 
+    iPipelineStateLogger = new LoggingPipelineObserver();
+    iMediaPlayer->Pipeline().AddObserver(*iPipelineStateLogger);
+
     // Set up config app.
     static const TUint addr = 0;    // Bind to all addresses.
     static const TUint port = 0;    // Bind to whatever free port the OS
@@ -129,6 +132,7 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
     ASSERT(!iDevice->Enabled());
     delete iAppFramework;
     delete iCpProxy;
+    delete iPipelineStateLogger;
     delete iMediaPlayer;
     delete iDevice;
     delete iDeviceUpnpAv;
