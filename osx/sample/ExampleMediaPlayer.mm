@@ -84,8 +84,8 @@ const Brx& aUserAgent)
     
     // Volume Control
     VolumeProfile  volumeProfile;
-    VolumeConsumer volumeInit(iVolume);
-    
+    VolumeConsumer volumeInit;
+    volumeInit.SetVolume(iVolume);
     volumeInit.SetBalance(iVolume);
     volumeInit.SetFade(iVolume);
     
@@ -300,6 +300,9 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
     iMediaPlayer->Add(Codec::CodecFactory::NewAdts());
     Log::Print("Codec:\tFlac\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewFlac());
+    // Disabled by default - requires patent and copyright licenses
+    //Log::Print("Codec:\tMP3\n");
+    //iMediaPlayer->Add(Codec::CodecFactory::NewMp3());
     Log::Print("Codec\tPcm\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewPcm());
     Log::Print("Codec\tVorbis\n");

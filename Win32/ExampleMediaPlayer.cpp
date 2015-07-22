@@ -94,8 +94,8 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
 
     // Volume Control
     VolumeProfile  volumeProfile;
-    VolumeConsumer volumeInit(iVolume);
-
+    VolumeConsumer volumeInit;
+    volumeInit.SetVolume(iVolume);
     volumeInit.SetBalance(iVolume);
     volumeInit.SetFade(iVolume);
 
