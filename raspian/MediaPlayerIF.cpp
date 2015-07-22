@@ -3,9 +3,12 @@
 // End of Extras
 
 #include <gtk/gtk.h>
+#include <unistd.h>
 
 #include <OpenHome/Net/Private/DviStack.h>
 #include <OpenHome/Private/Printer.h>
+#include <OpenHome/Av/Debug.h>
+#include <OpenHome/Media/Debug.h>
 
 #include "DriverAlsa.h"
 #include "ExampleMediaPlayer.h"
@@ -71,15 +74,21 @@ void InitAndRunMediaPlayer(gpointer args)
     TIpAddress  subnet = iArgs->subnet;          // Preferred subnet.
 
     // Pipeline configuration.
-    static const TChar *aRoom  = "ExampleTestRoom";
-    static const TChar *aName  = "ExamplePlayer";
-    static const TChar *aUdn   = "ExampleDevice";
+    static const TChar *name  = "SoftPlayer";
+    static char udn[1024];
+    static char hostname[512];
+    gethostname(hostname, 512);
+    sprintf(udn, "4c494e4e-PiPlayer-%s", hostname);
     static const TChar *cookie = "ExampleMediaPlayer";
-
+    static const TChar *room  = hostname;
     NetworkAdapter *adapter = NULL;
     Net::CpStack   *cpStack = NULL;
     Net::DvStack   *dvStack = NULL;
     DriverAlsa     *driver  = NULL;
+
+    Debug::SetLevel(Debug::kPipeline);
+    Debug::SetLevel(Debug::kSongcast);
+    //Debug::SetLevel(Debug::kError);
 
     // Create the library on the supplied subnet.
     g_lib  = ExampleMediaPlayerInit::CreateLibrary(subnet);
@@ -103,11 +112,16 @@ void InitAndRunMediaPlayer(gpointer args)
     adapter->RemoveRef(cookie);
 
     // Create the ExampleMediaPlayer instance.
-    g_emp = new ExampleMediaPlayer(*dvStack, Brn(aUdn), aRoom, aName,
+    g_emp = new ExampleMediaPlayer(*dvStack, Brn(udn), room, name,
                                    Brx::Empty()/*aUserAgent*/);
 
     // Add the audio driver to the pipeline.
-    driver = new DriverAlsa(g_emp->Pipeline(), 25000);
+    //
+    // The 22052ms value a is a bit of a magic number which get's
+    // things going for the Hifiberry Digi+ card.
+    //
+    // FIXME This should be calculated.
+    driver = new DriverAlsa(g_emp->Pipeline(), 22052);
     if (driver == NULL)
     {
         goto cleanup;

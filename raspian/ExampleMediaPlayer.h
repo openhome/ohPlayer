@@ -71,6 +71,7 @@ private:
     void  Disabled();
 protected:
     MediaPlayer                   *iMediaPlayer;
+    Media::IPipelineObserver      *iPipelineStateLogger;
     Media::PipelineInitParams     *iInitParams;
     Net::DvDeviceStandard         *iDevice;
     Net::DvDevice                 *iDeviceUpnpAv;
@@ -90,6 +91,8 @@ private:
     IOhmTimestampMapper       *iRxTsMapper;
     const Brx                 &iUserAgent;
     Web::ConfigAppMediaPlayer *iConfigApp;
+    Bws<Uri::kMaxUriBytes+1>   iPresentationUrl;
+
 private: // from Media::IPipelineObserver
     void NotifyPipelineState(Media::EPipelineState aState) override;
     void NotifyMode(const Brx& aMode, const Media::ModeInfo& aInfo) override;

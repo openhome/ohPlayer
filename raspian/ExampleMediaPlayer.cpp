@@ -103,13 +103,18 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
     iInitParams->SetThreadPriorityMax(kPriorityHighest);
 
     // create MediaPlayer
+    //
+    // FIXME If volume is unavailable pass NULL to MediaPlayer.
     iMediaPlayer = new MediaPlayer( aDvStack, *iDevice, *iRamStore,
                                    *iConfigStore, iInitParams,
-                                    volumeInit, volumeProfile, aUdn, Brn(aRoom),
-                                    Brn(aProductName));
+                                    volumeInit, volumeProfile, aUdn,
+                                    Brn(aRoom), Brn(aProductName));
 
     // Register an observer, primarily to monitor the pipeline status.
     iMediaPlayer->Pipeline().AddObserver(*this);
+
+    iPipelineStateLogger = new LoggingPipelineObserver();
+    iMediaPlayer->Pipeline().AddObserver(*iPipelineStateLogger);
 
     // Set up config app.
     static const TUint addr = 0;    // Bind to all addresses.
@@ -129,6 +134,7 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
     ASSERT(!iDevice->Enabled());
     delete iAppFramework;
     delete iCpProxy;
+    delete iPipelineStateLogger;
     delete iMediaPlayer;
     delete iDevice;
     delete iDeviceUpnpAv;
@@ -227,8 +233,8 @@ void ExampleMediaPlayer::AddAttribute(const TChar* aAttribute)
 void ExampleMediaPlayer::RunWithSemaphore(Net::CpStack& aCpStack)
 {
     RegisterPlugins(iMediaPlayer->Env());
-    iMediaPlayer->Start();
     AddConfigApp();
+    iMediaPlayer->Start();
     iAppFramework->Start();
     iDevice->SetEnabled();
     iDeviceUpnpAv->SetEnabled();
@@ -373,8 +379,17 @@ void ExampleMediaPlayer::AddConfigApp()
 
 void ExampleMediaPlayer::PresentationUrlChanged(const Brx& aUrl)
 {
-    Bws<Uri::kMaxUriBytes+1> url(aUrl);   // +1 for '\0'
-    iDevice->SetAttribute("Upnp.PresentationUrl", url.PtrZ());
+    if (!iDevice->Enabled()) {
+        // FIXME - can only set Product attribute once (meaning no updates on subnet change)
+        const TBool firstChange = (iPresentationUrl.Bytes() == 0);
+        iPresentationUrl.Replace(aUrl);
+        iDevice->SetAttribute("Upnp.PresentationUrl", iPresentationUrl.PtrZ());
+        if (firstChange) {
+            Bws<128> configAtt("App:Config=");
+            configAtt.Append(iPresentationUrl);
+            iMediaPlayer->Product().AddAttribute(configAtt);
+        }
+    }
 }
 
 TBool ExampleMediaPlayer::TryDisable(DvDevice& aDevice)
@@ -402,7 +417,7 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
     TIpAddress            lastSubnet    = InitArgs::NO_SUBNET;;
     const TChar          *lastSubnetStr = "Subnet.LastUsed";
 
-    initParams->SetDvEnableBonjour();
+    //initParams->SetDvEnableBonjour();
 
     Net::Library* lib = new Net::Library(initParams);
 
