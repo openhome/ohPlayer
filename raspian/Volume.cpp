@@ -90,7 +90,7 @@ VolumeControl::~VolumeControl()
     snd_mixer_close(iHandle);
 }
 
-TBool VolumeControl::VolumeSupported()
+TBool VolumeControl::IsVolumeSupported()
 {
     return (iElem != NULL);
 }
@@ -104,7 +104,7 @@ void VolumeControl::SetVolume(TUint aVolume)
     TInt       err;
 
     // Sanity Check
-    if (!VolumeSupported())
+    if (! IsVolumeSupported())
     {
         return;
     }

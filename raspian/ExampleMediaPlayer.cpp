@@ -94,17 +94,23 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
     // Volume Control
     VolumeProfile  volumeProfile;
     VolumeConsumer volumeInit;
-    volumeInit.SetVolume(iVolume);
-    volumeInit.SetBalance(iVolume);
-    volumeInit.SetFade(iVolume);
+
+    if (iVolume.IsVolumeSupported())
+    {
+        volumeInit.SetVolume(iVolume);
+        volumeInit.SetBalance(iVolume);
+        volumeInit.SetFade(iVolume);
+    }
+    else
+    {
+        Log::Print("Volume Control Unavailable\n");
+    }
 
     // Set pipeline thread priority just below the pipeline animator.
     iInitParams = PipelineInitParams::New();
     iInitParams->SetThreadPriorityMax(kPriorityHighest);
 
     // create MediaPlayer
-    //
-    // FIXME If volume is unavailable pass NULL to MediaPlayer.
     iMediaPlayer = new MediaPlayer( aDvStack, *iDevice, *iRamStore,
                                    *iConfigStore, iInitParams,
                                     volumeInit, volumeProfile, aUdn,

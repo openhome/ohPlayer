@@ -37,6 +37,9 @@ sub GetDependencies
     my %pkgHash       = ();
     my @libraryDeps   = `ldd $scratchDir/usr/bin/$application`;
 
+    # General dependencies
+    $pkgHash{'notify-osd'} = undef;  # Notification service
+
     print "Calculating pkg dependencies ....\n";
 
     # Process each dependent library string.
@@ -144,7 +147,16 @@ my $fpmCmd = "fpm -s dir -t deb -f -n $application -v $version  -C $scratchDir -
 
 foreach (keys %{$pkgHashRef})
 {
-    $fpmCmd .= " -d \"$_ >= $pkgHashRef->{$_}\"";
+    if (defined $pkgHashRef->{$_})
+    {
+        # Minimum package version known
+        $fpmCmd .= " -d \"$_ >= $pkgHashRef->{$_}\"";
+    }
+    else
+    {
+        # Package version not important
+        $fpmCmd .= " -d \"$_\"";
+    }
 }
 
 $fpmCmd .= ' -m "Openhome Admin <admin@openhome.org>"';
