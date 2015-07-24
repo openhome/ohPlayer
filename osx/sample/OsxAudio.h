@@ -17,10 +17,10 @@ namespace OpenHome {
     class Environment;
 namespace Media {
 
-class OsxAudio : public Thread
+class OsxAudio
 {
     // number of OS buffers to allocate for AudioQueue
-    static const TInt32 kNumDataBuffers = 3;
+    static const TInt32 kNumDataBuffers = 2;
     
 public:
     OsxAudio();
@@ -69,12 +69,6 @@ public:
     // Set the audio stream volume.
     void setVolume(Float32 volume);
     
-    // quit the Host Audio processor
-    void quit();
-
-private: // from Thread
-    void Run();
-    
 private:
     // Initialise the OSX AudioQueue
     void initAudioQueue();
@@ -90,21 +84,12 @@ private:
     // Finalise the AudioQueue's buffers, releasing system resources
     void finaliseAudioBuffers();
     
-    // Prime the allocated AudioQueueBuffers with data from the pipeline
-    void primeAudioBuffers();
-    
 private:
     // The PCM handler object which will parse PCM data into host buffers
     OsxPcmProcessor *   iPcmHandler;
     
-    // Semaphore to indicate to the main loop when buffers need primed
-    Semaphore           iPrimeBuffers;
-    
     // Mutex to ensure serialised access to host buffers
     Mutex               iHostLock;
-    
-    // Flag to indicate when the main thread should exit
-    bool                iQuit;
     
     // Define the relative audio level of the output stream. Defaults to 1.0f.
     Float32             iVolume;
