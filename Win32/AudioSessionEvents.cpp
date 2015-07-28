@@ -29,7 +29,8 @@ HRESULT AudioSessionEvents::OnSessionDisconnected (AudioSessionDisconnectReason 
     // Notify the audio render thread of the disconnection.
     SetEvent(iDisconnectedEvent);
 
-    // Notify the user of audio session disconnection.
+    // Notify the user of audio session disconnection and shutdown the
+    // media player..
     PostMessage(iHwnd, WM_APP_AUDIO_DISCONNECTED, NULL, NULL);
 
     return S_OK;

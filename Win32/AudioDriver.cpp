@@ -553,6 +553,12 @@ TBool AudioDriver::RestartAudioEngine()
     }
     iAudioClient->Reset();
 
+    if (iAudioSessionEvents)
+    {
+        iAudioSessionControl->UnregisterAudioSessionNotification(iAudioSessionEvents);
+        delete iAudioSessionEvents;
+    }
+
     SafeRelease(&iAudioClient);
     SafeRelease(&iRenderClient);
     SafeRelease(&iAudioSessionControl);
@@ -829,13 +835,18 @@ void AudioDriver::ShutdownAudioEngine()
         iAudioSessionDisconnectedEvent = NULL;
     }
 
+    if (iAudioSessionEvents)
+    {
+        iAudioSessionControl->UnregisterAudioSessionNotification(iAudioSessionEvents);
+        delete iAudioSessionEvents;
+    }
+
     SafeRelease(&iAudioEndpoint);
     SafeRelease(&iAudioClient);
     SafeRelease(&iRenderClient);
     SafeRelease(&iAudioSessionControl);
     SafeRelease(&iAudioSessionVolume);
 
-    delete (iAudioSessionEvents);
 
     if (iMixFormat)
     {
@@ -964,6 +975,11 @@ void AudioDriver::Run()
                 }
             }
 
+            if (iQuit)
+            {
+                break;
+            }
+
             // Log some interesting data if we can't fill at least half
             // of the available space in the render buffer.
             if (iRenderBytesThisPeriod * 0.5 < iRenderBytesRemaining)
@@ -1021,11 +1037,6 @@ void AudioDriver::Run()
             Log::Print("Time To Process Messages This Audio Period [%lld us]\n",
                        ElapsedMicroseconds.QuadPart);
 #endif /* _TIMINGS_DEBUG */
-
-            if (iQuit)
-            {
-                break;
-            }
 
             // The audio client isn't capable of playing this stream.
             // Continue to pull from pipeline until the next playable

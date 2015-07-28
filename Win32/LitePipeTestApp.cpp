@@ -286,40 +286,40 @@ void ShowContextMenu(HWND hwnd, POINT pt)
 
         if (g_hSubMenu)
         {
-            HMENU networkPopup;
+            HMENU networkPopup = NULL;
 
             // Our window must be foreground before calling TrackPopupMenu
             // or the menu will not disappear when the user clicks away
             SetForegroundWindow(hwnd);
 
-            // respect menu drop alignment
-            UINT uFlags = TPM_RIGHTBUTTON;
-            if (GetSystemMetrics(SM_MENUDROPALIGNMENT) != 0)
-            {
-                uFlags |= TPM_RIGHTALIGN;
-            }
-            else
-            {
-                uFlags |= TPM_LEFTALIGN;
-            }
-
             // Insert a Network popup menu to allow selection of the required
             // subnet.
             //
+            // This submenu is only available if the media player is
+            // up and running. If, for example, the media player has been
+            // shutdown due to the audio client being disconnected the
+            // submenu is visible, but unavailable.
+            //
             // This is done prior to any menu item configuration as the insert
             // operation causes menu item indices to be altered.
-            networkPopup = CreateNetworkAdapterPopup();
+            UINT nFlags = MF_BYPOSITION | MF_POPUP | MF_STRING;
 
-            if (networkPopup != NULL)
+            if (g_mplayerThread != NULL)
             {
-                if (!InsertMenu(g_hSubMenu,
-                                MENU_NETWORK,
-                                MF_BYPOSITION | MF_POPUP | MF_STRING,
-                                (UINT_PTR)networkPopup,
-                                L"Network"))
-                {
-                    networkPopup = NULL;
-                }
+                networkPopup = CreateNetworkAdapterPopup();
+            }
+            else
+            {
+                nFlags |= MF_GRAYED;
+            }
+
+            if (!InsertMenu(g_hSubMenu,
+                            MENU_NETWORK,
+                            nFlags,
+                            (UINT_PTR)networkPopup,
+                            L"Network"))
+            {
+                networkPopup = NULL;
             }
 
             if (g_updatesAvailable)
@@ -335,9 +335,26 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                                MF_DISABLED|MF_GRAYED|MF_BYPOSITION);
             }
 
-            // Bring the playback options into line with the current
-            // pipeline state.
-            UpdatePlaybackOptions();
+            if (g_mplayerThread != NULL)
+            {
+                // Bring the playback options into line with the current
+                // pipeline state.
+                //
+                // This operation relies on the availability of the media
+                // player.
+                UpdatePlaybackOptions();
+            }
+
+            // respect menu drop alignment
+            UINT uFlags = TPM_RIGHTBUTTON;
+            if (GetSystemMetrics(SM_MENUDROPALIGNMENT) != 0)
+            {
+                uFlags |= TPM_RIGHTALIGN;
+            }
+            else
+            {
+                uFlags |= TPM_LEFTALIGN;
+            }
 
             TrackPopupMenuEx(g_hSubMenu, uFlags, pt.x, pt.y, hwnd, NULL);
             g_hSubMenu = NULL;
@@ -410,10 +427,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 case IDM_EXIT:
                 {
-                    ExitMediaPlayer();
+                    if (g_mplayerThread != NULL)
+                    {
+                        ExitMediaPlayer();
 
-                    WaitForSingleObject(g_mplayerThread, INFINITE);
-                    CloseHandle(g_mplayerThread);
+                        WaitForSingleObject(g_mplayerThread, INFINITE);
+                        CloseHandle(g_mplayerThread);
+                    }
 
                     DestroyWindow(hwnd);
                     break;
@@ -526,6 +546,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             WaitForSingleObject(g_mplayerThread, INFINITE);
             CloseHandle(g_mplayerThread);
+            g_mplayerThread = NULL;
 
             break;
         }
@@ -543,6 +564,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             WaitForSingleObject(g_mplayerThread, INFINITE);
             CloseHandle(g_mplayerThread);
+            g_mplayerThread = NULL;
 
             break;
         }
