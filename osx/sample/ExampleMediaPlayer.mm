@@ -286,9 +286,11 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
     // Add codecs
     Log::Print("Codec Registration: [\n");
 
-    //Log::Print("Codec\tAac\n");
-    // disabled - requires a patent license
-    //iMediaPlayer->Add(Codec::CodecFactory::NewAac());
+#ifdef ENABLE_AAC
+    // AAC is disabled by default as it requires a patent license
+    Log::Print("Codec\tAac\n");
+    iMediaPlayer->Add(Codec::CodecFactory::NewAac());
+#endif  /* ENABLE_AAC */
     Log::Print("Codec\tAiff\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewAiff());
     Log::Print("Codec\tAifc\n");
@@ -299,9 +301,11 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
     iMediaPlayer->Add(Codec::CodecFactory::NewAdts());
     Log::Print("Codec:\tFlac\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewFlac());
-    // Disabled by default - requires patent and copyright licenses
-    //Log::Print("Codec:\tMP3\n");
-    //iMediaPlayer->Add(Codec::CodecFactory::NewMp3());
+#ifdef ENABLE_MP3
+    // MP3 is disabled by default as it requires patent and copyright licenses
+    Log::Print("Codec:\tMP3\n");
+    iMediaPlayer->Add(Codec::CodecFactory::NewMp3());
+#endif  /* ENABLE_MP3 */
     Log::Print("Codec\tPcm\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewPcm());
     Log::Print("Codec\tVorbis\n");
@@ -334,6 +338,28 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
                                                  iRxTimestamper,
                                                  NULL,
                                                  kSongcastSenderIconFileName));
+
+#ifdef ENABLE_TIDAL
+    // You must define your Tidal token
+    iMediaPlayer->Add(ProtocolFactory::NewTidal( aEnv,
+                                                 Brn(TIDAL_TOKEN),
+                                                 iMediaPlayer->CredentialsManager(),
+                                                 iMediaPlayer->ConfigInitialiser()));
+#endif  /* ENABLE_TIDAL */
+    
+#ifdef ENABLE_QOBUZ
+    // You must define your QOBUZ appId and secret key
+    iMediaPlayer->Add(ProtocolFactory::NewQobuz( aEnv,
+                                                 Brn(QOBUZ_APPID),
+                                                 Brn(QOBUZ_SECRET),
+                                                 iMediaPlayer->CredentialsManager(),
+                                                 iMediaPlayer->ConfigInitialiser()));
+#endif  /* ENABLE_QOBUZ */
+    
+#ifdef ENABLE_RADIO
+    // Radio is disabled by default as many stations depend on AAC
+    iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer, NULL, aSupportedProtocols, Brn(TUNEIN_PARTNER_ID)));
+#endif  /* ENABLE_RADIO */
 }
 
 
