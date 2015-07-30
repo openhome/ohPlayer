@@ -782,7 +782,7 @@ Msg* DriverAlsa::ProcessMsg(MsgChangeInput * aMsg)
 
     aMsg->ReadyToChange();
 
-    return NULL;
+    return aMsg;
 }
 
 Msg* DriverAlsa::ProcessMsg(MsgDelay* /*aMsg*/)
