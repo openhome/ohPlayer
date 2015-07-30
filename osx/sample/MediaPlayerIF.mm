@@ -37,15 +37,7 @@ MediaPlayerIF::MediaPlayerIF(TIpAddress subnet)
 
 MediaPlayerIF::~MediaPlayerIF()
 {
-    if (iExampleMediaPlayer != NULL)
-    {
-        delete iExampleMediaPlayer;
-    }
-    
-    delete iDriver;
-    delete iLib;
-    delete iArbDriver;
-    delete iArbPipeline;
+    shutdown();
 }
 
 TChar * MediaPlayerIF::checkForUpdate(TUint major, TUint minor)
@@ -207,8 +199,8 @@ TBool MediaPlayerIF::setup (TIpAddress subnet)
     return true;
     
 cleanup:
-    delete iDriver;
     delete iExampleMediaPlayer;
+    delete iDriver;
     delete iLib;
 
     return false;
@@ -327,13 +319,19 @@ void MediaPlayerIF::FreeSubnets(std::vector<SubnetRecord*> *subnetVector)
 
 void MediaPlayerIF::shutdown() {
     
-    // delete our media player
-    delete iExampleMediaPlayer;
-    iExampleMediaPlayer = nil;
+    iExampleMediaPlayer->StopPipeline();
     
-    // and free our library
+    delete iExampleMediaPlayer;
+    delete iDriver;
     delete iLib;
+    delete iArbDriver;
+    delete iArbPipeline;
+
+    iExampleMediaPlayer = nil;
+    iDriver = nil;
     iLib = nil;
+    iArbDriver = nil;
+    iArbPipeline = nil;
 }
 
 

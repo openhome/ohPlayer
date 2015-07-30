@@ -1,9 +1,7 @@
 #include <OpenHome/Media/Pipeline/Msg.h>
-//#include <OpenHome/Media/Tests/VolumeUtils.h>
 #include <OpenHome/Av/VolumeManager.h>
 #include <OpenHome/Private/Printer.h>
 
-#include "OsxAudio.h"
 #include "Volume.h"
 
 using namespace OpenHome;

@@ -25,6 +25,8 @@ using namespace OpenHome::Web;
 
 const Brn ExampleMediaPlayer::kSongcastSenderIconFileName("SongcastSenderIcon");
 
+#define DBG(_x)
+//#define DBG(_x)   Log::Print(_x)
 
 ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName, const Brx& aUserAgent) :
   iDisabled("test", 0)
@@ -115,8 +117,8 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
 ExampleMediaPlayer::~ExampleMediaPlayer()
 {
     ASSERT(!iDevice->Enabled());
-    Pipeline().Quit();
     delete iAppFramework;
+    Pipeline().Quit();
     delete iCpProxy;
     delete iMediaPlayer;
     delete iDevice;
@@ -283,7 +285,7 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
 {
     // Add codecs
     Log::Print("Codec Registration: [\n");
-    
+
     //Log::Print("Codec\tAac\n");
     // disabled - requires a patent license
     //iMediaPlayer->Add(Codec::CodecFactory::NewAac());

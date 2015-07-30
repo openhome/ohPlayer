@@ -13,7 +13,7 @@
 #include <OpenHome/Av/VolumeManager.h>
 #include <OpenHome/Media/MuteManager.h>
 
-#include "OsxAudio.h"
+#include "PcmHandler.h"
 
 namespace OpenHome {
     class Environment;
@@ -65,6 +65,9 @@ private:
     
 class DriverOsx : public Thread, private IMsgProcessor, public IPipelineAnimator
 {
+    // number of OS buffers to allocate for AudioQueue
+    static const TInt32 kNumDataBuffers = 3;
+    
 public:
     // DriverOsx - constructor
     // Parameters:
@@ -92,6 +95,16 @@ public:
     // Resume driver output
     void resume();
     
+    // Fill a host buffer with PCM pipeline data
+    //
+    // Called by the host audio thread when it needs an audio buffer filled.
+    // This is also called on stream startup to prime buffers prior to
+    // starting playback
+    //
+    // Params:
+    //   inBuffer - the buffer to fill
+    
+    void fillBuffer(AudioQueueBufferRef inBuffer);
     
 private: // from Thread
     // Run - the execution method for class's main thread
@@ -122,6 +135,35 @@ private: // from IMsgProcessor
 private: // from IPipelineAnimator
     TUint PipelineDriverDelayJiffies(TUint aSampleRateFrom, TUint aSampleRateTo) override;
     
+    // Start playing the Host Audio
+    void startQueue();
+    
+    // Pause the Host Audio playback
+    void pauseQueue();
+    
+    // Pause the Host Audio playback
+    void resumeQueue();
+    
+    // Flush any outstanding host audio buffers
+    void flushQueue();
+    
+    // Stop playing the Host Audio
+    void stopQueue();
+    
+    // Initialise the OSX AudioQueue
+    void initAudioQueue();
+    
+    // Initialise a set of AudioQueueBuffers for use with our AudioQueue
+    // This method allocates kNumDataBuffers buffers (default is 3)
+    void initAudioBuffers();
+    
+    // Finalise the OSX AudioQueue
+    // The AudioQueue will be stopped if necessary and all used resources released
+    void finaliseAudioQueue();
+    
+    // Finalise the AudioQueue's buffers, releasing system resources
+    void finaliseAudioBuffers();
+    
 private:
     // A reference to the pipeline being animated
     IPipeline&      iPipeline;
@@ -135,17 +177,24 @@ private:
     // The PcmHandler class used to queue and process the Pcm audio messages
     OsxPcmProcessor iPcmHandler;
     
-    // The OsxAudio class used to handle OSX host audio queues and buffers
-    OsxAudio        iOsxAudio;
-    
     // A flag indicating whether we are currently animating the pipeline
     bool            iPlaying;
     
     // Define the relative audio level of the output stream. Defaults to 1.0f.
-    Float32 iVolume;
+    Float32         iVolume;
     
     // describe the audio format of the active stream
     AudioStreamBasicDescription iAudioFormat;
+    
+    // Mutex to ensure serialised access to host buffers
+    Mutex           iHostLock;
+    
+    // the host audio queue object being used for playback
+    AudioQueueRef   iAudioQueue;
+    
+    // the audio queue buffers for the host playback audio queue
+    AudioQueueBufferRef         iAudioQueueBuffers[kNumDataBuffers];
+    
 };
 
 } // namespace Media

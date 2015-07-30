@@ -4,6 +4,8 @@
 using namespace OpenHome;
 using namespace OpenHome::Media;
 
+#define DBG(_x)
+//#define DBG(_x)   DBG(_x)
 
 OsxPcmProcessor::OsxPcmProcessor() : IPcmProcessor()
 , iSampleBufferLock("SBLK")
@@ -16,16 +18,16 @@ OsxPcmProcessor::OsxPcmProcessor() : IPcmProcessor()
 
 void OsxPcmProcessor::enqueue(MsgPlayable *msg)
 {
-    Log::Print("OsxPcmProcessor::enqueue - wait host ready\n");
+    DBG("OsxPcmProcessor::enqueue - wait host ready\n");
     iSemHostReady.Wait();
     iSemHostReady.Clear();
-    Log::Print("OsxPcmProcessor::enqueue - got host ready\n");
+    DBG("OsxPcmProcessor::enqueue - got host ready\n");
     
     if(!iQuit)
     {
-        Log::Print("OsxPcmProcessor::enqueue - queue message\n");
+        DBG("OsxPcmProcessor::enqueue - queue message\n");
         queue.Enqueue(msg);
-        Log::Print("OsxPcmProcessor::enqueue - queued message\n");
+        DBG("OsxPcmProcessor::enqueue - queued message\n");
     }
 }
 
@@ -40,7 +42,7 @@ void OsxPcmProcessor::quit()
 {
     iQuit = true;
     
-    Log::Print("OsxPcmProcessor::quit - signalling host ready\n");
+    DBG("OsxPcmProcessor::quit - signalling host ready\n");
     // signal pending enqueue operations that we're finishing
     iSemHostReady.Signal();
 }
@@ -68,13 +70,13 @@ void OsxPcmProcessor::fillBuffer(AudioQueueBufferRef inBuffer)
 {
     MsgPlayable *remains = nil;
 
-    Log::Print("fillBuffer: %d messages in queue\n", queue.NumMsgs());
-    Log::Print("fillBuffer: buffer capacity is %d bytes\n", inBuffer->mAudioDataBytesCapacity);
+    DBG(("fillBuffer: %d messages in queue\n", queue.NumMsgs()));
+    DBG(("fillBuffer: buffer capacity is %d bytes\n", inBuffer->mAudioDataBytesCapacity));
 
     // if no data is available then signal the animator to provide some
     if(queue.NumMsgs() == 0)
     {
-        Log::Print("fillBuffer: no messages - signalling animator\n");
+        DBG("fillBuffer: no messages - signalling animator\n");
         iSemHostReady.Signal();
     }
     setOutputActive(true);
@@ -83,10 +85,10 @@ void OsxPcmProcessor::fillBuffer(AudioQueueBufferRef inBuffer)
     // or until we have been signalled to stop
     while((iBytesToRead > 0) && iOutputActive)
     {
-        Log::Print("fillBuffer: dequeue a message\n");
+        DBG("fillBuffer: dequeue a message\n");
         // if no data is available then signal the animator to provide some
         MsgPlayable *msg = dequeue();
-        Log::Print("fillBuffer: dequeued message with %d bytes\n", msg->Bytes());
+        DBG(("fillBuffer: dequeued message with %d bytes\n", msg->Bytes()));
         
         // read the packet, release and remove
         if(msg->Bytes() > iBytesToRead)
@@ -96,30 +98,30 @@ void OsxPcmProcessor::fillBuffer(AudioQueueBufferRef inBuffer)
         
         if(remains == nil)
         {
-            Log::Print("fillBuffer: more space available - signal the animator\n");
+            DBG("fillBuffer: more space available - signal the animator\n");
             iSemHostReady.Signal();
         }
         else
         {
-            Log::Print("fillBuffer: fillBuffer - buffer full: remainder is %d bytes\n", remains->Bytes());
+            DBG(("fillBuffer: fillBuffer - buffer full: remainder is %d bytes\n", remains->Bytes()));
         }
     }
 
     // requeue the remaining bytes
     if(remains != nil)
     {
-        Log::Print("fillBuffer: packet was too big. enqueue remainder\n");
+        DBG("fillBuffer: packet was too big. enqueue remainder\n");
         queue.EnqueueAtHead(remains);
-        Log::Print("fillBuffer: enqueued remainder\n" );
+        DBG("fillBuffer: enqueued remainder\n" );
     }
     else
     {
-        Log::Print("fillBuffer: signal host for more data\n" );
+        DBG("fillBuffer: signal host for more data\n" );
         iSemHostReady.Signal();
     }
     
     inBuffer->mAudioDataByteSize = size();
-    Log::Print("fillBuffer: buffer filled with %d bytes\n", inBuffer->mAudioDataByteSize );
+    DBG(("fillBuffer: buffer filled with %d bytes\n", inBuffer->mAudioDataByteSize ));
 }
 
 /**
