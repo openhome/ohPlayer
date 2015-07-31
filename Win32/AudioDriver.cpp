@@ -11,6 +11,7 @@
 #include "CustomMessages.h"
 #include "MemoryCheck.h"
 #include "ProcessorPcmWASAPI.h"
+#include "WWMFResampler.h"
 
 #include <avrt.h>
 #include <stdlib.h>
@@ -43,7 +44,9 @@ AudioDriver::AudioDriver(Environment& /*aEnv*/, IPipeline& aPipeline, HWND hwnd)
     iRenderBytesThisPeriod(0),
     iRenderBytesRemaining(0),
     iFrameSize(0),
-    iDuplicateChannel(false),
+    iResamplingInput(false),
+    iResampleInputBps(1),
+    iResampleOutputBps(1),
 
     Thread("PipelineAnimator", kPrioritySystemHighest),
     iPipeline(aPipeline),
@@ -172,38 +175,29 @@ Msg* AudioDriver::ProcessMsg(MsgSilence* /*aMsg*/)
 TUint AudioDriver::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/,
                                               TUint aSampleRateTo)
 {
-    WAVEFORMATEX *mixFormat;
-    WAVEFORMATEX *closestMix;
-
-    //
-    // Load the MixFormat. This may differ depending on the shared mode used
-    //
-    HRESULT hr = iAudioClient->GetMixFormat(&mixFormat);
-    if (FAILED(hr))
+    switch (aSampleRateTo)
     {
-        Log::Print("Warning Audio Endpoint mix format unknown\n",
-                   aSampleRateTo);
-        return 0;
-    }
+        // 48 KHz family rates
+        case 192000:
+        case 96000:
+        case 64000:
+        case 48000:
+        case 32000:
+        case 16000:
+        case 8000:
+        // 44.1 KHz family rates
+        case 176400:
+        case 88200:
+        case 44100:
+        case 22050:
+        case 11025:
+            break;
 
-    // Plug the requested sample rate into the existing mix format and
-    // query the Audio Engine.
-    mixFormat->nSamplesPerSec = aSampleRateTo;
-    mixFormat->nAvgBytesPerSec = mixFormat->nSamplesPerSec * mixFormat->nBlockAlign;
+        default:
+            Log::Print("Warning sample rate not supported [%u]\n",
+                       aSampleRateTo);
 
-    hr = iAudioClient->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED,
-                                         mixFormat,
-                                         &closestMix);
-
-    CoTaskMemFree(closestMix);
-    CoTaskMemFree(mixFormat);
-
-    if (hr != S_OK)
-    {
-        iStreamFormatSupported = false;
-
-        Log::Print("Warning sample rate not supported [%u]\n", aSampleRateTo);
-        THROW(SampleRateUnsupported);
+            THROW(SampleRateUnsupported);
     }
 
     return 0;
@@ -218,12 +212,35 @@ TBool AudioDriver::CheckMixFormat(TUint aSampleRate,
     WAVEFORMATEX  savedMixFormat;
     TBool         retVal = false;
 
-    iDuplicateChannel = false;
+    // Complete any previous resampling session.
+    if (iResamplingInput)
+    {
+        WWMFSampleData sampleData;
 
+        hr = iResampler.Drain((iBufferSize * iFrameSize), &sampleData);
+
+        if (hr == S_OK)
+        {
+            Log::Print("Resampler drained correctly [%d bytes].\n",
+                       sampleData.bytes);
+
+            sampleData.Release();
+        }
+        else
+        {
+            Log::Print("Resample drain failed.\n");
+        }
+
+        iResampler.Finalize();
+    }
+
+    iResamplingInput  = false;
+
+    // Verify the Audio Engine supports the stream format.
     if (iMixFormat == NULL)
     {
         hr = iAudioClient->GetMixFormat(&iMixFormat);
-        if (FAILED(hr))
+        if (hr != S_OK)
         {
             Log::Print("ERROR: Could not obtain mix system format.\n");
             return false;
@@ -232,7 +249,6 @@ TBool AudioDriver::CheckMixFormat(TUint aSampleRate,
 
     savedMixFormat = *iMixFormat;
 
-    // Verify the Audio Engine supports the pipeline format.
     iMixFormat->wFormatTag      = WAVE_FORMAT_PCM;
     iMixFormat->nChannels       = (WORD)aNumChannels;
     iMixFormat->nSamplesPerSec  = aSampleRate;
@@ -248,72 +264,89 @@ TBool AudioDriver::CheckMixFormat(TUint aSampleRate,
     if (hr != S_OK)
     {
         // The stream format isn't suitable as it stands.
+        //
+        // Use a media foundation translation to convert to the current
+        // mix format.
 
-        // Check to see if the issue is the number of channels.
-        // We can duplicate a channel to play mono as stereo.
-        if (aNumChannels == 1 && closestMix->nChannels == 2)
+        //
+        // Load the active mix format.
+        //
+        CoTaskMemFree(iMixFormat);
+
+        hr = iAudioClient->GetMixFormat(&iMixFormat);
+
+        if (hr == S_OK)
         {
-            iMixFormat->nChannels   = closestMix->nChannels;
-            iMixFormat->nBlockAlign =
-                                   WORD((iMixFormat->nChannels * aBitDepth)/8);
-            iMixFormat->nAvgBytesPerSec =
-                                   DWORD(aSampleRate * iMixFormat->nBlockAlign);
+            iMixFormat->wFormatTag = WAVE_FORMAT_PCM;
+            iMixFormat->cbSize     = 0;
 
+            // Confirm the mix format s valid.
             CoTaskMemFree(closestMix);
 
             hr = iAudioClient->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED,
                                                  iMixFormat,
                                                 &closestMix);
 
-            if (hr == S_OK)
+            if (hr != S_OK)
             {
-                Log::Print("Converting mono input to stereo\n");
-                iDuplicateChannel = true;
+                Log::Print("ERROR: Cannot obtain valid mix format for stream "
+                           "translation\n");
+
+                retVal = false;
+
+                goto end;
+            }
+
+            // Setup the translation.
+
+            // Input stream format.
+            WWMFPcmFormat inputFormat;
+
+            inputFormat.sampleFormat       = WWMFBitFormatInt;
+            inputFormat.nChannels          = (WORD)aNumChannels;
+            inputFormat.sampleRate         = aSampleRate;
+            inputFormat.bits               = (WORD)aBitDepth;
+            inputFormat.validBitsPerSample = (WORD)aBitDepth;
+
+            // System mix format.
+            WWMFPcmFormat outputFormat;
+
+            outputFormat.sampleFormat       = WWMFBitFormatInt;
+            outputFormat.nChannels          = iMixFormat->nChannels;
+            outputFormat.sampleRate         = iMixFormat->nSamplesPerSec;
+            outputFormat.bits               = iMixFormat->wBitsPerSample;
+            outputFormat.validBitsPerSample = iMixFormat->wBitsPerSample;
+
+            // Store bytes per second values for later calculations around
+            // the amount of data generated by the translation.
+            iResampleInputBps  = inputFormat.BytesPerSec();
+            iResampleOutputBps = outputFormat.BytesPerSec();
+
+            if (iResampler.Initialize(inputFormat,
+                                      outputFormat, 60) == S_OK)
+            {
+                iResamplingInput  = true;
                 retVal            = true;
             }
             else
             {
-                Log::Print("ERROR: Stream Format Cannot Be Played.\n");
+                Log::Print("ERROR: Stream Transaltion Failed.\n");
 
-                Log::Print("Windows Shared Audio Engine Configuration:\n");
+                Log::Print("Transalte From:\n\n");
 
-                switch (savedMixFormat.wFormatTag)
-                {
-                    case WAVE_FORMAT_PCM:
-                        Log::Print("PCM STREAM\n");
-                        break;
-                    case WAVE_FORMAT_EXTENSIBLE:
-                        Log::Print("EXTENSIBLE STREAM\n");
-                        break;
-                    case WAVE_FORMAT_MPEG:
-                        Log::Print("MPEG1 STREAM\n");
-                        break;
-                    case WAVE_FORMAT_MPEGLAYER3:
-                        Log::Print("MPEG3 STREAM\n");
-                        break;
-                    default:
-                        Log::Print("UNKNOWN STREAM\n");
-                        break;
-                }
+                Log::Print("\tSample Rate:        %6u\n", aSampleRate);
+                Log::Print("\tNumber Of Channels: %6u\n", aNumChannels);
+                Log::Print("\tBit Depth:          %6u\n", aBitDepth);
+
+                Log::Print("Translate To:\n\n");
 
                 Log::Print("\tSample Rate:        %6u\n",
-                           savedMixFormat.nSamplesPerSec);
+                           iMixFormat->nSamplesPerSec);
                 Log::Print("\tNumber Of Channels: %6u\n",
-                           savedMixFormat.nChannels);
+                           iMixFormat->nChannels);
                 Log::Print("\tBit Depth:          %6u\n",
-                           savedMixFormat.wBitsPerSample);
-
-                Log::Print("Closest Mix\n\n");
-
-                Log::Print("\tSample Rate:        %6u\n",
-                           closestMix->nSamplesPerSec);
-                Log::Print("\tNumber Of Channels: %6u\n",
-                           closestMix->nChannels);
-                Log::Print("\tBit Depth:          %6u\n",
-                           closestMix->wBitsPerSample);
+                           iMixFormat->wBitsPerSample);
             }
-
-            CoTaskMemFree(closestMix);
         }
     }
     else
@@ -321,6 +354,8 @@ TBool AudioDriver::CheckMixFormat(TUint aSampleRate,
         retVal = true;
     }
 
+end:
+    CoTaskMemFree(closestMix);
 
     return retVal;
 }
@@ -418,9 +453,17 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
 
     bytes = aMsg->Bytes();
 
-    if (iDuplicateChannel)
+    if (iResamplingInput)
     {
-        bytes *= 2;
+        // Calculate the bytes that will be generated by the translation.
+        long long tmp = (long long)bytes * (long long)iResampleOutputBps /
+                        (long long)iResampleInputBps;
+
+        bytes = TUint(tmp);
+
+        // Round up to the nearest frame.
+        bytes += iMixFormat->nBlockAlign;
+        bytes -= bytes % iMixFormat->nBlockAlign;
     }
 
     TUint framesToWrite = bytes / iFrameSize;
@@ -434,9 +477,40 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
     }
 
     hr = iRenderClient->GetBuffer(framesToWrite, &pData);
-    if (! SUCCEEDED(hr))
+    if (hr != S_OK)
     {
-        Log::Print("ERROR: Can't get render buffer\n");
+        Log::Print("ERROR: Can't get render buffer");
+
+        switch (hr)
+        {
+            case AUDCLNT_E_BUFFER_ERROR:
+                Log::Print("[AUDCLNT_E_BUFFER_ERROR]\n");
+                break;
+            case AUDCLNT_E_BUFFER_TOO_LARGE:
+                Log::Print("[AUDCLNT_E_BUFFER_TOO_LARGE]: %d\n", framesToWrite);
+                break;
+            case AUDCLNT_E_BUFFER_SIZE_ERROR:
+                Log::Print("[AUDCLNT_E_BUFFER_SIZE_ERROR]\n");
+                break;
+            case AUDCLNT_E_OUT_OF_ORDER:
+                Log::Print("[AUDCLNT_E_OUT_OF_ORDER]\n");
+                break;
+            case AUDCLNT_E_DEVICE_INVALIDATED:
+                Log::Print("[AUDCLNT_E_DEVICE_INVALIDATED]\n");
+                break;
+            case AUDCLNT_E_BUFFER_OPERATION_PENDING:
+                Log::Print("[AUDCLNT_E_BUFFER_OPERATION_PENDING]\n");
+                break;
+            case AUDCLNT_E_SERVICE_NOT_RUNNING:
+                Log::Print("[AUDCLNT_E_SERVICE_NOT_RUNNING]\n");
+                break;
+            case E_POINTER:
+                Log::Print("[E_POINTER]\n");
+                break;
+            default:
+                Log::Print("[UNKNOWN]\n");
+                break;
+        }
 
         // Can't get render buffer. Hold on to the data for the next
         // render period.
@@ -447,17 +521,68 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
 
     // Get the message data. This converts the pipeline data into a format
     // suitable for the native audio system.
-    ProcessorPcmBufWASAPI pcmProcessor(iDuplicateChannel);
+    ProcessorPcmBufWASAPI pcmProcessor(iResamplingInput,
+                                       iResampler);
     aMsg->Read(pcmProcessor);
-    Brn buf(pcmProcessor.Buf());
 
-    // Copy to the render buffer.
-    CopyMemory(pData, buf.Ptr(), bytes);
+    // Modify sample rate/bit to match system mix format, if required.
+    if (iResamplingInput)
+    {
+        WWMFSampleData sampleData;
 
-    // Release the render buffer.
-    iRenderClient->ReleaseBuffer(framesToWrite, 0);
+        hr = iResampler.Resample(pcmProcessor.Ptr(),
+                                 aMsg->Bytes(),
+                                 &sampleData);
 
-    iRenderBytesRemaining -= bytes;
+        if (hr == S_OK)
+        {
+            // Copy to the render buffer.
+            CopyMemory(pData, sampleData.data, sampleData.bytes);
+
+            framesToWrite = sampleData.bytes / iFrameSize;
+
+            // Release the render buffer.
+            hr = iRenderClient->ReleaseBuffer(framesToWrite, 0);
+
+            if (hr != S_OK)
+            {
+                Log::Print("ReleaseBuffer failed Reserved [%d] Written [%d]\n",
+                           bytes, sampleData.bytes);
+                Log::Print("aMsg [%d] InBps [%d] OutBps [%d]\n",
+                            aMsg->Bytes(),
+                            iResampleInputBps ,
+                            iResampleOutputBps);
+            }
+
+            iRenderBytesRemaining -= sampleData.bytes;
+
+            sampleData.Release();
+        }
+        else
+        {
+            Log::Print("ERROR: ProcessFragment16: Resample failed.\n");
+        }
+    }
+    else
+    {
+        Brn buf(pcmProcessor.Buf());
+
+        // Copy to the render buffer.
+        CopyMemory(pData, buf.Ptr(), buf.Bytes());
+
+        framesToWrite = buf.Bytes() / iFrameSize;
+
+        // Release the render buffer.
+        hr = iRenderClient->ReleaseBuffer(framesToWrite, 0);
+
+        if (hr != S_OK)
+        {
+            Log::Print("ReleaseBuffer failed Reserverd [%d] Written [%d]\n",
+                       bytes, buf.Bytes());
+        }
+
+        iRenderBytesRemaining -= buf.Bytes();
+    }
 
     // Release the source buffer.
     aMsg->RemoveRef();
@@ -500,7 +625,7 @@ TBool AudioDriver::GetMultimediaDevice(IMMDevice **DeviceToUse)
                           NULL,
                           CLSCTX_INPROC_SERVER,
                           IID_PPV_ARGS(&deviceEnumerator));
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to instantiate device enumerator: %x\n", hr);
         retValue = false;
@@ -513,7 +638,7 @@ TBool AudioDriver::GetMultimediaDevice(IMMDevice **DeviceToUse)
     hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender,
                                                    deviceRole,
                                                   &device);
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to get default multimedia device: %x\n", hr);
         retValue = false;
@@ -547,7 +672,7 @@ TBool AudioDriver::RestartAudioEngine()
 
     // Shutdown audio client.
     hr = iAudioClient->Stop();
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to stop audio client: %x\n", hr);
     }
@@ -569,7 +694,7 @@ TBool AudioDriver::RestartAudioEngine()
                                   CLSCTX_INPROC_SERVER,
                                   NULL,
                                   reinterpret_cast<void **>(&iAudioClient));
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to activate endpoint\n");
         return false;
@@ -583,17 +708,17 @@ TBool AudioDriver::RestartAudioEngine()
                                   iMixFormat,
                                   NULL);
 
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to initialize audio client: %x.\n", hr);
         return false;
     }
 
     //
-    //  Retrieve the buffer size, in frames,  for the audio client.
+    //  Retrieve the buffer size, in frames, for the audio client.
     //
     hr = iAudioClient->GetBufferSize(&iBufferSize);
-    if(FAILED(hr))
+    if(hr != S_OK)
     {
         Log::Print("Unable to get audio client buffer: %x. \n", hr);
         return false;
@@ -607,14 +732,14 @@ TBool AudioDriver::RestartAudioEngine()
     iRenderBytesRemaining  = iRenderBytesThisPeriod;
 
     hr = iAudioClient->SetEventHandle(iAudioSamplesReadyEvent);
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to set ready event: %x.\n", hr);
         return false;
     }
 
     hr = iAudioClient->GetService(IID_PPV_ARGS(&iRenderClient));
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to get new render client: %x.\n", hr);
         return false;
@@ -622,12 +747,14 @@ TBool AudioDriver::RestartAudioEngine()
 
     // Get Audio Session Control
     hr = iAudioClient->GetService(IID_PPV_ARGS(&iAudioSessionControl));
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to retrieve session control: %x\n", hr);
         return false;
     }
 
+    iAudioSessionEvents = new AudioSessionEvents(iHwnd,
+                                                 iAudioSessionDisconnectedEvent);
     //
     //  Register for session change notifications.
     //
@@ -636,7 +763,7 @@ TBool AudioDriver::RestartAudioEngine()
     //
     hr = iAudioSessionControl->RegisterAudioSessionNotification(iAudioSessionEvents);
 
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to register for audio session notifications: %x\n",
                    hr);
@@ -646,7 +773,7 @@ TBool AudioDriver::RestartAudioEngine()
 
     // Get Volume Control
     hr = iAudioClient->GetService(IID_PPV_ARGS(&iAudioSessionVolume));
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to retrieve volume control: %x\n", hr);
         return false;
@@ -690,7 +817,7 @@ TBool AudioDriver::InitializeAudioEngine()
                                   iMixFormat,
                                   NULL);
 
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to initialize audio client: %x.\n", hr);
         return false;
@@ -700,7 +827,7 @@ TBool AudioDriver::InitializeAudioEngine()
     //  Retrieve the buffer size, in frames,  for the audio client.
     //
     hr = iAudioClient->GetBufferSize(&iBufferSize);
-    if(FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to get audio client buffer: %x. \n", hr);
         return false;
@@ -714,14 +841,14 @@ TBool AudioDriver::InitializeAudioEngine()
     iRenderBytesRemaining  = iRenderBytesThisPeriod;
 
     hr = iAudioClient->SetEventHandle(iAudioSamplesReadyEvent);
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to set ready event: %x.\n", hr);
         return false;
     }
 
     hr = iAudioClient->GetService(IID_PPV_ARGS(&iRenderClient));
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to get new render client: %x.\n", hr);
         return false;
@@ -729,7 +856,7 @@ TBool AudioDriver::InitializeAudioEngine()
 
     // Get Audio Session Control
     hr = iAudioClient->GetService(IID_PPV_ARGS(&iAudioSessionControl));
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to retrieve session control: %x\n", hr);
         return false;
@@ -746,7 +873,7 @@ TBool AudioDriver::InitializeAudioEngine()
     //
     hr = iAudioSessionControl->RegisterAudioSessionNotification(iAudioSessionEvents);
 
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to register for audio session notifications: %x\n",
                    hr);
@@ -756,7 +883,7 @@ TBool AudioDriver::InitializeAudioEngine()
 
     // Get Volume Control
     hr = iAudioClient->GetService(IID_PPV_ARGS(&iAudioSessionVolume));
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to retrieve volume control: %x\n", hr);
         return false;
@@ -807,7 +934,7 @@ TBool AudioDriver::InitializeAudioClient()
                                   CLSCTX_INPROC_SERVER,
                                   NULL,
                                   reinterpret_cast<void **>(&iAudioClient));
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         goto Exit;
     }
@@ -865,7 +992,7 @@ void AudioDriver::StopAudioEngine()
     Log::Print("StopAudioEngine: Starting ...\n");
 
     hr = iAudioClient->Stop();
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to stop audio client: %x\n", hr);
     }
@@ -881,7 +1008,7 @@ void AudioDriver::Run()
     DWORD  mmcssTaskIndex = 0;
 
     HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-    if (FAILED(hr))
+    if (hr != S_OK)
     {
         Log::Print("Unable to initialize COM in render thread: %x\n", hr);
         return;
@@ -934,7 +1061,7 @@ void AudioDriver::Run()
             if (iAudioEngineInitialised && ! iAudioSessionDisconnected)
             {
                 hr = iAudioClient->GetCurrentPadding(&padding);
-                if (SUCCEEDED(hr))
+                if (hr == S_OK)
                 {
                     iRenderBytesThisPeriod = (iBufferSize - padding) *
                                               iFrameSize;
@@ -993,9 +1120,19 @@ void AudioDriver::Run()
                 {
                     TUint bytes = iPlayable->Bytes();
 
-                    if (iDuplicateChannel)
+                    if (iResamplingInput)
                     {
-                        bytes *= 2;
+                        // Calculate the bytes that will be generated by the
+                        // translation.
+                        long long tmp = (long long)bytes *
+                                        (long long)iResampleOutputBps /
+                                        (long long)iResampleInputBps;
+
+                        bytes = TUint(tmp);
+
+                        // Round up to the nearest frame.
+                        bytes += iMixFormat->nBlockAlign;
+                        bytes -= bytes % iMixFormat->nBlockAlign;
                     }
 
                     Log::Print("  Available Bytes [%u]\n", bytes);
@@ -1011,7 +1148,7 @@ void AudioDriver::Run()
                                padding);
 
                     hr = iAudioClient->GetCurrentPadding(&padding);
-                    if (SUCCEEDED(hr))
+                    if (hr == S_OK)
                     {
                         Log::Print(" Current Frames In Buffer [%u]\n",
                                    padding);
@@ -1068,7 +1205,7 @@ void AudioDriver::Run()
                 }
 
                 hr = iAudioClient->Start();
-                if (FAILED(hr))
+                if (hr != S_OK)
                 {
                     Log::Print("Unable to start render client: %x.\n", hr);
                     break;
@@ -1109,6 +1246,28 @@ void AudioDriver::Run()
     catch (ThreadKill&) {}
 
 Exit:
+    // Complete any previous resampling session.
+    if (iResamplingInput)
+    {
+        WWMFSampleData sampleData;
+
+        hr = iResampler.Drain((iBufferSize * iFrameSize), &sampleData);
+
+        if (hr == S_OK)
+        {
+            Log::Print("Resampler drained correctly [%d bytes].\n",
+                       sampleData.bytes);
+
+            sampleData.Release();
+        }
+        else
+        {
+            Log::Print("Resampler drain failed.\n");
+        }
+    }
+
+    iResampler.Finalize();
+
     // Now we've stopped reading the pipeline, stop the native audio.
     StopAudioEngine();
 

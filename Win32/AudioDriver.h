@@ -3,6 +3,7 @@
 #include <Mmdeviceapi.h>
 
 #include "AudioSessionEvents.h"
+#include "WWMFResampler.h"
 #include <OpenHome/Media/Utils/Aggregator.h>
 
 namespace OpenHome {
@@ -71,6 +72,7 @@ private:
     IAudioSessionControl *iAudioSessionControl;
     AudioSessionEvents   *iAudioSessionEvents;
     ISimpleAudioVolume   *iAudioSessionVolume;
+    WWMFResampler         iResampler;
 
 private:
     // Audio Client Events
@@ -100,8 +102,11 @@ private:
     TUint32 iRenderBytesRemaining;
     // Audio renderer frame size.
     TUint32 iFrameSize;
-    // Duplicate a chaneel when rendering (mono->stereo).
-    TBool   iDuplicateChannel;
+    // Resample the input stream
+    TBool   iResamplingInput;
+    // Bytes Per Second of resampled input/output streams
+    TUint32 iResampleInputBps;
+    TUint32 iResampleOutputBps;
 
 private:
     // Utility functions

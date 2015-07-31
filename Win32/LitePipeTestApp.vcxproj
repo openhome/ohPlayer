@@ -199,6 +199,8 @@
     <ClCompile Include="RamStore.cpp" />
     <ClCompile Include="UpdateCheck.cpp" />
     <ClCompile Include="Volume.cpp" />
+    <ClCompile Include="WWMFResampler.cpp" />
+    <ClCompile Include="WWUtil.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="LitePipeTestApp.ico" />
