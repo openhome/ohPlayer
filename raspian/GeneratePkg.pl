@@ -121,16 +121,17 @@ sub GetDependencies
 
 # Parse command line options.
 GetOptions("application=s"  => \$application,
+           "platform=s"     => \$platform,
            "version=s"      => \$version);
 
 $USAGE = <<EndOfText;
-Usage: GeneratePkg.pl --application=<Application Executable> --version=<Version>
+Usage: GeneratePkg.pl --platform=<OS Variant> --application=<Application Executable> --version=<Version>
 EndOfText
 
-die "$USAGE" unless (defined $application && defined $version);
+die "$USAGE" unless (defined $application && defined $platform && defined $version);
 
 # Install the application to a temporary folder.
-system("make DESTDIR=$scratchDir install");
+system("make DESTDIR=$scratchDir $platform-install");
 
 if ($? != 0)
 {
