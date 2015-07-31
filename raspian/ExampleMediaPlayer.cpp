@@ -109,6 +109,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
     // Set pipeline thread priority just below the pipeline animator.
     iInitParams = PipelineInitParams::New();
     iInitParams->SetThreadPriorityMax(kPriorityHighest);
+    iInitParams->SetStarvationMonitorMaxSize(100 * Jiffies::kPerMs);
 
     // create MediaPlayer
     iMediaPlayer = new MediaPlayer( aDvStack, *iDevice, *iRamStore,

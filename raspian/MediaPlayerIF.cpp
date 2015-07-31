@@ -30,6 +30,9 @@ static ExampleMediaPlayer* g_emp = NULL; // Example media player instance.
 static Library*            g_lib = NULL; // Library instance.
 static gint                g_tID = 0;
 
+static Media::PriorityArbitratorDriver* g_arbDriver;
+static Media::PriorityArbitratorPipeline* g_arbPipeline;
+
 // Timed callback to initiate application update check.
 static gint tCallback(gpointer data)
 {
@@ -96,6 +99,12 @@ void InitAndRunMediaPlayer(gpointer args)
     {
         return;
     }
+
+    g_arbDriver = new Media::PriorityArbitratorDriver(kPrioritySystemHighest);
+    ThreadPriorityArbitrator& priorityArbitrator = g_lib->Env().PriorityArbitrator();
+    priorityArbitrator.Add(*g_arbDriver);
+    g_arbPipeline = new Media::PriorityArbitratorPipeline(kPrioritySystemHighest-1);
+    priorityArbitrator.Add(*g_arbPipeline);
 
     // Get the current network adapter.
     adapter = g_lib->CurrentSubnetAdapter(cookie);
@@ -171,6 +180,9 @@ cleanup:
     {
         delete g_lib;
     }
+    
+    delete g_arbDriver;
+    delete g_arbPipeline;
 
     // Terminate the thread.
     g_thread_exit(NULL);
