@@ -204,15 +204,52 @@ void UpdatePlaybackOptions()
     }
 }
 
-// Placeholder.
-//
-// Instigate an application update.
-void ShowUpdateUI(HWND hwnd)
+BOOL InstallUpdate(HWND hwnd)
 {
-    // TBD. Update UI.
-    MessageBox(hwnd,
-               L"Installing Updates",
-               L"Update", MB_OK);
+    // Display update dialogue.
+    INT button = MessageBox(hwnd,
+                            L"Install Updates ?",
+                            L"Update",
+                            MB_OKCANCEL);
+
+    if (button == IDOK)
+    {
+        WCHAR  *wcstring;
+        size_t  convertedChars;
+        UINT    length = strlen(g_updateLocation);
+
+        if (length <= 0)
+        {
+            return false;
+        }
+
+        // Convert update URI to a wide string.
+        wcstring = new WCHAR[length+1];
+
+        mbstowcs_s(&convertedChars, wcstring, length+1, g_updateLocation,
+                   length);
+
+        // Launch deafult browser to download update.
+        HINSTANCE r = ShellExecute(NULL, L"open", wcstring,
+                                   NULL, NULL, SW_SHOWNORMAL);
+
+        delete wcstring;
+
+        // A return code of > 32 equal success
+        if ((INT)r > 32)
+        {
+            return true;
+        }
+        else
+        {
+            MessageBox(hwnd,
+                       L"Cannot Retreive Update",
+                       L"Update",
+                       MB_OK);
+        }
+    }
+
+    return false;
 }
 
 // Create a sub menu listing the available network adapters and their
@@ -413,16 +450,20 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                     break;
                 }
 
-                case IDM_UPDATE:
-                {
-                    ShowUpdateUI(hwnd);
-                    break;
-                }
-
                 case IDM_ABOUT:
                 {
                     MessageBox(hwnd,  L"LitePipe v1.0", L"About", MB_OK);
                     break;
+                }
+
+                case IDM_UPDATE:
+                {
+                    if (! InstallUpdate(hwnd))
+                    {
+                        break;
+                    }
+
+                    // Fallthough on success to exit the application.
                 }
 
                 case IDM_EXIT:

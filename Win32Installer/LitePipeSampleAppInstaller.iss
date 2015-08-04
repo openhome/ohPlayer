@@ -2,9 +2,8 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "LitePipeSampleApp"
-#define MyAppVersion "1.0"
-#define MyAppPublisher "Linn"
-#define MyAppURL "http://www.linn.co.uk"
+#define MyAppPublisher "OpenHome"
+#define MyAppURL "http://www.openhome.org/"
 #define MyAppExeName "LitePipetestApp.exe"
 
 ; MySrcDir *must* be defined on the 'iscc' command line, via the '/d' option
@@ -13,6 +12,12 @@
 #ifndef MySrcDir
 #error ERROR: The 'MySrcDir' location must be defined. 
 #endif 
+
+; MyAppVersion *must* be defined on the 'iscc' command line, via the '/d' option
+; to set the release version.
+#ifndef MyAppVersion
+#error ERROR: The 'MyAppVersion' location must be defined. 
+#endif
 
 ; Default to a Release build unless a Debug build is explicittly asked for.
 #ifdef Debug
@@ -36,6 +41,8 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={pf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 LicenseFile={#MySrcDir}\Win32\LitePipeSampleAppEULA.txt
+DisableDirPage=auto
+DisableProgramGroupPage=auto
 OutputDir={#MySrcDir}\Win32Installer
 OutputBaseFilename=setup
 Compression=lzma
@@ -62,5 +69,5 @@ Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: 
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [Registry]
-Root: HKCU; Subkey: "Software\Linn"; Flags: uninsdeletekeyifempty
-Root: HKCU; Subkey: "Software\Linn\LitePipeTestApp"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\OpenHome"; Flags: uninsdeletekeyifempty
+Root: HKCU; Subkey: "Software\OpenHome\LitePipeTestApp"; Flags: uninsdeletekey
