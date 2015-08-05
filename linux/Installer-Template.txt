@@ -1,0 +1,54 @@
+#! /bin/bash
+
+# Self extracting installer for the litepipe-test-app
+
+pkgFile=<PUT PKG FILE HERE>
+
+# Search for the beginning of the embedded pkg file. 
+SKIP=`awk '/^__PKGFILE_FOLLOWS__/ { print NR + 1; exit 0; }' $0`
+
+# Make a note of the location of this script.
+THIS=`pwd`/$0
+
+# Create and move to a temporary directory.
+dir=`mktemp -d` && pushd $dir >& /dev/null
+
+if [ $? -ne 0 ]
+then
+    echo "ERROR: Cannot create a temporary folder for pkg extraction."
+    exit 1
+fi
+
+echo "Extracting file into `pwd`"
+
+# Extract the embedded pkg file
+tail -n +$SKIP $THIS | cat - > $pkgFile
+
+# Install the extracted debian package
+echo "Installing application package"
+sudo dpkg -i $pkgFile
+
+# Id 'dpkg' fails, tidy up and exit.
+if [ $? -ne 0 ]
+then
+    popd >& /dev/null
+    rm $dir/$pkgFile
+    rmdir $dir
+
+    exit 1
+fi
+
+# Install any missing dependencies
+echo "Fixing External Dependencies"
+sudo apt-get -f install
+
+# Tidy up
+echo "Tidying Up"
+popd >& /dev/null
+rm $dir/$pkgFile
+rmdir $dir
+
+echo "Finished"
+exit 0
+# NOTE: Don't place any newline characters after the last line below.
+__PKGFILE_FOLLOWS__

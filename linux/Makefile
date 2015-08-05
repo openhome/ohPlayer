@@ -30,7 +30,7 @@ ubuntu-install:
 ubuntu-uninstall:
 	$(MAKE) -f Makefile.ubuntu uninstall
 
-raspbain-install:
+raspbian-install:
 	$(MAKE) -f Makefile.raspbian install
 
 raspbian-uninstall:

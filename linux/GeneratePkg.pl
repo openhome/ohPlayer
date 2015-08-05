@@ -5,6 +5,7 @@
 # and version.
 ###############################################################################
 
+use File::Copy;
 use File::Path qw(remove_tree);
 use Getopt::Long;
 use POSIX qw(tmpnam);
@@ -27,6 +28,92 @@ END
     print STDERR "Error: Cannot remove temp pkg directory $scratchDir $!\n"
         unless ((-d $scratchDir) && (remove_tree($scratchDir) > 0));
 
+}
+
+# Create a self extracting installer for the release pkg
+sub CreateSelfExtarctingInstaller
+{
+    # Obtain the name of the generated release package.
+    my @pkg = glob("*deb");
+
+    if ($#pkg < 0)
+    {
+        print STDERR "Error: Cannot locate release package for the installer.\n";
+        return;
+    }
+    elsif ($#pkg > 0)
+    {
+        print STDERR "Error: Too many release packages found. Only one " .
+                     "expected:\n";
+
+        foreach (@pkg)
+        {
+            print STDERR "       $_\n";
+        }
+
+        return;
+    }
+
+    # Open the installer template
+    if (! open SCRIPT_TEMPLATE, "<Installer-Template.txt")
+    {
+        print STDERR "Error: Cannot open 'Installer-Template.sh\n";
+        return;
+    }
+
+    # Generate the name of the installer script by replacing the release package
+    # extension with 'sh'.
+    my $installerScript = $pkg[0];
+    $installerScript =~ s/\.deb$/\.sh/;
+
+    # Open the installer script,.overwriting any existing file.
+    if (! open INSTALLER_SCRIPT, ">:raw", "$installerScript")
+    {
+        print STDERR "Error: Cannot create installer script. $!\n";
+
+        close SCRIPT_TEMPLATE;
+        return;
+    }
+
+    # Open the release package.
+    if (! open PKG_FILE, "<:raw", $pkg[0])
+    {
+        print STDERR "Error: Cannot open application package. $!\n";
+
+        close SCRIPT_TEMPLATE;
+        close INSTALLER_SCRIPT;
+        return;
+    }
+
+    print "Generating installer sctipt\n";
+
+    # Create the installer script from it's template.
+    foreach (<SCRIPT_TEMPLATE>)
+    {
+        # Replace the release package marker with the real name.
+        s/<PUT PKG FILE HERE>/$pkg[0]/;
+
+        print INSTALLER_SCRIPT "$_";
+    }
+
+    # Append the application package to script.
+    my $READ_BLOCK_SIZE = 4096;
+
+    while (read(PKG_FILE, $data, $READ_BLOCK_SIZE) > 0)
+    {
+        print INSTALLER_SCRIPT "$data";
+    }
+
+    close SCRIPT_TEMPLATE;
+    close PKG_FILE;
+    close INSTALLER_SCRIPT;
+
+    # Ensure the installer is executable.
+    print "Chmodding $installerScript\n";
+    if (chmod(oct("755"), "$installerScript") != 1)
+    {
+        print STDERR "Error: Cannot set permissions of install script. $!\n";
+    }
 }
 
 # Create and return a reference to a hash of required packages and their
@@ -122,10 +209,11 @@ sub GetDependencies
 # Parse command line options.
 GetOptions("application=s"  => \$application,
            "platform=s"     => \$platform,
-           "version=s"      => \$version);
+           "version=s"      => \$version,
+           "installer"      => \$installer);
 
 $USAGE = <<EndOfText;
-Usage: GeneratePkg.pl --platform=<OS Variant> --application=<Application Executable> --version=<Version>
+Usage: GeneratePkg.pl --platform=<OS Variant> --application=<Application Executable> --version=<Version> [--installer]
 EndOfText
 
 die "$USAGE" unless (defined $application && defined $platform && defined $version);
@@ -140,7 +228,6 @@ if ($? != 0)
 
 # Obtain the application dependencies.
 my $pkgHashRef = &GetDependencies($application);
-
 
 # Use the 'fpm' utility to create the pkg file.
 
@@ -168,3 +255,13 @@ $fpmCmd .= ' --description "LitePipe Test Application"';
 $fpmCmd .= " usr";
 
 system("$fpmCmd");
+
+# Dpkg does not install missing dependencies. On platforms that do not support
+# an alternative method which does install missing dependencies, such as 'gdebi',
+# we use a self extracting installer to accomplish this.
+if (defined $installer)
+{
+    &CreateSelfExtarctingInstaller();
+}
+
+print "Done.\n";
