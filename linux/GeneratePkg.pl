@@ -5,7 +5,6 @@
 # and version.
 ###############################################################################
 
-use File::Copy;
 use File::Path qw(remove_tree);
 use Getopt::Long;
 use POSIX qw(tmpnam);
@@ -109,7 +108,6 @@ sub CreateSelfExtarctingInstaller
     close INSTALLER_SCRIPT;
 
     # Ensure the installer is executable.
-    print "Chmodding $installerScript\n";
     if (chmod(oct("755"), "$installerScript") != 1)
     {
         print STDERR "Error: Cannot set permissions of install script. $!\n";

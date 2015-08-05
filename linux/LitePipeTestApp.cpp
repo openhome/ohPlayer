@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <gtk/gtk.h>
+#include <gio/gappinfo.h>
 #include <libnotify/notify.h>
 #include <vector>
 
@@ -128,25 +129,65 @@ static void aboutSelectionHandler()
     gtk_widget_destroy(dialog);
 }
 
-static void updateSelectionHandler()
-{
-    // TBD Update UI
-    GtkWidget *dialog;
-    dialog = gtk_message_dialog_new(NULL,
-            GTK_DIALOG_MODAL,
-            GTK_MESSAGE_INFO,
-            GTK_BUTTONS_OK,
-            "Installing Updates");
-    gtk_window_set_title(GTK_WINDOW(dialog), "Update");
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(dialog);
-}
-
 static void exitSelectionHandler()
 {
     ExitMediaPlayer();
 
     gtk_main_quit();
+}
+
+static void updateSelectionHandler()
+{
+    // Show update dialogue.
+    GtkWidget *dialog;
+
+    dialog = gtk_message_dialog_new(NULL,
+                                    GTK_DIALOG_MODAL,
+                                    GTK_MESSAGE_INFO,
+                                    GTK_BUTTONS_OK_CANCEL,
+                                    "Install Updates ?");
+    gtk_window_set_title(GTK_WINDOW(dialog), "Update");
+
+    gint result = gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+
+    // Check result
+    switch (result)
+    {
+        case GTK_RESPONSE_OK:
+        {
+            GError   *error   = NULL;
+            gboolean  success = false;
+
+            // Launch default browser to download update for installation.
+            success = g_app_info_launch_default_for_uri(g_updateLocation,
+                                                        NULL,
+                                                       &error);
+            if (success)
+            {
+                // Exit the application to allow update.
+                exitSelectionHandler();
+            }
+            else
+            {
+                // Show error if update could not be retrieved
+                dialog = gtk_message_dialog_new(NULL,
+                        GTK_DIALOG_MODAL,
+                        GTK_MESSAGE_INFO,
+                        GTK_BUTTONS_OK,
+                        "Cannot Retrieve Update");
+                gtk_window_set_title(GTK_WINDOW(dialog), "Update");
+                gtk_dialog_run(GTK_DIALOG(dialog));
+                gtk_widget_destroy(dialog);
+            }
+
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
 }
 
 static void NetworkSelectionHandler(GtkMenuItem * /*menuitem*/, gpointer args)
