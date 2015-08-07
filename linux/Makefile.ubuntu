@@ -18,11 +18,16 @@ GTK_LIBS   := $(shell pkg-config --libs gtk+-3.0)
 
 # indicate to build that we have selected a valid target
 HWPLATFORM=$(shell uname -i)
-ifneq ($(HWPLATFORM),i686)
-    $(error please build on an x86 Ubunutu machine)
-else
+ifeq ($(HWPLATFORM),i686)
     CC          = g++
     TARG_ARCH   = Linux-x86
+else
+ifeq ($(HWPLATFORM),x86_64)
+    CC          = g++
+    TARG_ARCH   = Linux-x64
+else
+    $(error please build on an x86/x64 Ubunutu machine)
+endif
 endif
 
 ifdef DEBUG
