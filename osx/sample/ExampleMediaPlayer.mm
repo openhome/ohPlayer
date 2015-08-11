@@ -275,8 +275,12 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
     "http-get:*:audio/ogg:*,"       // Vorbis
     "http-get:*:audio/x-ogg:*,"     // Vorbis
     "http-get:*:application/ogg:*," // Vorbis
-    //"tidalhifi.com:*:*:*,"          // Tidal
-    //"qobuz.com:*:*:*,"              // Qobuz
+#ifdef ENABLE_TIDAL
+    "tidalhifi.com:*:*:*,"          // Tidal
+#endif  /* ENABLE_TIDAL */
+#ifdef ENABLE_QOBUZ
+    "qobuz.com:*:*:*,"              // Qobuz
+#endif  /* ENABLE_QOBUZ */
     );
     DoRegisterPlugins(aEnv, kSupportedProtocols);
 }
