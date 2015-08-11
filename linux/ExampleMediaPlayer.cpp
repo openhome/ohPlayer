@@ -279,8 +279,12 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
         "http-get:*:audio/ogg:*,"       // Vorbis
         "http-get:*:audio/x-ogg:*,"     // Vorbis
         "http-get:*:application/ogg:*," // Vorbis
-        //"tidalhifi.com:*:*:*,"          // Tidal
-        //"qobuz.com:*:*:*"               // Qobuz
+#ifdef ENABLE_TIDAL
+        "tidalhifi.com:*:*:*,"          // Tidal
+#endif // ENABLE_TIDAL
+#ifdef ENABLE_QOBUZ
+        "qobuz.com:*:*:*"               // Qobuz
+#endif // ENABLE_QOBUZ
         );
     DoRegisterPlugins(aEnv, kSupportedProtocols);
 }
@@ -290,9 +294,11 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
     // Add codecs
     Log::Print("Codec Registration: [\n");
 
+#ifdef ENABLE_AAC
     // Disabled by default - requires patent license
-    //Log::Print("Codec\tAac\n");
-    //iMediaPlayer->Add(Codec::CodecFactory::NewAac());
+    Log::Print("Codec\tAac\n");
+    iMediaPlayer->Add(Codec::CodecFactory::NewAac());
+#endif // ENABLE_AAC
     Log::Print("Codec\tAiff\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewAiff());
     Log::Print("Codec\tAifc\n");
@@ -303,9 +309,11 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
     iMediaPlayer->Add(Codec::CodecFactory::NewAdts());
     Log::Print("Codec:\tFlac\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewFlac());
+#ifdef ENABLE_MP3
     // Disabled by default - requires patent and copyright licenses
-    //Log::Print("Codec:\tMP3\n");
-    //iMediaPlayer->Add(Codec::CodecFactory::NewMp3());
+    Log::Print("Codec:\tMP3\n");
+    iMediaPlayer->Add(Codec::CodecFactory::NewMp3());
+#endif // ENABLE_MP3
     Log::Print("Codec\tPcm\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewPcm());
     Log::Print("Codec\tVorbis\n");
@@ -338,6 +346,33 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
                                                   iRxTimestamper,
                                                   iRxTsMapper,
                                                   kSongcastSenderIconFileName));
+
+#ifdef ENABLE_TIDAL
+    // You must define your Tidal token
+    iMediaPlayer->Add(ProtocolFactory::NewTidal(
+                                            aEnv,
+                                            Brn(TIDAL_TOKEN),
+                                            iMediaPlayer->CredentialsManager(),
+                                            iMediaPlayer->ConfigInitialiser()));
+#endif  // ENABLE_TIDAL
+
+#ifdef ENABLE_QOBUZ
+    // You must define your QOBUZ appId and secret key
+    iMediaPlayer->Add(ProtocolFactory::NewQobuz(
+                                            aEnv,
+                                            Brn(QOBUZ_APPID),
+                                            Brn(QOBUZ_SECRET),
+                                            iMediaPlayer->CredentialsManager(),
+                                            iMediaPlayer->ConfigInitialiser()));
+#endif  // ENABLE_QOBUZ
+
+#ifdef ENABLE_RADIO
+    // Radio is disabled by default as many stations depend on AAC
+    iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer,
+                                              NULL,
+                                              aSupportedProtocols,
+                                              Brn(TUNEIN_PARTNER_ID)));
+#endif  // ENABLE_RADIO
 }
 
 void ExampleMediaPlayer::WriteResource(const Brx&          aUriTail,
