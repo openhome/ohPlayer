@@ -21,7 +21,7 @@
 all: ubuntu raspbian 
 
 clean:
-	$(MAKE) -f Makefile.ubuntu clean
+	-$(MAKE) -f Makefile.ubuntu clean
 	$(MAKE) -f Makefile.raspbian clean
 
 ubuntu:
