@@ -4,7 +4,8 @@
 
 #include "AudioSessionEvents.h"
 #include "WWMFResampler.h"
-#include <OpenHome/Media/Utils/Aggregator.h>
+#include <OpenHome/Media/Pipeline/Msg.h>
+#include <OpenHome/Private/Standard.h>
 
 namespace OpenHome {
     class Environment;
@@ -20,9 +21,10 @@ template <class T> void SafeRelease(T **ppT)
     }
 }
 
-class AudioDriver : public Thread, private IMsgProcessor, public IPipelineAnimator
+class AudioDriver : public PipelineElement, public IPipelineAnimator, private INonCopyable
 {
     static const TInt64 kClockPullDefault = (1 << 29) * 100LL;
+    static const TUint kSupportedMsgTypes;
 public:
     AudioDriver(Environment& aEnv, IPipeline& aPipeline, HWND hwnd);
     ~AudioDriver();
@@ -32,36 +34,26 @@ public:
 private: // Data set by SetVolume()
     static TBool iVolumeChanged;
     static float iVolumeLevel;
-private: // from Thread
-    void Run();
 private:
+    void AudioThread();
     void ProcessAudio(MsgPlayable* aMsg);
 private: // from IMsgProcessor
     Msg* ProcessMsg(MsgMode* aMsg) override;
-    Msg* ProcessMsg(MsgTrack* aMsg) override;
     Msg* ProcessMsg(MsgDrain* aMsg) override;
-    Msg* ProcessMsg(MsgDelay* aMsg) override;
-    Msg* ProcessMsg(MsgEncodedStream* aMsg) override;
-    Msg* ProcessMsg(MsgAudioEncoded* aMsg) override;
-    Msg* ProcessMsg(MsgMetaText* aMsg) override;
-    Msg* ProcessMsg(MsgStreamInterrupted* aMsg) override;
     Msg* ProcessMsg(MsgHalt* aMsg) override;
-    Msg* ProcessMsg(MsgFlush* aMsg) override;
-    Msg* ProcessMsg(MsgWait* aMsg) override;
     Msg* ProcessMsg(MsgDecodedStream* aMsg) override;
-    Msg* ProcessMsg(MsgAudioPcm* aMsg) override;
-    Msg* ProcessMsg(MsgSilence* aMsg) override;
     Msg* ProcessMsg(MsgPlayable* aMsg) override;
     Msg* ProcessMsg(MsgQuit* aMsg) override;
 private: // from IPipelineDriver
     TUint PipelineDriverDelayJiffies(TUint aSampleRateFrom, TUint aSampleRateTo) override;
 private:
-    IPipeline   &iPipeline;
-    TUint        iSampleRate;
-    TUint        iNumChannels;
-    TUint        iBitDepth;
-    MsgPlayable *iPlayable;
-    TBool        iQuit;
+    IPipeline     &iPipeline;
+    TUint          iSampleRate;
+    TUint          iNumChannels;
+    TUint          iBitDepth;
+    MsgPlayable   *iPlayable;
+    TBool          iQuit;
+    ThreadFunctor *iThread;
 private:
     // WASAPI Related
     IMMDevice            *iAudioEndpoint;

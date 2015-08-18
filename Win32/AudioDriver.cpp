@@ -23,8 +23,15 @@ using namespace OpenHome::Media;
 // Static data
 TBool AudioDriver::iVolumeChanged = false;
 float AudioDriver::iVolumeLevel   = 100.0f;
+const TUint AudioDriver::kSupportedMsgTypes =   eMode
+                                              | eDrain
+                                              | eHalt
+                                              | eDecodedStream
+                                              | ePlayable
+                                              | eQuit;
 
 AudioDriver::AudioDriver(Environment& /*aEnv*/, IPipeline& aPipeline, HWND hwnd) :
+    PipelineElement(kSupportedMsgTypes),
     iHwnd(hwnd),
     iAudioEndpoint(NULL),
     iAudioClient(NULL),
@@ -48,18 +55,18 @@ AudioDriver::AudioDriver(Environment& /*aEnv*/, IPipeline& aPipeline, HWND hwnd)
     iResampleInputBps(1),
     iResampleOutputBps(1),
 
-    Thread("PipelineAnimator", kPrioritySystemHighest),
     iPipeline(aPipeline),
     iPlayable(NULL),
     iQuit(false)
 {
     iPipeline.SetAnimator(*this);
-    Start();
+    iThread = new ThreadFunctor("PipelineAnimator", MakeFunctor(*this, &AudioDriver::AudioThread), kPrioritySystemHighest);
+    iThread->Start();
 }
 
 AudioDriver::~AudioDriver()
 {
-    Join();
+    delete iThread;
 }
 
 void AudioDriver::SetVolume(float level)
@@ -73,12 +80,6 @@ Msg* AudioDriver::ProcessMsg(MsgMode* aMsg)
     Log::Print("Pipeline Mode Msg\n");
 
     aMsg->RemoveRef();
-    return NULL;
-}
-
-Msg* AudioDriver::ProcessMsg(MsgTrack* /*aMsg*/)
-{
-    ASSERTS();
     return NULL;
 }
 
@@ -109,60 +110,6 @@ Msg* AudioDriver::ProcessMsg(MsgDrain* aMsg)
     aMsg->ReportDrained();
     aMsg->RemoveRef();
 
-    return NULL;
-}
-
-Msg* AudioDriver::ProcessMsg(MsgDelay* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* AudioDriver::ProcessMsg(MsgEncodedStream* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* AudioDriver::ProcessMsg(MsgAudioEncoded* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* AudioDriver::ProcessMsg(MsgMetaText* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* AudioDriver::ProcessMsg(MsgStreamInterrupted * /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* AudioDriver::ProcessMsg(MsgFlush* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* AudioDriver::ProcessMsg(MsgWait* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* AudioDriver::ProcessMsg(MsgAudioPcm* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* AudioDriver::ProcessMsg(MsgSilence* /*aMsg*/)
-{
-    ASSERTS();
     return NULL;
 }
 
@@ -996,7 +943,7 @@ void AudioDriver::StopAudioEngine()
     Log::Print("StopAudioEngine: Complete\n");
 }
 
-void AudioDriver::Run()
+void AudioDriver::AudioThread()
 {
     HANDLE mmcssHandle    = NULL;
     DWORD  mmcssTaskIndex = 0;
@@ -1082,8 +1029,9 @@ void AudioDriver::Run()
                 }
                 else {
                     Msg* msg = iPipeline.Pull();
-                    (void)msg->Process(*this);
                     ASSERT(msg != NULL);
+                    msg = msg->Process(*this);
+                    ASSERT(msg == NULL);
                 }
 
                 //
