@@ -2,9 +2,9 @@ Sample apps for LitePipe (https://github.com/openhome/LitePipe) for Mac, Windows
 
 Repository and source setup
 ---------------------------
-Before building, clone ohdevtools (git@github.com:openhome/ohdevtools.git) into the same parent directory as LitePipeSampleApps.
+Before building, clone ohdevtools (https://github.com/openhome/ohdevtools.git) into the same parent directory as LitePipeSampleApps.
 
-OpenHome can fetch pre-built dependencies for ohNet and ohMediaPlayer from the OpenHome build server.
+OpenHome can fetch pre-built dependencies for ohNet and LitePipe (aka ohMediaPlayer) from the OpenHome build server.
 
 To fetch dependencies, run
     'go fetch --all'
@@ -37,6 +37,8 @@ sudo apt-get install ruby-dev
 gem install fpm
 
 # make the project
+cd LitePipeSampleApps/linux
+
 make ubuntu     // release build
 or
 make raspbian   // release build
@@ -64,6 +66,18 @@ Open the LitePipeTestApp solution in Visual Studio 2013 and build release or deu
   Win32/LitePipeTestApp.sln
 
 The solution will build a windows tray application.
+
+The installer generation process employs the Inno Setup 5 tool - http://www.jrsoftware.org/isinfo.php
+The actual download was 'isetup-5.5.5.exe'.
+
+All defaults were chosen during application installation including the installation of the optional pre-processor extensions..
+To create the installer, compile the installer script, LitePipeSampleAppInstaller.iss, as follows:
+
+  iscc /dMySrcDir="C:\<src folder>" LitePipeSampleAppInstaller.iss
+
+Where <src folder> identifies the parent folder of the installer (Win32Installer) and application source (Win32) folders.
+
+'setup.exe' will be generated in the Win32Installer folder.
 
 
 Mac OSX (Mountain Lion onward)
