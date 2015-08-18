@@ -81,7 +81,7 @@ void InitAndRunMediaPlayer(gpointer args)
     static char udn[1024];
     static char hostname[512];
     gethostname(hostname, 512);
-    sprintf(udn, "4c494e4e-PiPlayer-%s", hostname);
+    sprintf(udn, "PiPlayer-%s", hostname);
     static const TChar *cookie = "ExampleMediaPlayer";
     static const TChar *room  = hostname;
     NetworkAdapter *adapter = NULL;
