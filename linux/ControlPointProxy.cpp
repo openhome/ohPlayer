@@ -800,7 +800,9 @@ void ControlPointProxy::setActiveCp(Sources newSource)
 {
     // Reset all sources
     iCpPlaylist->setActive(false);
+#ifdef ENABLE_RADIO
     iCpRadio->setActive(false);
+#endif
     iCpReceiver->setActive(false);
 
     // Activate the new source.
