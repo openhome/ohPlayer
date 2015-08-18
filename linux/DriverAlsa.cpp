@@ -436,7 +436,7 @@ public:
     virtual ~Pimpl();
     void ProcessDecodedStream(MsgDecodedStream* aMsg);
     void ProcessPlayable(MsgPlayable* aMsg);
-    void ProcessChangeInput();
+    void ProcessDrain();
     void LogPCMState();
     TUint DriverDelayJiffies(TUint aSampleRateFrom, TUint aSampleRateTo);
 public:
@@ -493,7 +493,7 @@ void DriverAlsa::Pimpl::ProcessPlayable(MsgPlayable* aMsg)
     	aMsg->Read(iProfiles[iProfileIndex].GetPcmProcessor());
 }
 
-void DriverAlsa::Pimpl::ProcessChangeInput()
+void DriverAlsa::Pimpl::ProcessDrain()
 {
     // Drain and stop the PCM.
     if (iProfileIndex != -1)
@@ -746,11 +746,16 @@ DriverAlsa::~DriverAlsa()
 
 void DriverAlsa::Run()
 {
-    for(;;)
+    for (;;)
     {
         CheckForKill();
 
-        iPipeline.Pull()->Process(*this)->RemoveRef();
+        Msg* msg = iPipeline.Pull();
+        msg = msg->Process(*this);
+        if (msg != NULL)
+        {
+            msg->RemoveRef();
+        }
 
         AutoMutex am(iMutex);
         if (iQuit)
@@ -802,12 +807,12 @@ Msg* DriverAlsa::ProcessMsg(MsgTrack* /*aMsg*/)
     return NULL;
 }
 
-Msg* DriverAlsa::ProcessMsg(MsgChangeInput * aMsg)
+Msg* DriverAlsa::ProcessMsg(MsgDrain* aMsg)
 {
     // Ensure the ALSA audio buffer is emptied.
-    iPimpl->ProcessChangeInput();
+    iPimpl->ProcessDrain();
 
-    aMsg->ReadyToChange();
+    aMsg->ReportDrained();
 
     return aMsg;
 }
@@ -861,12 +866,6 @@ Msg* DriverAlsa::ProcessMsg(MsgAudioPcm* /*aMsg*/)
 }
 
 Msg* DriverAlsa::ProcessMsg(MsgSilence* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverAlsa::ProcessMsg(MsgSession* /*aMsg*/)
 {
     ASSERTS();
     return NULL;

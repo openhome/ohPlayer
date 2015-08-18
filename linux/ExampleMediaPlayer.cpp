@@ -241,65 +241,23 @@ DvDevice* ExampleMediaPlayer::UpnpAvDevice()
 
 void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 {
-    const Brn kSupportedProtocols(
-        "http-get:*:audio/x-flac:*,"    // Flac
-        "http-get:*:audio/wav:*,"       // Wav
-        "http-get:*:audio/wave:*,"      // Wav
-        "http-get:*:audio/x-wav:*,"     // Wav
-        "http-get:*:audio/aiff:*,"      // AIFF
-        "http-get:*:audio/x-aiff:*,"    // AIFF
-        "http-get:*:audio/x-m4a:*,"     // Alac
-        "http-get:*:audio/x-scpls:*,"   // M3u (content processor)
-        "http-get:*:text/xml:*,"        // Opml ??  (content processor)
-        "http-get:*:audio/aac:*,"       // Aac
-        "http-get:*:audio/aacp:*,"      // Aac
-        "http-get:*:audio/mp4:*,"       // Mpeg4 (container)
-        "http-get:*:audio/ogg:*,"       // Vorbis
-        "http-get:*:audio/x-ogg:*,"     // Vorbis
-        "http-get:*:application/ogg:*," // Vorbis
-#ifdef ENABLE_TIDAL
-        "tidalhifi.com:*:*:*,"          // Tidal
-#endif // ENABLE_TIDAL
-#ifdef ENABLE_QOBUZ
-        "qobuz.com:*:*:*"               // Qobuz
-#endif // ENABLE_QOBUZ
-        );
-    DoRegisterPlugins(aEnv, kSupportedProtocols);
-}
-
-void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSupportedProtocols)
-{
     // Add codecs
-    Log::Print("Codec Registration: [\n");
-
+    iMediaPlayer->Add(Codec::CodecFactory::NewFlac(iMediaPlayer->MimeTypes()));
+    iMediaPlayer->Add(Codec::CodecFactory::NewWav(iMediaPlayer->MimeTypes()));
+    iMediaPlayer->Add(Codec::CodecFactory::NewAiff(iMediaPlayer->MimeTypes()));
+    iMediaPlayer->Add(Codec::CodecFactory::NewAifc(iMediaPlayer->MimeTypes()));
 #ifdef ENABLE_AAC
     // Disabled by default - requires patent license
-    Log::Print("Codec\tAac\n");
-    iMediaPlayer->Add(Codec::CodecFactory::NewAac());
+    iMediaPlayer->Add(Codec::CodecFactory::NewAac(iMediaPlayer->MimeTypes()));
+    iMediaPlayer->Add(Codec::CodecFactory::NewAdts(iMediaPlayer->MimeTypes()));
 #endif // ENABLE_AAC
-    Log::Print("Codec\tAiff\n");
-    iMediaPlayer->Add(Codec::CodecFactory::NewAiff());
-    Log::Print("Codec\tAifc\n");
-    iMediaPlayer->Add(Codec::CodecFactory::NewAifc());
-    Log::Print("Codec\tAlac\n");
-    iMediaPlayer->Add(Codec::CodecFactory::NewAlac());
-    Log::Print("Codec\tAdts\n");
-    iMediaPlayer->Add(Codec::CodecFactory::NewAdts());
-    Log::Print("Codec:\tFlac\n");
-    iMediaPlayer->Add(Codec::CodecFactory::NewFlac());
+    iMediaPlayer->Add(Codec::CodecFactory::NewAlac(iMediaPlayer->MimeTypes()));
 #ifdef ENABLE_MP3
     // Disabled by default - requires patent and copyright licenses
-    Log::Print("Codec:\tMP3\n");
-    iMediaPlayer->Add(Codec::CodecFactory::NewMp3());
+    iMediaPlayer->Add(Codec::CodecFactory::NewMp3(iMediaPlayer->MimeTypes()));
 #endif // ENABLE_MP3
-    Log::Print("Codec\tPcm\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewPcm());
-    Log::Print("Codec\tVorbis\n");
-    iMediaPlayer->Add(Codec::CodecFactory::NewVorbis());
-    Log::Print("Codec\tWav\n");
-    iMediaPlayer->Add(Codec::CodecFactory::NewWav());
-
-    Log::Print("]\n");
+    iMediaPlayer->Add(Codec::CodecFactory::NewVorbis(iMediaPlayer->MimeTypes()));
 
     // Add protocol modules
     iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
@@ -310,12 +268,9 @@ void ExampleMediaPlayer::DoRegisterPlugins(Environment& aEnv, const Brx& aSuppor
     iMediaPlayer->Add(ProtocolFactory::NewHls(aEnv, iUserAgent));
 
     // Add sources
-    iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer,
-                                                 aSupportedProtocols));
+    iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer));
 
-    iMediaPlayer->Add(SourceFactory::NewUpnpAv(*iMediaPlayer,
-                                               *iDeviceUpnpAv,
-                                                aSupportedProtocols));
+    iMediaPlayer->Add(SourceFactory::NewUpnpAv(*iMediaPlayer, *iDeviceUpnpAv));
 
     iMediaPlayer->Add(SourceFactory::NewReceiver(*iMediaPlayer,
                                                   NULL,
