@@ -61,7 +61,7 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
     const TChar        *room  = computerName;
     static const TChar *name  = "SoftPlayer";
     char udn[1024];
-    strcpy_s(udn, "4c494e4e-WinPlayer-"); // 4c494e4e- prefix is a temporary measure to allow recognition by Linn Konfig
+    strcpy_s(udn, "WinPlayer-");
     strcat_s(udn, computerName);
     static const TChar *cookie = "ExampleMediaPlayer";
 
