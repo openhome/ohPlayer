@@ -76,19 +76,13 @@ Msg* AudioDriver::ProcessMsg(MsgMode* aMsg)
     return NULL;
 }
 
-Msg* AudioDriver::ProcessMsg(MsgSession* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
 Msg* AudioDriver::ProcessMsg(MsgTrack* /*aMsg*/)
 {
     ASSERTS();
     return NULL;
 }
 
-Msg* AudioDriver::ProcessMsg(MsgChangeInput * aMsg)
+Msg* AudioDriver::ProcessMsg(MsgDrain* aMsg)
 {
     TUint32        padding;
     REFERENCE_TIME defaultPeriod;
@@ -112,7 +106,7 @@ Msg* AudioDriver::ProcessMsg(MsgChangeInput * aMsg)
         }
     }
 
-    aMsg->ReadyToChange();
+    aMsg->ReportDrained();
     aMsg->RemoveRef();
 
     return NULL;

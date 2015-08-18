@@ -63,15 +63,12 @@ public:
                                               IOhmTimestampMapper& aRxTsMapper);
     Media::PipelineManager &Pipeline();
     Net::DvDeviceStandard  *Device();
-protected:
-    virtual void RegisterPlugins(Environment& aEnv);
-    void         DoRegisterPlugins(Environment& aEnv,
-                                   const Brx& aSupportedProtocols);
 private: // from Net::IResourceManager
     void WriteResource(const Brx& aUriTail, TIpAddress aInterface,
                        std::vector<char*>& aLanguageList,
                        Net::IResourceWriter& aResourceWriter) override;
 private:
+    void  RegisterPlugins(Environment& aEnv);
     void  AddConfigApp();
     void  PresentationUrlChanged(const Brx& aUrl);
     TBool TryDisable(Net::DvDevice& aDevice);
