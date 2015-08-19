@@ -155,8 +155,7 @@ TBool MediaPlayerIF::setup (TIpAddress subnet)
     NSString *computerName = [[NSHost currentHost] name];
     const TChar *room  = [computerName cStringUsingEncoding:NSUTF8StringEncoding];
     const TChar *name  = "SoftPlayer-OSX";
-    // 4c494e4e- prefix is a temporary measure to allow recognition by Linn Konfig
-    NSString *udn = [NSString stringWithFormat:@"4c494e4e-OsxPlayer-%@",computerName];
+    NSString *udn = [NSString stringWithFormat:@"OsxPlayer-%@",computerName];
     const TChar *cookie = "OSXMediaPlayer";
 
     // Create the library on the supplied subnet.
