@@ -239,24 +239,18 @@ Msg* DriverOsx::ProcessMsg(MsgMode* aMsg)
     return NULL;
 }
 
-Msg* DriverOsx::ProcessMsg(MsgSession* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
 Msg* DriverOsx::ProcessMsg(MsgTrack* /*aMsg*/)
 {
     ASSERTS();
     return NULL;
 }
 
-Msg* DriverOsx::ProcessMsg(MsgChangeInput * aMsg)
+Msg* DriverOsx::ProcessMsg(MsgDrain* aMsg)
 {
     // Terminate playback immediately, flushing any
     // active audio buffers
     flushQueue();
-    aMsg->ReadyToChange();
+    aMsg->ReportDrained();
     aMsg->RemoveRef();
 
     return NULL;
