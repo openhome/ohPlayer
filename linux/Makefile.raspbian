@@ -44,7 +44,7 @@ BINDIR = $(PREFIX)/bin
 # The directory to install the resource files to.
 RESDIR = $(PREFIX)/share/litepipe-test-app
 
-CFLAGS = -c -Wall -std=c++11 $(GTK_CFLAGS)
+CFLAGS = -c -Wall -std=c++11 $(GTK_CFLAGS) -DTARG_ARCH=$(TARG_ARCH)
 
 # If 'DEBUG=0 is specified on the command line build a debug biuld.
 ifdef DEBUG

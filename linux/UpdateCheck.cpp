@@ -1,4 +1,4 @@
-//
+
 // Check for updates, supplying the location Uri of any found to the
 // caller.
 //
@@ -15,6 +15,9 @@
 
 using namespace OpenHome;
 using namespace OpenHome::Media;
+
+#define xstr(s) str(s)
+#define str(s) #s
 
 //
 // Compare two version numbers of the form 'x.y.z' or a substring of.
@@ -113,7 +116,7 @@ TBool UpdateChecker::updateAvailable(Environment& aEnv,
         {
             // Check this release record is for our platform.
             Brn jsonKey = Brn("platform");
-            if (ReadValue(readerUntil, jsonKey) == Brn("Linux-armhf"))
+            if (ReadValue(readerUntil, jsonKey) == Brn(xstr(TARG_ARCH)))
             {
 
                 // Check this release record is valid for our platform version.

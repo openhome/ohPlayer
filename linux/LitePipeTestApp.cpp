@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <gtk/gtk.h>
+#ifdef USE_UNITY
+#include <libappindicator/app-indicator.h>
+#endif // USE_UNITY
 #include <gio/gappinfo.h>
 #include <libnotify/notify.h>
 #include <vector>
@@ -46,10 +49,14 @@ static guint     g_mediaOptions     = 0;     // Available media playback options
 static GThread  *g_mplayerThread    = NULL;  // Media Player thread
 static InitArgs  g_mPlayerArgs;              // Media Player arguments.
 
+#ifdef USE_UNITY
+static const gchar *g_light_icon_path = "/usr/share/litepipe-test-app";
+static const gchar *g_light_icon_name = "OpenHome-Light-48x48";
+#endif // USE_UNITY
 static const gchar *g_icon_path =
                         "/usr/share/litepipe-test-app/OpenHome-48x48.png";
 
-const gchar     *g_appName          = "LitePipeTestApp";
+const gchar        *g_appName   = "LitePipeTestApp";
 
 static void displayNotification(const gchar *summary,
                                 const gchar *body,
@@ -84,11 +91,13 @@ static void displayNotification(const gchar *summary,
     g_object_unref(G_OBJECT(notification));
 }
 
+#ifndef USE_UNITY
 static void tray_icon_on_click(GtkStatusIcon *status_icon,
                                gpointer       user_data)
 {
     g_debug("Clicked on tray icon\n");
 }
+#endif // USE_UNITY
 
 // Context Menu Handlers.
 static void playSelectionHandler()
@@ -286,11 +295,16 @@ static void CreateNetworkAdapterSubmenu(GtkWidget *networkMenuItem)
     gtk_menu_item_set_submenu (GTK_MENU_ITEM(networkMenuItem), submenu);
 }
 
+#ifdef USE_UNITY
+// Create the context menu
+static GtkMenu* tray_icon_on_menu()
+#else // USE_UNITY
 // Display the context menu
 static void tray_icon_on_menu(GtkStatusIcon *status_icon,
                               guint          button,
                               guint          activate_time,
                               gpointer       user_data)
+#endif // USE_UNITY
 {
     GtkMenu   *menu    = (GtkMenu*)gtk_menu_new();
 
@@ -338,8 +352,10 @@ static void tray_icon_on_menu(GtkStatusIcon *status_icon,
     g_signal_connect(G_OBJECT(g_mi_exit), "activate",
                               G_CALLBACK(exitSelectionHandler), NULL);
 
+#ifndef USE_UNITY
     // Populate the 'Networks' submenu.
     CreateNetworkAdapterSubmenu(g_mi_networks);
+#endif // USE_UNITY
 
     // Update the playback options in the UI
     UpdatePlaybackOptions();
@@ -354,6 +370,9 @@ static void tray_icon_on_menu(GtkStatusIcon *status_icon,
         gtk_widget_set_sensitive(g_mi_update,false);
     }
 
+#ifdef USE_UNITY
+    return menu;
+#else  // USE_UNITY
     gtk_menu_popup(menu,
                    NULL,
                    NULL,
@@ -361,8 +380,28 @@ static void tray_icon_on_menu(GtkStatusIcon *status_icon,
                    NULL,
                    button,
                    activate_time);
+#endif // USE_UNITY
 }
 
+#ifdef USE_UNITY
+static void create_tray_icon(AppIndicator **indicator)
+{
+    // Create the application indicator
+    *indicator = app_indicator_new(g_appName,
+                                   g_light_icon_name,
+                                   APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
+
+    app_indicator_set_icon_theme_path(*indicator, g_light_icon_path);
+
+    app_indicator_set_status (*indicator, APP_INDICATOR_STATUS_ACTIVE);
+
+    // Create the application context menu.
+    GtkMenu *menu = tray_icon_on_menu();
+
+    // Attach the menu to the indicator.
+    app_indicator_set_menu(*indicator, menu);
+}
+#else // USE_UNITY
 static void create_tray_icon()
 {
     GtkStatusIcon *tray_icon;
@@ -380,6 +419,7 @@ static void create_tray_icon()
 
     gtk_status_icon_set_visible(tray_icon, TRUE);
 }
+#endif // USE_UNITY
 
 gboolean updateUI(gpointer mediaOptions)
 {
@@ -392,6 +432,16 @@ gboolean updateUI(gpointer mediaOptions)
 
     return false;
 }
+
+#ifdef USE_UNITY
+gboolean networkAdaptersAvailable()
+{
+    // Add the available adapters to the networks submenu.
+    CreateNetworkAdapterSubmenu(g_mi_networks);
+
+    return false;
+}
+#endif // USE_UNITY
 
 gboolean updatesAvailable(gpointer data)
 {
@@ -427,7 +477,12 @@ int main(int argc, char **argv)
     gtk_init(&argc, &argv);
     notify_init(g_appName);
 
+#ifdef USE_UNITY
+    AppIndicator *indicator;
+    create_tray_icon(&indicator);
+#else
     create_tray_icon();
+#endif
 
     // Start MediaPlayer thread.
     g_mPlayerArgs.subnet = InitArgs::NO_SUBNET;

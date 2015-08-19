@@ -153,6 +153,12 @@ void InitAndRunMediaPlayer(gpointer args)
                                       GINT_TO_POINTER(TenSeconds));
     }
 
+#ifdef USE_UNITY
+    // Add the network submenu to the application indicator context menu
+    // now that the information is available.
+    gdk_threads_add_idle((GSourceFunc)networkAdaptersAvailable, NULL);
+#endif // USE_UNITY
+
     /* Run the media player. (Blocking) */
     g_emp->RunWithSemaphore(*cpStack);
 
@@ -180,7 +186,7 @@ cleanup:
     {
         delete g_lib;
     }
-    
+
     delete g_arbDriver;
     delete g_arbPipeline;
 

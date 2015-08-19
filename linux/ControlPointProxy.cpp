@@ -802,7 +802,7 @@ void ControlPointProxy::setActiveCp(Sources newSource)
     iCpPlaylist->setActive(false);
 #ifdef ENABLE_RADIO
     iCpRadio->setActive(false);
-#endif
+#endif // ENABLE_RADIO
     iCpReceiver->setActive(false);
 
     // Activate the new source.
@@ -819,7 +819,7 @@ void ControlPointProxy::setActiveCp(Sources newSource)
             iCpRadio->setActive(true);
             Log::Print("NEW SOURCE: Radio\n");
             break;
-#endif
+#endif // ENABLE_RADIO
         case RECEIVER:
             iCpReceiver->setActive(true);
             Log::Print("NEW SOURCE: Receiver\n");
