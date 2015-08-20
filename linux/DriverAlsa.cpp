@@ -495,13 +495,24 @@ void DriverAlsa::Pimpl::ProcessPlayable(MsgPlayable* aMsg)
 
 void DriverAlsa::Pimpl::ProcessDrain()
 {
-    // Drain and stop the PCM.
+    // Wait for the native audio buffers to empty.
     if (iProfileIndex != -1)
     {
+        // Drain the PCM buffers.
         auto err = snd_pcm_drain(iHandle);
         if (err < 0)
         {
             Log::Print("DriverAlsa: snd_pcm_drain() error : %s\n",
+                       snd_strerror(err));
+            ASSERTS();
+        }
+
+        // Prepare the PCM to accept new data.
+        err = snd_pcm_prepare(iHandle);
+
+        if (err < 0)
+        {
+            Log::Print("DriverAlsa: snd_pcm_prepare() error : %s\n",
                        snd_strerror(err));
             ASSERTS();
         }

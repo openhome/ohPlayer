@@ -4,6 +4,7 @@
 #include <OpenHome/OsWrapper.h>
 #include <OpenHome/Private/Env.h>
 #include <OpenHome/Private/Printer.h>
+#include <OpenHome/Private/Standard.h>
 
 #include <string>
 #include <limits>
@@ -176,8 +177,15 @@ static void PlayCallback(void *inUserData, AudioQueueRef inAudioQueue, AudioQueu
 }
 #endif /* TEST_BUFFER */
 
-DriverOsx::DriverOsx(Environment& aEnv, IPipeline& aPipeline)
-    : Thread("PipelineAnimator", kPrioritySystemHighest)
+const TUint DriverOsx::kSupportedMsgTypes = PipelineElement::MsgType::eMode
+| PipelineElement::MsgType::eDrain
+| PipelineElement::MsgType::eHalt
+| PipelineElement::MsgType::eDecodedStream
+| PipelineElement::MsgType::ePlayable
+| PipelineElement::MsgType::eQuit;
+
+DriverOsx::DriverOsx(Environment& aEnv, IPipeline& aPipeline) :
+      PipelineElement(kSupportedMsgTypes)
     , iPipeline(aPipeline)
     , iOsCtx(aEnv.OsCtx())
     , iQuit(false)
@@ -185,7 +193,8 @@ DriverOsx::DriverOsx(Environment& aEnv, IPipeline& aPipeline)
     , iAudioQueue(nil)
 {
     iPipeline.SetAnimator(*this);
-    Start();
+    iThread = new ThreadFunctor("PipelineAnimator", MakeFunctor(*this, &DriverOsx::AudioThread), kPrioritySystemHighest);
+    iThread->Start();
 }
 
 DriverOsx::~DriverOsx()
@@ -194,9 +203,11 @@ DriverOsx::~DriverOsx()
 
     // we're leaving now, so finalise the previailing AudioQueue
     finaliseAudioQueue();
+    
+    delete iThread;
 }
 
-void DriverOsx::Run()
+void DriverOsx::AudioThread()
 {
     try {
         /* Loop round processing messages until we are explicitly stopped
@@ -239,74 +250,20 @@ Msg* DriverOsx::ProcessMsg(MsgMode* aMsg)
     return NULL;
 }
 
-Msg* DriverOsx::ProcessMsg(MsgSession* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverOsx::ProcessMsg(MsgTrack* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverOsx::ProcessMsg(MsgChangeInput * aMsg)
+Msg* DriverOsx::ProcessMsg(MsgDrain* aMsg)
 {
     // Terminate playback immediately, flushing any
     // active audio buffers
     flushQueue();
-    aMsg->ReadyToChange();
+    aMsg->ReportDrained();
     aMsg->RemoveRef();
 
-    return NULL;
-}
-
-Msg* DriverOsx::ProcessMsg(MsgDelay* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverOsx::ProcessMsg(MsgEncodedStream* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverOsx::ProcessMsg(MsgAudioEncoded* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverOsx::ProcessMsg(MsgMetaText* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverOsx::ProcessMsg(MsgStreamInterrupted * /*aMsg*/)
-{
-    ASSERTS();
     return NULL;
 }
 
 Msg* DriverOsx::ProcessMsg(MsgHalt* aMsg)
 {
     aMsg->RemoveRef();
-    return NULL;
-}
-
-Msg* DriverOsx::ProcessMsg(MsgFlush* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverOsx::ProcessMsg(MsgWait* /*aMsg*/)
-{
-    ASSERTS();
     return NULL;
 }
 
@@ -340,18 +297,6 @@ Msg* DriverOsx::ProcessMsg(MsgDecodedStream* aMsg)
     startQueue();
 
     aMsg->RemoveRef();
-    return NULL;
-}
-
-Msg* DriverOsx::ProcessMsg(MsgAudioPcm* aMsg)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverOsx::ProcessMsg(MsgSilence* /*aMsg*/)
-{
-    ASSERTS();
     return NULL;
 }
 

@@ -32,8 +32,7 @@ namespace Av {
     class RamStore;
     class ControlPointProxy;
 
-class ExampleMediaPlayer : private Net::IResourceManager,
-                           private Media::IPipelineObserver
+class ExampleMediaPlayer : private Net::IResourceManager
 {
     static const Brn kSongcastSenderIconFileName;
     static const TUint kMaxUiTabs       = 4;
@@ -63,6 +62,7 @@ public:
                                               IOhmTimestampMapper& aRxTsMapper);
     Media::PipelineManager &Pipeline();
     Net::DvDeviceStandard  *Device();
+    Net::DvDevice          *UpnpAvDevice();
 private: // from Net::IResourceManager
     void WriteResource(const Brx& aUriTail, TIpAddress aInterface,
                        std::vector<char*>& aLanguageList,
@@ -86,8 +86,6 @@ protected:
 private:
     Semaphore                  iDisabled;
     Av::VolumeControl          iVolume;
-    Media::EPipelineState      iPState;
-    TBool                      iLive;
     ControlPointProxy         *iCpProxy;
     IOhmTimestamper           *iTxTimestamper;
     IOhmTimestamper           *iRxTimestamper;
@@ -97,14 +95,6 @@ private:
     Web::ConfigAppMediaPlayer *iConfigApp;
     HWND                       iHwnd; // Main window handle
     Bws<Uri::kMaxUriBytes+1>   iPresentationUrl;
-private: // from Media::IPipelineObserver
-    void NotifyPipelineState(Media::EPipelineState aState) override;
-    void NotifyMode(const Brx& aMode, const Media::ModeInfo& aInfo) override;
-    void NotifyTrack(Media::Track& aTrack, const Brx& aMode,
-                     TBool aStartOfStream) override;
-    void NotifyMetaText(const Brx& aText) override;
-    void NotifyTime(TUint aSeconds, TUint aTrackDurationSeconds) override;
-    void NotifyStreamInfo(const Media::DecodedStreamInfo& aStreamInfo) override;
 };
 
 class ExampleMediaPlayerInit

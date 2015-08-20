@@ -49,7 +49,7 @@ BINDIR = $(PREFIX)/bin
 # The directory to install the resource files to.
 RESDIR = $(PREFIX)/share/litepipe-test-app
 
-CFLAGS = -c -Wall -std=c++11 $(GTK_CFLAGS)
+CFLAGS = -c -Wall -std=c++11 $(GTK_CFLAGS) -DTARG_ARCH=$(TARG_ARCH)
 
 # If 'DEBUG=0 is specified on the command line build a debug biuld.
 ifdef DEBUG
@@ -64,6 +64,7 @@ endif
 # Optional Feature Support
 EXTRA_CODECS =
 EXTRA_SOURCES =
+UNITY_LIBS=
 
 ifdef ENABLE_RADIO
     CFLAGS += -DENABLE_RADIO
@@ -87,7 +88,11 @@ ifdef ENABLE_MP3
     EXTRA_CODECS += -lCodecMp3
 endif
 
-LIBS         = $(GTK_LIBS) -lnotify -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv $(EXTRA_SOURCES) -lohMediaPlayer -lWebAppFramework -lConfigUi -lohNetGeneratedProxies -lohNetCore -lCodecAdts -lCodecAac -lCodecAacBase -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecFlac -lCodecWav $(EXTRA_CODECS) -lohPipeline -lpthread -lssl -lcrypto -ldl
+ifeq ($(XDG_CURRENT_DESKTOP),Unity)
+    UNITY_LIBS = -lappindicator3
+endif
+
+LIBS         = $(GTK_LIBS) $(UNITY_LIBS) -lnotify -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv $(EXTRA_SOURCES) -lohMediaPlayer -lWebAppFramework -lConfigUi -lohNetGeneratedProxies -lohNetCore -lCodecAdts -lCodecAac -lCodecAacBase -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecFlac -lCodecWav $(EXTRA_CODECS) -lohPipeline -lpthread -lssl -lcrypto -ldl
 
 INCLUDES     = -I../dependencies/$(TARG_ARCH)/ohMediaPlayer/include -I../dependencies/$(TARG_ARCH)/ohNetmon/include -I../dependencies/$(TARG_ARCH)/openssl/include -I../dependencies/$(TARG_ARCH)/ohNetGenerated-$(TARG_ARCH)-Release/include/ohnet/OpenHome/Net/Core
 
@@ -97,6 +102,12 @@ LIBS     += -L../dependencies/$(TARG_ARCH)/ohNet-$(TARG_ARCH)-$(BUILD_TYPE)/lib
 INCLUDES += -I../dependencies/$(TARG_ARCH)/ohNet-$(TARG_ARCH)-$(BUILD_TYPE)/include/ohnet
 
 LIBS     += -L../dependencies/$(TARG_ARCH)/ohNetGenerated-$(TARG_ARCH)-Release/lib
+
+# Build for Unity desktop if required.
+ifeq ($(XDG_CURRENT_DESKTOP),Unity)
+    CFLAGS += -DUSE_UNITY
+    INCLUDES += -I/usr/include/libappindicator3-0.1
+endif
 
 OBJECTS  = $(patsubst %.cpp, $(OBJ_DIR)/%.o, $(wildcard *.cpp))
 HEADERS  = $(wildcard *.h)
@@ -141,6 +152,7 @@ install:
 	$(INSTALL) -m 755 -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(RESDIR) $(DESTDIR)$(RESDIR)/res
 	$(INSTALL) -m 755 $(TARGET) $(DESTDIR)$(BINDIR)
 	$(INSTALL) -m 644 OpenHome-48x48.png $(DESTDIR)$(RESDIR)
+	$(INSTALL) -m 644 OpenHome-Light-48x48.png $(DESTDIR)$(RESDIR)
 	cp -R $(RESOURCEDIR) $(DESTDIR)$(RESDIR)
 
 uninstall:

@@ -63,10 +63,11 @@ private:
 // pipeline.
 
     
-class DriverOsx : public Thread, private IMsgProcessor, public IPipelineAnimator
+class DriverOsx : public PipelineElement, public IPipelineAnimator, private INonCopyable
 {
     // number of OS buffers to allocate for AudioQueue
     static const TInt32 kNumDataBuffers = 3;
+    static const TUint kSupportedMsgTypes;
     
 public:
     // DriverOsx - constructor
@@ -106,29 +107,15 @@ public:
     
     void fillBuffer(AudioQueueBufferRef inBuffer);
     
-private: // from Thread
-    // Run - the execution method for class's main thread
-    void Run();
-    
 private:
+    void AudioThread();
     void ProcessAudio(MsgPlayable* aMsg);
     
 private: // from IMsgProcessor
     Msg* ProcessMsg(MsgMode* aMsg) override;
-    Msg* ProcessMsg(MsgSession* aMsg) override;
-    Msg* ProcessMsg(MsgTrack* aMsg) override;
-    Msg* ProcessMsg(MsgChangeInput* aMsg) override;
-    Msg* ProcessMsg(MsgDelay* aMsg) override;
-    Msg* ProcessMsg(MsgEncodedStream* aMsg) override;
-    Msg* ProcessMsg(MsgAudioEncoded* aMsg) override;
-    Msg* ProcessMsg(MsgMetaText* aMsg) override;
-    Msg* ProcessMsg(MsgStreamInterrupted* aMsg) override;
+    Msg* ProcessMsg(MsgDrain* aMsg) override;
     Msg* ProcessMsg(MsgHalt* aMsg) override;
-    Msg* ProcessMsg(MsgFlush* aMsg) override;
-    Msg* ProcessMsg(MsgWait* aMsg) override;
     Msg* ProcessMsg(MsgDecodedStream* aMsg) override;
-    Msg* ProcessMsg(MsgAudioPcm* aMsg) override;
-    Msg* ProcessMsg(MsgSilence* aMsg) override;
     Msg* ProcessMsg(MsgPlayable* aMsg) override;
     Msg* ProcessMsg(MsgQuit* aMsg) override;
 
@@ -165,6 +152,9 @@ private: // from IPipelineAnimator
     void finaliseAudioBuffers();
     
 private:
+    // functor for main audio driver thread.
+    ThreadFunctor *iThread;
+    
     // A reference to the pipeline being animated
     IPipeline&      iPipeline;
     
