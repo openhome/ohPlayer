@@ -34,8 +34,8 @@
     {   "name": "ohNetGenerated",
         "type": "openhome",
         "platform-specific": true,
-        "version": "1.0.73",
-        "archive-filename": "${name}-${version}-${archive-platform}-Release.tar.gz",
+        "version": "1.0.78",
+        "archive-filename": "${name}-${version}-${archive-platform}-${debugmode}.tar.gz",
         "source-git": "https://github.com/openhome/ohNetGenerated.git"
     }
 ]
