@@ -2,3 +2,6 @@ Include
 Libs
 
 .DS_Store
+sample.xcodeproj/project.xcworkspace/xcuserdata
+sample.xcodeproj/xcuserdata
+
