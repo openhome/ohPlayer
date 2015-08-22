@@ -136,7 +136,9 @@ NSMenuItem *subnetItem =  nil;
     _statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
     _statusItem.title = @"";
     _statusItem.image = [NSImage imageNamed:@"menu"];
+    [_statusItem.image setTemplate:true];
     _statusItem.alternateImage = [NSImage imageNamed:@"menu-hilite"];
+    [_statusItem.alternateImage setTemplate:true];
     _statusItem.highlightMode = YES;
     
     [self initMenu];
