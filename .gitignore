@@ -15,3 +15,6 @@ tags
 
 # PyCharm project files
 /.idea
+
+# Osx finder files
+.DS_Store

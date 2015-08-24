@@ -57,8 +57,7 @@ namespace OpenHome {
         class RamStore;
         namespace Example {
             
-            class ExampleMediaPlayer :  private Net::IResourceManager,
-                                        private Media::IPipelineObserver
+            class ExampleMediaPlayer :  private Net::IResourceManager
             {
             private:
                 static const Brn kSongcastSenderIconFileName;
@@ -72,6 +71,7 @@ namespace OpenHome {
                 virtual void Run(Net::CpStack& aCpStack);
                 Media::PipelineManager& Pipeline();
                 Net::DvDeviceStandard* Device();
+                Net::DvDevice* UpnpAvDevice();
                 VolumeControl& VolumeControl() {return iVolume;}
                 void SetSongcastTimestampers(IOhmTimestamper& aTxTimestamper, IOhmTimestamper& aRxTimestamper);
                 void SetSongcastTimestampMappers(IOhmTimestamper& aTxTsMapper, IOhmTimestamper& aRxTsMapper);
@@ -90,14 +90,6 @@ namespace OpenHome {
             private: // from Net::IResourceManager
                 void WriteResource(const Brx& aUriTail, TIpAddress aInterface, std::vector<char*>& aLanguageList, Net::IResourceWriter& aResourceWriter) override;
 
-            private: // from Media::IPipelineObserver
-                void NotifyPipelineState(Media::EPipelineState aState) override;
-                void NotifyMode(const Brx& aMode, const Media::ModeInfo& aInfo) override;
-                void NotifyTrack(Media::Track& aTrack, const Brx& aMode, TBool aStartOfStream) override;
-                void NotifyMetaText(const Brx& aText) override;
-                void NotifyTime(TUint aSeconds, TUint aTrackDurationSeconds) override;
-                void NotifyStreamInfo(const Media::DecodedStreamInfo& aStreamInfo) override;
-                
             private:
                 void RegisterPlugins(Environment& aEnv);
                 void AddConfigApp();
@@ -116,8 +108,6 @@ namespace OpenHome {
             private:
                 Semaphore iDisabled;
                 Av::VolumeControl       iVolume;
-                TBool                   iLive;
-                Media::EPipelineState   iState;
                 ObservableBrx           iObservableFriendlyName;
                 const Brx &             iUserAgent;
                 ControlPointProxy *     iCpProxy;

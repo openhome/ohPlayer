@@ -30,7 +30,6 @@ const Brn ExampleMediaPlayer::kSongcastSenderIconFileName("SongcastSenderIcon");
 
 ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName, const Brx& aUserAgent) :
   iDisabled("test", 0)
-, iLive(false)
 , iUserAgent(aUserAgent)
 , iObservableFriendlyName(new Bws<RaopDevice::kMaxNameBytes>())
 , iTxTimestamper(NULL)
@@ -105,9 +104,6 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
                                    Brn(aRoom),
                                    Brn(aProductName));
     
-    // Register an observer to monitor the pipeline status.
-    iMediaPlayer->Pipeline().AddObserver(*this);
-    
     // Set up config app.
     static const TUint addr = 0;    // Bind to all addresses.
     static const TUint port = 0;    // Bind to whatever free port the OS allocates to the framework server.
@@ -146,7 +142,10 @@ void ExampleMediaPlayer::Run(Net::CpStack& aCpStack)
     iDevice->SetEnabled();
     iDeviceUpnpAv->SetEnabled();
 
-    iCpProxy = new ControlPointProxy(aCpStack, *(Device()));
+    iCpProxy = new ControlPointProxy(aCpStack,
+                                     *(Device()),
+                                     *(UpnpAvDevice()),
+                                     iMediaPlayer->Pipeline());
 }
 
 
@@ -178,6 +177,11 @@ PipelineManager& ExampleMediaPlayer::Pipeline()
 DvDeviceStandard* ExampleMediaPlayer::Device()
 {
     return iDevice;
+}
+
+DvDevice* ExampleMediaPlayer::UpnpAvDevice()
+{
+    return iDeviceUpnpAv;
 }
 
 void ExampleMediaPlayer::SetSongcastTimestampers(IOhmTimestamper& aTxTimestamper, IOhmTimestamper& aRxTimestamper)
@@ -218,42 +222,32 @@ void ExampleMediaPlayer::StopPipeline()
 
 TBool ExampleMediaPlayer::CanPlay()
 {
-    return ((iState == EPipelineStopped) || (iState == EPipelinePaused));
+    return iCpProxy->canPlay();
 }
 
 TBool ExampleMediaPlayer::CanPause()
 {
-    return (!iLive &&
-            ((iState == EPipelinePlaying) || (iState == EPipelineBuffering)));
+    return iCpProxy->canPause();
 }
 
 TBool ExampleMediaPlayer::CanHalt()
 {
-    return ((iState == EPipelinePlaying) || (iState == EPipelinePaused));
+    return iCpProxy->canStop();
 }
 
 void ExampleMediaPlayer::PlayPipeline()
 {
-    if (CanPlay())
-    {
-        iCpProxy->playlistPlay();
-    }
+    iCpProxy->cpPlay();
 }
 
 void ExampleMediaPlayer::PausePipeline()
 {
-    if (CanPause())
-    {
-        iCpProxy->playlistPause();
-    }
+    iCpProxy->cpPause();
 }
 
 void ExampleMediaPlayer::HaltPipeline()
 {
-    if (CanHalt())
-    {
-        iCpProxy->playlistStop();
-    }
+    iCpProxy->cpStop();
 }
 
 
@@ -368,65 +362,5 @@ void ExampleMediaPlayer::Disabled()
 {
     iDisabled.Signal();
 }
-
-// Pipeline Observer callbacks.
-void ExampleMediaPlayer::NotifyPipelineState(Media::EPipelineState aState)
-{
-    
-    switch (aState)
-    {
-        case EPipelineStopped:
-            Log::Print("Pipeline State: Stopped\n");
-            break;
-        case EPipelinePaused:
-            Log::Print("Pipeline State: Paused\n");
-            break;
-        case EPipelinePlaying:
-            Log::Print("Pipeline State: Playing\n");
-            break;
-        case EPipelineBuffering:
-            Log::Print("Pipeline State: Buffering\n");
-            break;
-        case EPipelineWaiting:
-            Log::Print("Pipeline State: Waiting\n");
-            break;
-        default:
-            Log::Print("Pipeline State: UNKNOWN\n");
-            break;
-    }
-    
-    if(iDriver != NULL)
-    {
-        if(aState==EPipelinePaused)
-            iDriver->pause();
-        else if(aState==EPipelinePlaying)
-            iDriver->resume();
-    }
-    
-    iState = aState;
-}
-
-void ExampleMediaPlayer::NotifyMode(const Brx& /*aMode*/, const Media::ModeInfo& /*aInfo*/)
-{
-}
-
-void ExampleMediaPlayer::NotifyTrack(Media::Track& /*aTrack*/, const Brx& /*aMode*/, TBool /*aStartOfStream*/)
-{
-}
-
-void ExampleMediaPlayer::NotifyMetaText(const Brx& /*aText*/)
-{
-}
-
-void ExampleMediaPlayer::NotifyTime(TUint /*aSeconds*/, TUint /*aTrackDurationSeconds*/)
-{
-}
-
-void ExampleMediaPlayer::NotifyStreamInfo(const Media::DecodedStreamInfo& aStreamInfo)
-{
-    iLive = aStreamInfo.Live();
-}
-
-
 
 
