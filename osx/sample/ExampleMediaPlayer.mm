@@ -145,7 +145,8 @@ void ExampleMediaPlayer::Run(Net::CpStack& aCpStack)
     iCpProxy = new ControlPointProxy(aCpStack,
                                      *(Device()),
                                      *(UpnpAvDevice()),
-                                     iMediaPlayer->Pipeline());
+                                     iMediaPlayer->Pipeline(),
+                                     *iDriver);
 }
 
 

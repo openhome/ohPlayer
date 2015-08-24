@@ -15,6 +15,7 @@
 #include <string>
 
 #include "ControlPointProxy.h"
+#include "DriverOsx.h"
 
 using namespace OpenHome;
 using namespace OpenHome::Av;
@@ -29,23 +30,30 @@ static const std::string kTransportStatePaused("Paused");
 static const std::string kTransportStateStopped("Stopped");
 static const std::string kTransportStateBuffering("Buffering");
 
+// Available pipeline states.
+static const std::string kPipelineStatePlaying("PLAYING");
+static const std::string kPipelineStatePaused("PAUSED_PLAYBACK");
+static const std::string kPipelineStateStopped("STOPPED");
+static const std::string kPipelineStateBuffering("TRANSITIONING");
+
 // ControlPointProxy to control playback from the active source.
 
 ControlPointProxy::ControlPointProxy(CpStack& aCpStack,
                                      DvDevice& aDevice,
                                      Net::DvDevice& aUpnpDevice,
-                                     Media::PipelineManager& aPipeline) :
+                                     Media::PipelineManager& aPipeline,
+                                     Media::DriverOsx& aDriver) :
     iActiveSource(UNKNOWN)
 {
     iCpPlayer       = CpDeviceDv::New(aCpStack, aDevice);
     iCpUpnpAvPlayer = CpDeviceDv::New(aCpStack, aUpnpDevice);
 
-    iCpPlaylist = new CPPlaylist(*iCpPlayer);
+    iCpPlaylist = new CPPlaylist(*iCpPlayer, aDriver);
 #ifdef ENABLE_RADIO
-    iCpRadio    = new CPRadio(*iCpPlayer);
+    iCpRadio    = new CPRadio(*iCpPlayer, aDriver);
 #endif // ENABLE_RADIO
-    iCpReceiver = new CPReceiver(*iCpPlayer);
-    iCpUpnpAv   = new CPUpnpAv(*iCpUpnpAvPlayer, aPipeline);
+    iCpReceiver = new CPReceiver(*iCpPlayer, aDriver);
+    iCpUpnpAv   = new CPUpnpAv(*iCpUpnpAvPlayer, aPipeline, aDriver);
     iCpProduct  = new CPProduct(*iCpPlayer, *this);
 }
 
@@ -90,8 +98,10 @@ ControlPointProxy::~ControlPointProxy()
 
 // Playlist Proxy
 
-ControlPointProxy::CPPlaylist::CPPlaylist(Net::CpDeviceDv &aCpPlayer) :
-    iIsActive(false)
+ControlPointProxy::CPPlaylist::CPPlaylist(Net::CpDeviceDv &aCpPlayer,
+                                          Media::DriverOsx &aDriver) :
+    iIsActive(false),
+    iDriver(aDriver)
 {
     iCpPlayer = &aCpPlayer;
     iCpPlayer->AddRef();
@@ -141,6 +151,18 @@ void ControlPointProxy::CPPlaylist::transportChangedEvent()
     catch (ProxyError& aPe)
     {
         return;
+    }
+
+    // Keep the native audio state synced with the transport state.
+    string stateStr(state.CString());
+
+    if (stateStr == kTransportStatePlaying)
+    {
+        iDriver.resume();
+    }
+    else if (stateStr == kTransportStatePaused)
+    {
+        iDriver.pause();
     }
 
     // Log the new state.
@@ -224,8 +246,10 @@ void ControlPointProxy::CPPlaylist::playlistPause()
 #ifdef ENABLE_RADIO
 // Radio Proxy
 
-ControlPointProxy::CPRadio::CPRadio(Net::CpDeviceDv &aCpPlayer) :
-    iIsActive(false)
+ControlPointProxy::CPRadio::CPRadio(Net::CpDeviceDv &aCpPlayer,
+                                    Media::DriverOsx &aDriver) :
+    iIsActive(false),
+    iDriver(aDriver)
 {
     iCpPlayer = &aCpPlayer;
     iCpPlayer->AddRef();
@@ -275,6 +299,14 @@ void ControlPointProxy::CPRadio::transportChangedEvent()
     catch (ProxyError& aPe)
     {
         return;
+    }
+
+    // Keep the native audio state synced with the transport state.
+    string stateStr(state.CString());
+
+    if (stateStr == kTransportStatePlaying)
+    {
+        iDriver.resume();
     }
 
     // Log the new state.
@@ -334,8 +366,10 @@ void ControlPointProxy::CPRadio::radioPlay()
 
 // Receiver Proxy
 
-ControlPointProxy::CPReceiver::CPReceiver(Net::CpDeviceDv &aCpPlayer) :
-    iIsActive(false)
+ControlPointProxy::CPReceiver::CPReceiver(Net::CpDeviceDv &aCpPlayer,
+                                          Media::DriverOsx &aDriver) :
+    iIsActive(false),
+    iDriver(aDriver)
 {
     iCpPlayer = &aCpPlayer;
     iCpPlayer->AddRef();
@@ -385,6 +419,14 @@ void ControlPointProxy::CPReceiver::transportChangedEvent()
     catch (ProxyError& aPe)
     {
         return;
+    }
+
+    // Keep the native audio state synced with the transport state.
+    string stateStr(state.CString());
+
+    if (stateStr == kTransportStatePlaying)
+    {
+        iDriver.resume();
     }
 
     // Log the new state.
@@ -444,9 +486,11 @@ void ControlPointProxy::CPReceiver::receiverPlay()
 // UpnpAV Proxy
 
 ControlPointProxy::CPUpnpAv::CPUpnpAv(Net::CpDeviceDv &aCpPlayer,
-                                      Media::PipelineManager& aPipeline) :
+                                      Media::PipelineManager &aPipeline,
+                                      Media::DriverOsx &aDriver) :
     iIsActive(false),
-    iPipeline(aPipeline)
+    iPipeline(aPipeline),
+    iDriver(aDriver)
 {
     iCpPlayer = &aCpPlayer;
     iCpPlayer->AddRef();
@@ -495,8 +539,20 @@ void ControlPointProxy::CPUpnpAv::pipelineChangedEvent()
         return;
     }
 
+    // Keep the native audio state synced with the transport state.
+    string stateStr(state.Extract());
+
+    if (stateStr == kPipelineStatePlaying)
+    {
+        iDriver.resume();
+    }
+    else if (stateStr == kPipelineStatePaused)
+    {
+        iDriver.pause();
+    }
+
     // Log the new state.
-    Log::Print("New UpnpAV State: %s\n", state.Extract());
+    Log::Print("New UpnpAV State: %s\n", stateStr.c_str());
 }
 
 void ControlPointProxy::CPUpnpAv::setActive(TBool active)
@@ -513,7 +569,8 @@ TBool ControlPointProxy::CPUpnpAv::canStop()
 
     string stateStr(state.Extract());
 
-    return ((stateStr == "PLAYING") || (stateStr == "PAUSED_PLAYBACK"));
+    return ((stateStr == kPipelineStatePlaying) ||
+            (stateStr == kPipelineStatePaused));
 }
 
 TBool ControlPointProxy::CPUpnpAv::canPlay()
@@ -525,7 +582,8 @@ TBool ControlPointProxy::CPUpnpAv::canPlay()
 
     string stateStr(state.Extract());
 
-    return ((stateStr == "STOPPED") || (stateStr == "PAUSED_PLAYBACK"));
+    return ((stateStr == kPipelineStateStopped) ||
+            (stateStr == kPipelineStatePaused));
 }
 
 TBool ControlPointProxy::CPUpnpAv::canPause()
@@ -537,7 +595,8 @@ TBool ControlPointProxy::CPUpnpAv::canPause()
 
     string stateStr(state.Extract());
 
-    return ((stateStr == "PLAYING") || (stateStr == "TRANSITIONING"));
+    return ((stateStr == kPipelineStatePlaying) ||
+            (stateStr == kPipelineStateBuffering));
 }
 
 void ControlPointProxy::CPUpnpAv::upnpAvStop()

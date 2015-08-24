@@ -7,6 +7,10 @@
 
 namespace OpenHome {
 
+namespace Media {
+    class DriverOsx;
+}
+
 namespace Net {
     class CpStack;
     class CpDeviceDv;
@@ -31,7 +35,8 @@ public:
     ControlPointProxy(Net::CpStack& aCpStack,
                       Net::DvDevice& aDevice,
                       Net::DvDevice& aUpnpDevice,
-                      Media::PipelineManager& aPipeline);
+                      Media::PipelineManager& aPipeline,
+                      Media::DriverOsx& aDriver);
     ~ControlPointProxy();
 
     void setActiveCp(Sources newSource);
@@ -46,7 +51,7 @@ private:
     class CPPlaylist
     {
         public:
-            CPPlaylist(Net::CpDeviceDv &aCpPlayer);
+            CPPlaylist(Net::CpDeviceDv &aCpPlayer, Media::DriverOsx& aDriver);
             ~CPPlaylist();
 
             void  setActive(TBool active);
@@ -61,7 +66,8 @@ private:
         private:
             Net::CpProxyAvOpenhomeOrgPlaylist1 *iPlaylistProxy;
             Net::CpDeviceDv                    *iCpPlayer;
-            TBool                               iIsActive;;
+            Media::DriverOsx                   &iDriver;
+            TBool                               iIsActive;
 
             Functor iTransportStateChanged;
     };
@@ -71,7 +77,7 @@ private:
     class CPRadio
     {
         public:
-            CPRadio(Net::CpDeviceDv &aCpPlayer);
+            CPRadio(Net::CpDeviceDv &aCpPlayer, Media::DriverOsx &aDriver);
             ~CPRadio();
 
             void  setActive(TBool active);
@@ -84,6 +90,7 @@ private:
         private:
             Net::CpProxyAvOpenhomeOrgRadio1 *iRadioProxy;
             Net::CpDeviceDv                 *iCpPlayer;
+            Media::DriverOsx                &iDriver;
             TBool                            iIsActive;;
 
             Functor iTransportStateChanged;
@@ -94,7 +101,7 @@ private:
     class CPReceiver
     {
         public:
-            CPReceiver(Net::CpDeviceDv &aCpPlayer);
+            CPReceiver(Net::CpDeviceDv &aCpPlayer, Media::DriverOsx &aDriver);
             ~CPReceiver();
 
             void  setActive(TBool active);
@@ -107,6 +114,7 @@ private:
         private:
             Net::CpProxyAvOpenhomeOrgReceiver1 *iReceiverProxy;
             Net::CpDeviceDv                    *iCpPlayer;
+            Media::DriverOsx                   &iDriver;
             TBool                               iIsActive;;
 
             Functor iTransportStateChanged;
@@ -117,7 +125,8 @@ private:
     {
         public:
             CPUpnpAv(Net::CpDeviceDv &aCpPlayer,
-                     Media::PipelineManager& aPipeline);
+                     Media::PipelineManager &aPipeline,
+                     Media::DriverOsx &aDriver);
             ~CPUpnpAv();
 
             void  setActive(TBool active);
@@ -132,6 +141,7 @@ private:
         private:
             Net::CpProxyUpnpOrgAVTransport1 *iUpnpAvProxy;
             Net::CpDeviceDv                 *iCpPlayer;
+            Media::DriverOsx                &iDriver;
             TBool                            iIsActive;
             Media::PipelineManager&          iPipeline;
         private: // from Media::IPipelineObserver
