@@ -91,7 +91,7 @@ LIBS += -L../dependencies/$(TARG_ARCH)/ohMediaPlayer/lib -L../dependencies/$(TAR
 LIBS     += -L../dependencies/$(TARG_ARCH)/ohNet-$(TARG_ARCH)-$(BUILD_TYPE)/lib
 INCLUDES += -I../dependencies/$(TARG_ARCH)/ohNet-$(TARG_ARCH)-$(BUILD_TYPE)/include/ohnet
 
-LIBS     += -L../dependencies/$(TARG_ARCH)/ohNetGenerated-$(TARG_ARCH)-Release/lib
+LIBS     += -L../dependencies/$(TARG_ARCH)/ohNetGenerated-$(TARG_ARCH)-$(BUILD_TYPE)/lib
 
 OBJECTS  = $(patsubst %.cpp, $(OBJ_DIR)/%.o, $(wildcard *.cpp))
 HEADERS  = $(wildcard *.h)

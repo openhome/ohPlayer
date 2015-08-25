@@ -101,7 +101,7 @@ LIBS += -L../dependencies/$(TARG_ARCH)/ohMediaPlayer/lib -L../dependencies/$(TAR
 LIBS     += -L../dependencies/$(TARG_ARCH)/ohNet-$(TARG_ARCH)-$(BUILD_TYPE)/lib
 INCLUDES += -I../dependencies/$(TARG_ARCH)/ohNet-$(TARG_ARCH)-$(BUILD_TYPE)/include/ohnet
 
-LIBS     += -L../dependencies/$(TARG_ARCH)/ohNetGenerated-$(TARG_ARCH)-Release/lib
+LIBS     += -L../dependencies/$(TARG_ARCH)/ohNetGenerated-$(TARG_ARCH)-$(BUILD_TYPE)/lib
 
 # Build for Unity desktop if required.
 ifeq ($(XDG_CURRENT_DESKTOP),Unity)
