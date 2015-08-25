@@ -2,7 +2,7 @@
     {   "name": "ohNet",
         "type": "openhome",
         "platform-specific": true,
-        "version": "1.4.1659",
+        "version": "1.4.1710",
         "archive-suffix": "-${debugmode}",
         "main-dir": "${dest}${name}-${platform}-${debugmode}",
         "configure-args": [
@@ -34,7 +34,7 @@
     {   "name": "ohNetGenerated",
         "type": "openhome",
         "platform-specific": true,
-        "version": "1.0.78",
+        "version": "1.0.79",
         "archive-filename": "${name}-${version}-${archive-platform}-${debugmode}.tar.gz",
         "source-git": "https://github.com/openhome/ohNetGenerated.git"
     }
