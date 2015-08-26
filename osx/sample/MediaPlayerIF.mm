@@ -28,7 +28,6 @@ MediaPlayerIF::MediaPlayerIF(TIpAddress subnet)
     Debug::SetLevel(Debug::kDvDevice);
     Debug::SetLevel(Debug::kError);
     Debug::SetLevel(Debug::kHttp);
-    Debug::SetLevel(Debug::BreakBeforeThrow());
 #endif  // DEBUG
     
     // set up our media player
@@ -320,8 +319,8 @@ void MediaPlayerIF::shutdown() {
     
     iExampleMediaPlayer->StopPipeline();
     
-    delete iExampleMediaPlayer;
     delete iDriver;
+    delete iExampleMediaPlayer;
     delete iLib;
     delete iArbDriver;
     delete iArbPipeline;

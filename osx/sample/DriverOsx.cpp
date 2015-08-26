@@ -80,7 +80,7 @@ void generateTone (AudioQueueBufferRef buffer)
         // Make the buffer length a multiple of the wavelength for the output frequency.
         int sampleCount = buffer->mAudioDataBytesCapacity / sizeof (SInt16);
         sampleCount -= 500 * sizeof (SInt16);
-        
+
         double bufferLength = sampleCount;
         double wavelength = sampleRate / outputFrequency;
         double repetitions = floor (bufferLength / wavelength);
@@ -88,14 +88,14 @@ void generateTone (AudioQueueBufferRef buffer)
         {
             sampleCount = round (wavelength * repetitions);
         }
-        
+
         double      x, y;
         double      sd = 1.0 / sampleRate;
         double      amp = 0.9;
         double      max16bit = SHRT_MAX;
         int i;
         SInt16 *p = (SInt16 *)buffer->mAudioData;
-        
+
         // loop round for each sample generating a point on our sine wave
         for (i = 0; i < sampleCount; i++)
         {
@@ -103,7 +103,7 @@ void generateTone (AudioQueueBufferRef buffer)
             y = sin (x * 2.0 * M_PI);
             p[i] = y * max16bit * amp;
         }
-        
+
         // set the size of the wave data as the buffer data size
         buffer->mAudioDataByteSize = sampleCount * sizeof (SInt16);
         DBG("generateTone() wrote %u bytes to buffer of size %u\n", buffer->mAudioDataByteSize, buffer->mAudioDataBytesCapacity );
@@ -118,7 +118,7 @@ void processOutputBuffer( AudioQueueBufferRef buffer, AudioQueueRef queue)
     {
         // we're in play mode so fill the buffer with a test tone
         generateTone(buffer);
-        
+
         // enqueue the buffer with our AudioQueue
         err = AudioQueueEnqueueBuffer(queue, buffer, 0, NULL);
         if (err == 560030580)
@@ -143,9 +143,9 @@ static void PlayCallback(void *inUserData, AudioQueueRef inAudioQueue, AudioQueu
 {
     if(inUserData == nil)
         return;
-    
+
     OsxAudio *hostAudio = (OsxAudio *)inUserData;
-    
+
     // fill the audio buffer with a 200Hz test tone
     processOutputBuffer(inBuffer, inAudioQueue);
 }
@@ -156,11 +156,11 @@ static void PlayCallback(void *inUserData, AudioQueueRef inAudioQueue, AudioQueu
 {
     if(inUserData == nil)
         return;
-    
+
     DriverOsx *hostAudio = (DriverOsx *)inUserData;
-    
+
     DBG("PlayCallback()\n");
-    
+
     // fill the host buffer with data from the pipeline
     hostAudio->fillBuffer(inBuffer);
     DBG("PlayCallback() filled buffer\n");
@@ -169,11 +169,11 @@ static void PlayCallback(void *inUserData, AudioQueueRef inAudioQueue, AudioQueu
     //{
     //    DBG("%.2x",((char*)inBuffer->mAudioData)[i]);
     //}
-    
+
     // the buffer is full so enqueue it with the Audio subsystem
     AudioQueueEnqueueBuffer(inAudioQueue, inBuffer, 0, NULL);
     DBG("PlayCallback() enqueued buffer\n");
-    
+
 }
 #endif /* TEST_BUFFER */
 
@@ -199,10 +199,13 @@ DriverOsx::DriverOsx(Environment& aEnv, IPipeline& aPipeline) :
 
 DriverOsx::~DriverOsx()
 {
+    // Wait for the pipeline animator thread to finish.
+    iThread->Join();
+
     iPcmHandler.quit();
 
     // we're leaving now, so finalise the previailing AudioQueue
-    finaliseAudioQueue();
+    finaliseAudioQueue(false);
     
     delete iThread;
 }
@@ -211,11 +214,11 @@ void DriverOsx::AudioThread()
 {
     try {
         /* Loop round processing messages until we are explicitly stopped
-         * Note that messages such as MsgPlayable may block waiting for available host buffers 
+         * Note that messages such as MsgPlayable may block waiting for available host buffers
          */
         while (!iQuit) {
             Msg *msg = nil;
-            
+
             try {
                 msg = iPipeline.Pull();
             }
@@ -223,7 +226,7 @@ void DriverOsx::AudioThread()
             {
                 iQuit = true;
             }
-            
+
             if(!iQuit && (msg != nil))
                 (void)msg->Process(*this);
         }
@@ -270,10 +273,10 @@ Msg* DriverOsx::ProcessMsg(MsgHalt* aMsg)
 Msg* DriverOsx::ProcessMsg(MsgDecodedStream* aMsg)
 {
     const DecodedStreamInfo& stream = aMsg->StreamInfo();
-    
+
     iPlaying = false;
     iVolume = 1.0;
-    
+
     iAudioFormat.mFormatID         = kAudioFormatLinearPCM;
     iAudioFormat.mSampleRate       = stream.SampleRate();
     iAudioFormat.mChannelsPerFrame = stream.NumChannels();
@@ -282,18 +285,18 @@ Msg* DriverOsx::ProcessMsg(MsgDecodedStream* aMsg)
     iAudioFormat.mBytesPerFrame    = iAudioFormat.mChannelsPerFrame * iAudioFormat.mBitsPerChannel/8;
     iAudioFormat.mBytesPerPacket   = iAudioFormat.mBytesPerFrame * iAudioFormat.mFramesPerPacket;
     iAudioFormat.mFormatFlags      = kLinearPCMFormatFlagIsBigEndian | kLinearPCMFormatFlagIsSignedInteger | kLinearPCMFormatFlagIsPacked;
-    
+
     stopQueue();
-    
+
     // we may be switching streams to a new stream; finalise the existing AudioQueue
-    finaliseAudioQueue();
-    
+    finaliseAudioQueue(true);
+
     // set up a new AudioQueue object in the format specified by aFormat
     initAudioQueue();
-    
+
     // allocate a set of buffers of an appropriate size to handle the new stream
     initAudioBuffers();
-    
+
     startQueue();
 
     aMsg->RemoveRef();
@@ -332,12 +335,12 @@ TUint DriverOsx::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/, TUint /*a
 void DriverOsx::fillBuffer(AudioQueueBufferRef inBuffer)
 {
     AutoMutex _(iHostLock);
-    
+
     DBG(("fillBuffer() populate buffer: %p\n", (inBuffer==iAudioQueueBuffers[0]) ? 1 : 2));
-    
+
     // set the PcmHandler to use inBuffer as the target for the next read requests
     iPcmHandler.setBuffer(inBuffer);
-    
+
     DBG(("fillBuffer() buffersize is: %d\n", inBuffer->mAudioDataBytesCapacity));
     // copy from the pipeline cache buffer
     while(inBuffer->mAudioDataByteSize < inBuffer->mAudioDataBytesCapacity)
@@ -346,7 +349,7 @@ void DriverOsx::fillBuffer(AudioQueueBufferRef inBuffer)
         DBG(("fillBuffer() datasize is: %d\n", inBuffer->mAudioDataByteSize));
     }
     DBG("fillBuffer() out\n");
-    
+
 }
 
 
@@ -364,7 +367,7 @@ void DriverOsx::initAudioQueue()
     streamFormat.mBytesPerFrame = 2 * streamFormat.mChannelsPerFrame;
     streamFormat.mFramesPerPacket = 1;
     streamFormat.mReserved = 0;
-    
+
     // create a new AudioQueue output stream and supply our PlayCallback
     // function to fill the buffer with a 200Hz sine wave
     AudioQueueNewOutput(
@@ -376,7 +379,7 @@ void DriverOsx::initAudioQueue()
                         0,                      // flags
                         &iAudioQueue);
 #else /* TEST_BUFFER */
-    
+
     // create a new AudioQueue output stream and supply our PlayCallback
     // to fill the host buffers with PCM data from the pipeline
     AudioQueueNewOutput(
@@ -392,19 +395,19 @@ void DriverOsx::initAudioQueue()
     DBG(("   bits per channel: %d\n", iAudioFormat.mBitsPerChannel));
     DBG(("   num channels    : %d\n", iAudioFormat.mChannelsPerFrame));
 #endif /* TEST_BUFFER */
-    
+
     iVolume = 0;
-    
+
     setVolume(1.0);
 }
 
-void DriverOsx::finaliseAudioQueue()
+void DriverOsx::finaliseAudioQueue(TBool synchronous)
 {
     // dispose of the prevailing AudioQueue, terminating immediately
     if(iAudioQueue != nil)
     {
         DBG("finaliseAudioQueue\n");
-        AudioQueueDispose(iAudioQueue, true);
+        AudioQueueDispose(iAudioQueue, synchronous);
         iAudioQueue = nil;
     }
 }
@@ -469,7 +472,7 @@ void DriverOsx::flushQueue()
         // NOTE: this also resets DSP state so resuming audio playback could
         // potentially result in a minor audio glitch
         DBG("osxAudio:resumeQueue\n");
-        AudioQueueReset(iAudioQueue);
+        AudioQueueFlush(iAudioQueue);
     }
 }
 

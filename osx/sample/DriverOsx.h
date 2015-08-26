@@ -62,40 +62,40 @@ private:
 // calls a buffer-fill callback where we pull more audio data from our
 // pipeline.
 
-    
+
 class DriverOsx : public PipelineElement, public IPipelineAnimator, private INonCopyable
 {
     // number of OS buffers to allocate for AudioQueue
     static const TInt32 kNumDataBuffers = 3;
     static const TUint kSupportedMsgTypes;
-    
+
 public:
     // DriverOsx - constructor
     // Parameters:
     //   aEnv:      OpenHome execution environment
     //   aPipeline: The pipeline to animate
     DriverOsx(Environment& aEnv, IPipeline& aPipeline);
-    
+
     // DriverOsx - destructor
     ~DriverOsx();
-    
+
     // isPlaying - inform callers whether then Driver is currently animating
     //             the pipeline
     // Return:
     //   true if the pipeline is being animated, false otherwise
     TBool isPlaying() { return iPlaying; }
-    
+
     // Set the audio stream volume.
     // Parameters:
     //   volume:      volume - from 0 to 1.0
     void setVolume(Float32 volume);
-    
+
     // Pause driver output
     void pause();
-    
+
     // Resume driver output
     void resume();
-    
+
     // Fill a host buffer with PCM pipeline data
     //
     // Called by the host audio thread when it needs an audio buffer filled.
@@ -104,13 +104,13 @@ public:
     //
     // Params:
     //   inBuffer - the buffer to fill
-    
+
     void fillBuffer(AudioQueueBufferRef inBuffer);
-    
+
 private:
     void AudioThread();
     void ProcessAudio(MsgPlayable* aMsg);
-    
+
 private: // from IMsgProcessor
     Msg* ProcessMsg(MsgMode* aMsg) override;
     Msg* ProcessMsg(MsgDrain* aMsg) override;
@@ -121,70 +121,70 @@ private: // from IMsgProcessor
 
 private: // from IPipelineAnimator
     TUint PipelineDriverDelayJiffies(TUint aSampleRateFrom, TUint aSampleRateTo) override;
-    
+
     // Start playing the Host Audio
     void startQueue();
-    
+
     // Pause the Host Audio playback
     void pauseQueue();
-    
+
     // Pause the Host Audio playback
     void resumeQueue();
-    
+
     // Flush any outstanding host audio buffers
     void flushQueue();
-    
+
     // Stop playing the Host Audio
     void stopQueue();
-    
+
     // Initialise the OSX AudioQueue
     void initAudioQueue();
-    
+
     // Initialise a set of AudioQueueBuffers for use with our AudioQueue
     // This method allocates kNumDataBuffers buffers (default is 3)
     void initAudioBuffers();
-    
+
     // Finalise the OSX AudioQueue
     // The AudioQueue will be stopped if necessary and all used resources released
-    void finaliseAudioQueue();
-    
+    void finaliseAudioQueue(TBool synchronous);
+
     // Finalise the AudioQueue's buffers, releasing system resources
     void finaliseAudioBuffers();
-    
+
 private:
     // functor for main audio driver thread.
     ThreadFunctor *iThread;
-    
+
     // A reference to the pipeline being animated
     IPipeline&      iPipeline;
-    
+
     // The Os Context for the OpenHome enironment
     OsContext*      iOsCtx;
-    
+
     // A flag to indcate when then main thread should quit
     TBool           iQuit;
-    
+
     // The PcmHandler class used to queue and process the Pcm audio messages
     OsxPcmProcessor iPcmHandler;
-    
+
     // A flag indicating whether we are currently animating the pipeline
     bool            iPlaying;
-    
+
     // Define the relative audio level of the output stream. Defaults to 1.0f.
     Float32         iVolume;
-    
+
     // describe the audio format of the active stream
     AudioStreamBasicDescription iAudioFormat;
-    
+
     // Mutex to ensure serialised access to host buffers
     Mutex           iHostLock;
-    
+
     // the host audio queue object being used for playback
     AudioQueueRef   iAudioQueue;
-    
+
     // the audio queue buffers for the host playback audio queue
     AudioQueueBufferRef         iAudioQueueBuffers[kNumDataBuffers];
-    
+
 };
 
 } // namespace Media
