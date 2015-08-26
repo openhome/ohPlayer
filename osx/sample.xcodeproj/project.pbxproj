@@ -505,7 +505,7 @@
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Debug/include/ohnet",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/include",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Debug/include/ohnet/OpenHome/Net/Core",
-					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Release/include/ohnet",
+					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Debug/include/ohnet",
 				);
 				INFOPLIST_FILE = sample/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
@@ -514,8 +514,8 @@
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/lib",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/lib",
-					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Release/lib",
-					"(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/lib",
+					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Debug/lib",
+					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/lib",
 				);
 				OPENHOME_UPDATE_URI = "http://www.torino.plus.com/ohmediaplayer/application.json";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -545,7 +545,7 @@
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Release/lib",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/lib",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Release/lib",
-					"(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/lib",
+					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/lib",
 				);
 				OPENHOME_UPDATE_URI = "http://openhome.org";
 				PRODUCT_NAME = "$(TARGET_NAME)";
