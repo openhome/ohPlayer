@@ -5,6 +5,7 @@
 # and version.
 ###############################################################################
 
+use Cwd;
 use File::Path qw(remove_tree);
 use Getopt::Long;
 use POSIX qw(tmpnam);
@@ -17,8 +18,10 @@ BEGIN
         $scratchDir = tmpnam();
     } while (-e "$scratchDir");
 
-    die "Cannot make temporary directory $scratchDir\n"
+    die "Cannot temporary directory $scratchDir\n"
         unless mkdir $scratchDir;
+
+    $ORIG_DIR = cwd();
 }
 
 END
@@ -54,7 +57,7 @@ sub CreateSelfExtarctingInstaller
     }
 
     # Open the installer template
-    if (! open SCRIPT_TEMPLATE, "<Installer-Template.txt")
+    if (! open SCRIPT_TEMPLATE, "<$ORIG_DIR/Installer-Template.txt")
     {
         print STDERR "Error: Cannot open 'Installer-Template.sh\n";
         return;
@@ -223,6 +226,10 @@ if ($? != 0)
 {
    die "ERROR: Cannot install applicaiton to '$scratchDir'\n";
 }
+
+# Create the package in the same folder as the application
+chdir $platform or
+   die "ERROR: Cannot move to platform folder '$platform'\n";
 
 # Obtain the application dependencies.
 my $pkgHashRef = &GetDependencies($application);

@@ -28,19 +28,13 @@ tail -n +$SKIP $THIS | cat - > $pkgFile
 echo "Installing application package"
 sudo dpkg -i $pkgFile
 
-# Id 'dpkg' fails, tidy up and exit.
+# If 'dpkg' fails then attempt to correct dependency issues automatically
 if [ $? -ne 0 ]
 then
-    popd >& /dev/null
-    rm $dir/$pkgFile
-    rmdir $dir
-
-    exit 1
+    # Install any missing dependencies
+    echo "Fixing External Dependencies"
+    sudo apt-get -f install
 fi
-
-# Install any missing dependencies
-echo "Fixing External Dependencies"
-sudo apt-get -f install
 
 # Tidy up
 echo "Tidying Up"
