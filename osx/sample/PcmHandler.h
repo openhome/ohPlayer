@@ -15,21 +15,22 @@ class OsxPcmProcessor : public IPcmProcessor
 public:
     OsxPcmProcessor();
     ~OsxPcmProcessor() {};
-    
+
     void enqueue(MsgPlayable *msg);
     MsgPlayable * dequeue();
-    
+    bool isEmpty();
+
     /**
      * Set the buffer to be used for packet reading
      */
     void setBuffer(AudioQueueBufferRef buf);
-    
+
     /**
      * Fill the current audio output buffer using data
      * read from the PipelineAnimator
      */
     void fillBuffer(AudioQueueBufferRef inBuffer);
-    
+
     /**
      * Set the audio output state.
      * If output is false then we will terminate any
@@ -41,19 +42,19 @@ public:
      * get the size of data in the buffer
      */
     TUint32 size() { return iWriteIndex; }
-    
+
     /**
      * quit outstanding processing
      */
     void quit();
-    
+
     /**
      * Called once per call to MsgPlayable::Read.
      *
      * Will be called before any calls to ProcessFragment or ProcessSample.
      */
     virtual void BeginBlock() {}
-    
+
     /**
      * Gives the processor a chance to copy memory in a single block.
      *
@@ -67,7 +68,7 @@ public:
      *          false otherwise (meaning that ProcessSample will be called for each sample in aData).
      */
     virtual TBool ProcessFragment(const Brx& aData, TByte aSampleSize, TUint aNumChannels);
-    
+
     /**
      * Optional function.  Gives the processor a chance to copy memory in a single block.
      *
@@ -83,8 +84,8 @@ public:
     virtual TBool ProcessFragment8(const Brx& aData, TUint aNumChannels);
     virtual TBool ProcessFragment16(const Brx& aData, TUint aNumChannels);
     virtual TBool ProcessFragment24(const Brx& aData, TUint aNumChannels);
-    
-    
+
+
     /**
      * Process a single sample of audio.
      *
@@ -94,7 +95,7 @@ public:
      * @param aSample  Pcm data for a single sample.  Length will be (bitDepth * numChannels).
      */
     virtual void ProcessSample(const TByte* aSample, const TUint8 aSampleSize, TUint aNumChannels);
-    
+
     /**
      * Process a single sample of audio.
      *
@@ -106,14 +107,14 @@ public:
     virtual void ProcessSample8(const TByte* aSample, TUint aNumChannels);
     virtual void ProcessSample16(const TByte* aSample, TUint aNumChannels);
     virtual void ProcessSample24(const TByte* aSample, TUint aNumChannels);
-    
+
     /**
      * Called once per call to MsgPlayable::Read.
      *
      * No more calls to ProcessFragment or ProcessSample will be made after this.
      */
     virtual void EndBlock() {}
-    
+
 private:
     AudioQueueBufferRef   iBuff;
     TUint32 iBuffsize;
@@ -124,6 +125,7 @@ private:
     Mutex iSampleBufferLock;
     Mutex iOutputLock;
     Semaphore iSemHostReady;
+    Semaphore iSemQueueGuard;
     MsgQueue queue;
     bool    iOutputActive;
     bool    iQuit;

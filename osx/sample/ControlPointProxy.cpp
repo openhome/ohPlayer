@@ -160,7 +160,8 @@ void ControlPointProxy::CPPlaylist::transportChangedEvent()
     {
         iDriver.resume();
     }
-    else if (stateStr == kTransportStatePaused)
+    else if (stateStr == kTransportStatePaused ||
+             stateStr == kTransportStateStopped)
     {
         iDriver.pause();
     }
@@ -308,6 +309,10 @@ void ControlPointProxy::CPRadio::transportChangedEvent()
     {
         iDriver.resume();
     }
+    else if (stateStr == kTransportStateStopped)
+    {
+        iDriver.pause();
+    }
 
     // Log the new state.
     Log::Print("New Radio State: %s\n", state.CString());
@@ -345,7 +350,7 @@ void ControlPointProxy::CPRadio::radioStop()
 {
     if (iIsActive)
     {
-        if (canStop(stateStr))
+        if (canStop())
         {
             iRadioProxy->SyncStop();
         }
@@ -356,7 +361,7 @@ void ControlPointProxy::CPRadio::radioPlay()
 {
     if (iIsActive)
     {
-        if (canPlay(stateStr))
+        if (canPlay())
         {
             iRadioProxy->SyncPlay();
         }
@@ -427,6 +432,10 @@ void ControlPointProxy::CPReceiver::transportChangedEvent()
     if (stateStr == kTransportStatePlaying)
     {
         iDriver.resume();
+    }
+    else if (stateStr == kTransportStateStopped)
+    {
+        iDriver.pause();
     }
 
     // Log the new state.
@@ -546,7 +555,8 @@ void ControlPointProxy::CPUpnpAv::pipelineChangedEvent()
     {
         iDriver.resume();
     }
-    else if (stateStr == kPipelineStatePaused)
+    else if (stateStr == kPipelineStatePaused ||
+            (stateStr == kPipelineStateStopped))
     {
         iDriver.pause();
     }

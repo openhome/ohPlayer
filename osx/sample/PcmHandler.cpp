@@ -11,6 +11,7 @@ OsxPcmProcessor::OsxPcmProcessor() : IPcmProcessor()
 , iSampleBufferLock("SBLK")
 , iOutputLock("OPLK")
 , iSemHostReady("HRDY", 0)
+, iSemQueueGuard("QGUARD", 0)
 , iQuit(false)
 {
     iReadIndex = iWriteIndex = iBytesToRead = 0;
@@ -18,31 +19,39 @@ OsxPcmProcessor::OsxPcmProcessor() : IPcmProcessor()
 
 void OsxPcmProcessor::enqueue(MsgPlayable *msg)
 {
-    DBG("OsxPcmProcessor::enqueue - wait host ready\n");
+    DBG(("OsxPcmProcessor::enqueue - wait host ready\n"));
     iSemHostReady.Wait();
     iSemHostReady.Clear();
-    DBG("OsxPcmProcessor::enqueue - got host ready\n");
-    
+    DBG(("OsxPcmProcessor::enqueue - got host ready\n"));
+
     if(!iQuit)
     {
-        DBG("OsxPcmProcessor::enqueue - queue message\n");
+        DBG(("OsxPcmProcessor::enqueue - queue message\n"));
         queue.Enqueue(msg);
-        DBG("OsxPcmProcessor::enqueue - queued message\n");
+        DBG(("OsxPcmProcessor::enqueue - queued message\n"));
+
+        // Allow the reader access to the message queue.
+        iSemQueueGuard.Signal();
     }
 }
 
 MsgPlayable * OsxPcmProcessor::dequeue()
 {
     MsgPlayable *msg = static_cast<MsgPlayable *>(queue.Dequeue());
-    
+
     return msg;
+}
+
+TBool OsxPcmProcessor::isEmpty()
+{
+    return queue.IsEmpty();
 }
 
 void OsxPcmProcessor::quit()
 {
     iQuit = true;
-    
-    DBG("OsxPcmProcessor::quit - signalling host ready\n");
+
+    DBG(("OsxPcmProcessor::quit - signalling host ready\n"));
     // signal pending enqueue operations that we're finishing
     iSemHostReady.Signal();
 }
@@ -64,6 +73,13 @@ void OsxPcmProcessor::setOutputActive(bool active)
     AutoMutex _(iOutputLock);
 
     iOutputActive = active;
+
+    if (active == false)
+    {
+        // Allow the fillBuffer loop to exit early without attempting
+        // to dequeue more data and blocking.
+        iSemQueueGuard.Signal();
+    }
 }
 
 void OsxPcmProcessor::fillBuffer(AudioQueueBufferRef inBuffer)
@@ -73,32 +89,48 @@ void OsxPcmProcessor::fillBuffer(AudioQueueBufferRef inBuffer)
     DBG(("fillBuffer: %d messages in queue\n", queue.NumMsgs()));
     DBG(("fillBuffer: buffer capacity is %d bytes\n", inBuffer->mAudioDataBytesCapacity));
 
+    if (iOutputActive == false)
+    {
+        return;
+    }
+
     // if no data is available then signal the animator to provide some
     if(queue.NumMsgs() == 0)
     {
-        DBG("fillBuffer: no messages - signalling animator\n");
+        DBG(("fillBuffer: no messages - signalling animator\n"));
         iSemHostReady.Signal();
     }
-    setOutputActive(true);
-    
+
     // loop round processing data until the buffer is full
     // or until we have been signalled to stop
     while((iBytesToRead > 0) && iOutputActive)
     {
-        DBG("fillBuffer: dequeue a message\n");
+        // This will be signalled when data has been queued OR the output
+        // is no longer active.
+        iSemQueueGuard.Wait();
+        iSemQueueGuard.Clear();
+
+        // If the outptu is no longe active exit without attempting to
+        // read more data.
+        if (iOutputActive == false)
+        {
+            break;
+        }
+
+        DBG(("fillBuffer: dequeue a message\n"));
         // if no data is available then signal the animator to provide some
         MsgPlayable *msg = dequeue();
         DBG(("fillBuffer: dequeued message with %d bytes\n", msg->Bytes()));
-        
+
         // read the packet, release and remove
         if(msg->Bytes() > iBytesToRead)
             remains = (MsgPlayable *)msg->Split(iBytesToRead);
         msg->Read(*this);
         msg->RemoveRef();
-        
+
         if(remains == nil)
         {
-            DBG("fillBuffer: more space available - signal the animator\n");
+            DBG(("fillBuffer: more space available - signal the animator\n"));
             iSemHostReady.Signal();
         }
         else
@@ -110,16 +142,21 @@ void OsxPcmProcessor::fillBuffer(AudioQueueBufferRef inBuffer)
     // requeue the remaining bytes
     if(remains != nil)
     {
-        DBG("fillBuffer: packet was too big. enqueue remainder\n");
+        DBG(("fillBuffer: packet was too big. enqueue remainder\n"));
         queue.EnqueueAtHead(remains);
-        DBG("fillBuffer: enqueued remainder\n" );
+        DBG(("fillBuffer: enqueued remainder\n" ));
+        iSemQueueGuard.Signal();
     }
     else
     {
-        DBG("fillBuffer: signal host for more data\n" );
-        iSemHostReady.Signal();
+        DBG(("fillBuffer: signal host for more data\n" ));
+
+        if (iOutputActive)
+        {
+            iSemHostReady.Signal();
+        }
     }
-    
+
     inBuffer->mAudioDataByteSize = size();
     DBG(("fillBuffer: buffer filled with %d bytes\n", inBuffer->mAudioDataByteSize ));
 }
@@ -139,16 +176,16 @@ void OsxPcmProcessor::fillBuffer(AudioQueueBufferRef inBuffer)
 TBool OsxPcmProcessor::ProcessFragment(const Brx& aData, TByte aSampleSize, TUint aNumChannels)
 {
     AutoMutex _(iSampleBufferLock);
-    
+
     iFrameSize = aSampleSize * aNumChannels;
-    
+
     /* figure out how much data we can copy between the current start point and the end of the buffer */
     TUint32 blocksize = fmin(aData.Bytes(), iBuffsize - iWriteIndex);
-    
+
     memcpy(&(((char *)iBuff->mAudioData)[iWriteIndex]), aData.Ptr(), blocksize);
     iBytesToRead -= blocksize;
     iWriteIndex += blocksize;
-    
+
     return true;
 }
 
@@ -190,12 +227,12 @@ TBool OsxPcmProcessor::ProcessFragment24(const Brx& aData, TUint aNumChannels)
 void OsxPcmProcessor::ProcessSample(const TByte* aSample, const TUint8 aSampleSize, TUint aNumChannels)
 {
     AutoMutex _(iSampleBufferLock);
-    
+
     iFrameSize = aSampleSize * aNumChannels;
-    
+
     /* figure out how much data we can copy between the current start point and the end of the buffer */
     TUint32 dataSize = iFrameSize;
-    
+
     TUint32 blocksize = fmin(dataSize, iBuffsize - iWriteIndex);
     memcpy(&(((char *)iBuff->mAudioData)[iWriteIndex]), aSample, blocksize);
     iBytesToRead -= blocksize;
