@@ -10,13 +10,10 @@ using namespace OpenHome::Media;
 
 // WASAPI based implementation of the ProcessorPcmBuf interface
 //
-// Takes PCM data fromteh pipeline and formats it for the WASAPI
+// Takes PCM data from the pipeline and formats it for the WASAPI
 // audio subsystem.
 
-ProcessorPcmBufWASAPI::ProcessorPcmBufWASAPI(bool           resamplingInput,
-                                             WWMFResampler &resampler) :
-    iResamplingInput(resamplingInput),
-    iResampler(resampler)
+ProcessorPcmBufWASAPI::ProcessorPcmBufWASAPI()
 {
 }
 
@@ -60,7 +57,7 @@ TBool ProcessorPcmBufWASAPI::ProcessFragment16(const Brx& aData,
     Brn fragment(nData, bytes);
     ProcessFragment(fragment);
 
-    delete nData;
+    delete[] nData;
 
     return true;
 }
@@ -99,7 +96,7 @@ TBool ProcessorPcmBufWASAPI::ProcessFragment24(const Brx& aData,
     Brn fragment(nData, bytes);
     ProcessFragment(fragment);
 
-    delete nData;
+    delete[] nData;
 
     return true;
 }

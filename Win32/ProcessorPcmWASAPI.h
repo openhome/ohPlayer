@@ -8,7 +8,7 @@ namespace Media {
 class ProcessorPcmBufWASAPI : public ProcessorPcmBuf
 {
 public:
-    ProcessorPcmBufWASAPI(bool resamplingInput, WWMFResampler &resampler);
+    ProcessorPcmBufWASAPI();
 private: // from IPcmProcessor
     TBool ProcessFragment8(const Brx& aData, TUint aNumChannels);
     TBool ProcessFragment16(const Brx& aData, TUint aNumChannels);
@@ -16,10 +16,6 @@ private: // from IPcmProcessor
     void ProcessSample8(const TByte* aSample, TUint aNumChannels);
     void ProcessSample16(const TByte* aSample, TUint aNumChannels);
     void ProcessSample24(const TByte* aSample, TUint aNumChannels);
-
-    bool          iResamplingInput;  // True if the input should be passed
-                                     // through the resampler.
-    WWMFResampler &iResampler;       // Resample agent
 };
 
 } // namespace Media

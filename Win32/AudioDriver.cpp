@@ -462,8 +462,8 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
 
     // Get the message data. This converts the pipeline data into a format
     // suitable for the native audio system.
-    ProcessorPcmBufWASAPI pcmProcessor(iResamplingInput,
-                                       iResampler);
+    ProcessorPcmBufWASAPI pcmProcessor;
+
     aMsg->Read(pcmProcessor);
 
     // Modify sample rate/bit to match system mix format, if required.

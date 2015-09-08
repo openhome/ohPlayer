@@ -189,9 +189,6 @@ WWMFResampler::ConvertWWSampleDataToMFSample(WWMFSampleData &sampleData, IMFSamp
 
     HRG(MFCreateSample(&pSample));
     HRG(pSample->AddBuffer(spBuffer));
-#ifndef USE_ATL
-    spBuffer = NULL; // Do not SafeRelease buffer.
-#endif // USE_ATL
 
     frameCount = sampleData.bytes / m_inputFormat.FrameBytes();
     /*
@@ -345,33 +342,6 @@ WWMFResampler::Resample(const BYTE *buff, DWORD bytes, WWMFSampleData *sampleDat
 end:
     tmpData.Release();
     inputData.Forget();
-
-#ifndef USE_ATL
-    // Release sample buffers.
-    if (pSample != NULL)
-    {
-        DWORD           cBuffers = 0;
-        IMFMediaBuffer *spBuffer = NULL;
-
-        hr = pSample->GetBufferCount(&cBuffers);
-
-        if (SUCCEEDED(hr))
-        {
-            for (DWORD i = 0; i < cBuffers; i++)
-            {
-                hr = pSample->GetBufferByIndex(i, &spBuffer);
-
-                SafeRelease(&spBuffer);
-
-                if (FAILED(hr))
-                {
-                    break;
-                }
-            }
-        }
-    }
-#endif // USE_ATL
-
     SafeRelease(&pSample);
     return hr;
 }

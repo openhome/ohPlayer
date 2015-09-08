@@ -95,7 +95,7 @@ struct WWMFSampleData {
     }
 
     void Release(void) {
-        delete[] data;
+        delete data;
         data = NULL;
         bytes = 0;
     }

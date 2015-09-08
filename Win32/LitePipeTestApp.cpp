@@ -305,7 +305,7 @@ HMENU CreateNetworkAdapterPopup()
                 return pMenu;
             }
 
-            delete wcstring;
+            delete[] wcstring;
             index++;
         }
     }

@@ -86,7 +86,7 @@ void ConfigRegStore::Read(const Brx& aKey, Bwx& aDest)
                                      (LPDWORD)&bytes);
 
             RegCloseKey(iHk);
-            delete keyString;
+            delete[] keyString;
 
             switch (retVal)
             {
@@ -141,7 +141,7 @@ void ConfigRegStore::Write(const Brx& aKey, const Brx& aSource)
                           (LPBYTE)aSource.Ptr(),
                           aSource.Bytes());
 
-            delete keyString;
+            delete[] keyString;
         }
 
         RegCloseKey(iHk);
@@ -169,7 +169,7 @@ void ConfigRegStore::Delete(const Brx& aKey)
                                     0);
 
             RegCloseKey(iHk);
-            delete keyString;
+            delete[] keyString;
 
             // Throw exception if the deletion failed.
             if (retVal != ERROR_SUCCESS)
