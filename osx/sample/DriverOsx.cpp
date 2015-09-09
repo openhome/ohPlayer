@@ -440,14 +440,14 @@ void DriverOsx::initAudioBuffers()
     // based on buffering a minimal number of samples of audio per buffer
     // AudioQueue fails to play audio when the buffer size is below a certain
     // level, but does not generate any errors. This could be a hardware limit
-    // but we set the buffer to 250 samples.
+    // but we set the buffer to 500 samples.
     for (int t = 0; t < kNumDataBuffers; ++t)
     {
         AudioQueueAllocateBuffer(iAudioQueue,
 #ifdef TEST_BUFFER
                                  iAudioFormat.mBytesPerFrame * 1000,  // 1000 samples
 #else
-                                 iAudioFormat.mBytesPerFrame * 250,  // 250 samples
+                                 iAudioFormat.mBytesPerFrame * 500,  // 500 samples
 #endif
                                  &iAudioQueueBuffers[t]);
         iAudioQueueBuffers[t]->mAudioDataByteSize = iAudioFormat.mBytesPerFrame;
@@ -463,7 +463,6 @@ void DriverOsx::startQueue()
     {
         DBG(("osxAudio:startQueue\n"));
         AudioQueueStart(iAudioQueue, NULL);
-
     }
 }
 
