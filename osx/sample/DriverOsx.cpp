@@ -255,9 +255,15 @@ Msg* DriverOsx::ProcessMsg(MsgMode* aMsg)
 
 Msg* DriverOsx::ProcessMsg(MsgDrain* aMsg)
 {
+    DBG(("MsgDrain\n"));
+
     // Terminate playback immediately, flushing any
     // active audio buffers
     flushQueue();
+
+    // Pause the queue. We assune drain signals a gap in playback.
+    pauseQueue();
+
     aMsg->ReportDrained();
     aMsg->RemoveRef();
 
@@ -266,6 +272,7 @@ Msg* DriverOsx::ProcessMsg(MsgDrain* aMsg)
 
 Msg* DriverOsx::ProcessMsg(MsgHalt* aMsg)
 {
+    DBG(("MsgHalt\n"));
     aMsg->RemoveRef();
     return NULL;
 }
@@ -336,7 +343,7 @@ Msg* DriverOsx::ProcessMsg(MsgQuit* aMsg)
 
 void DriverOsx::pause()
 {
-    pauseQueue();
+    // The audio queue is paused on receipt of a MsgDrain.
 }
 
 void DriverOsx::resume()

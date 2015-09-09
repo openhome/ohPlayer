@@ -801,6 +801,7 @@ void ControlPointProxy::setActiveCp(Sources newSource)
     iCpRadio->setActive(false);
 #endif // ENABLE_RADIO
     iCpReceiver->setActive(false);
+    iCpUpnpAv->setActive(false);
 
     // Activate the new source.
     iActiveSource = newSource;

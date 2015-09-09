@@ -24,10 +24,10 @@ static NSString *const kUpdateUri = OPENHOME_UPDATE_URI;
 MediaPlayerIF::MediaPlayerIF(TIpAddress subnet)
 {
 #ifdef DEBUG
-    Debug::SetLevel(Debug::kBonjour);
-    Debug::SetLevel(Debug::kDvDevice);
-    Debug::SetLevel(Debug::kError);
-    Debug::SetLevel(Debug::kHttp);
+//    Debug::SetLevel(Debug::kBonjour);
+//    Debug::SetLevel(Debug::kDvDevice);
+//    Debug::SetLevel(Debug::kError);
+//    Debug::SetLevel(Debug::kHttp);
 #endif  // DEBUG
     
     // set up our media player

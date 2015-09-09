@@ -327,7 +327,7 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
     
 #ifdef ENABLE_RADIO
     // Radio is disabled by default as many stations depend on AAC
-    iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer, NULL, aSupportedProtocols, Brn(TUNEIN_PARTNER_ID)));
+    iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer, NULL, Brn(TUNEIN_PARTNER_ID)));
 #endif  /* ENABLE_RADIO */
 }
 
