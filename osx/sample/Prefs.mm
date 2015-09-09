@@ -11,44 +11,34 @@
 
 @implementation Prefs
 
-NSMutableDictionary *defaultPrefs;
-
 + (void)initialize
 {
-    if (self == [Prefs class])
-    {
-        defaultPrefs = [[NSMutableDictionary alloc] init];
-        [[NSUserDefaults standardUserDefaults] registerDefaults:defaultPrefs];
-    }
+    // we have no default prefs to set up, but if we did we would
+    // set them up here
 }
 
 - (void) load
 {
-
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSLog(@"Loaded prefs: %@", [defaults dictionaryRepresentation]);
 }
 
 - (void) save
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    
     [defaults synchronize];
+    NSLog(@"saved prefs: %@", [defaults dictionaryRepresentation]);
 }
 
 
 - (void) setPref:(NSString *)key value:(NSString *)value
 {
-    if(defaultPrefs)
-        defaultPrefs[key] = value;
+    [[NSUserDefaults standardUserDefaults] setValue:value forKey:key];
 }
 
 - (NSString *) getPref:(NSString *)key
 {
-    NSString * result = nil;
-    
-    if(defaultPrefs)
-        result = defaultPrefs[key];
-    
-    return result;
+    return [[NSUserDefaults standardUserDefaults] valueForKey:key];
 }
 
 

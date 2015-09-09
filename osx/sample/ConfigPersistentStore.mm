@@ -13,6 +13,7 @@ ConfigPersistentStore::ConfigPersistentStore()
     : iLock("RAMS")
 {
     prefs = [[Prefs alloc] init];
+    [prefs load];
 }
 
 ConfigPersistentStore::~ConfigPersistentStore()
