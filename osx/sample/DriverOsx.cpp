@@ -454,7 +454,7 @@ void DriverOsx::initAudioBuffers()
 #ifdef TEST_BUFFER
                                  iAudioFormat.mBytesPerFrame * 1000,  // 1000 samples
 #else
-                                 iAudioFormat.mBytesPerFrame * 500,  // 500 samples
+                                 iAudioFormat.mBytesPerFrame * 1000,  // 1000 samples
 #endif
                                  &iAudioQueueBuffers[t]);
         iAudioQueueBuffers[t]->mAudioDataByteSize = iAudioFormat.mBytesPerFrame;
