@@ -504,7 +504,7 @@
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/include",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Debug/include/ohnet",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/include",
-					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Debug/include/ohnet/OpenHome/Net/Core",
+					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Debug/include/ohnet",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Debug/include/ohnet",
 				);
 				INFOPLIST_FILE = sample/Info.plist;
@@ -534,7 +534,7 @@
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/include",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Release/include/ohnet",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/include",
-					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Release/include/ohnet/OpenHome/Net/Core",
+					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Release/include/ohnet",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Release/include/ohnet",
 				);
 				INFOPLIST_FILE = sample/Info.plist;
