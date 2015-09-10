@@ -8,6 +8,8 @@
 
 #import "Prefs.h"
 
+#define DBG(_x)
+//#define DBG(_x)   NSLog _x
 
 @implementation Prefs
 
@@ -19,15 +21,14 @@
 
 - (void) load
 {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    NSLog(@"Loaded prefs: %@", [defaults dictionaryRepresentation]);
+    DBG((@"Loaded prefs: %@", [[NSUserDefaults standardUserDefaults] dictionaryRepresentation]));
 }
 
 - (void) save
 {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults synchronize];
-    NSLog(@"saved prefs: %@", [defaults dictionaryRepresentation]);
+    DBG((@"Saved prefs: %@", [defaults dictionaryRepresentation]));
 }
 
 

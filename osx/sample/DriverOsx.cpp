@@ -15,7 +15,7 @@ using namespace OpenHome;
 using namespace OpenHome::Media;
 
 #define DBG(_x)
-//#define DBG(_x)   DBG(_x)
+//#define DBG(_x)   Log::Print(_x)
 
 PriorityArbitratorDriver::PriorityArbitratorDriver(TUint aOpenHomeMax)
 : iOpenHomeMax(aOpenHomeMax)
