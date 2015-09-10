@@ -173,7 +173,7 @@ TBool PcmProcessorLe::ProcessFragment8(const Brx& aData, TUint aNumChannels)
     Brn fragment(nData, bytes);
     Flush();
     iSink.Write(fragment);
-    delete nData;
+    delete[] nData;
 
     return true;
 }
@@ -222,7 +222,7 @@ TBool PcmProcessorLe::ProcessFragment16(const Brx& aData, TUint aNumChannels)
     Brn fragment(nData, bytes);
     Flush();
     iSink.Write(fragment);
-    delete nData;
+    delete[] nData;
 
     return true;
 }
@@ -291,7 +291,7 @@ TBool PcmProcessorLe::ProcessFragment24(const Brx& aData, TUint aNumChannels)
     Brn fragment(nData, bytes);
     Flush();
     iSink.Write(fragment);
-    delete nData;
+    delete[] nData;
 
     return true;
 }
@@ -738,8 +738,16 @@ TUint DriverAlsa::Pimpl::DriverDelayJiffies(TUint aSampleRateFrom, TUint aSample
 
 // DriverAlsa
 
+const TUint DriverAlsa::kSupportedMsgTypes = PipelineElement::MsgType::eMode
+| PipelineElement::MsgType::eDrain
+| PipelineElement::MsgType::eHalt
+| PipelineElement::MsgType::eDecodedStream
+| PipelineElement::MsgType::ePlayable
+| PipelineElement::MsgType::eQuit;
+
 DriverAlsa::DriverAlsa(IPipeline& aPipeline, TUint aBufferUs)
     : Thread("alsa", kPriorityHighest)
+    , PipelineElement(kSupportedMsgTypes)
     , iPimpl(new Pimpl("default", aBufferUs))
     , iPipeline(aPipeline)
     , iMutex("alsa")
@@ -810,14 +818,6 @@ Msg* DriverAlsa::ProcessMsg(MsgMode* aMsg)
     return aMsg;
 }
 
-// Unimplemented Msg handlers
-
-Msg* DriverAlsa::ProcessMsg(MsgTrack* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
 Msg* DriverAlsa::ProcessMsg(MsgDrain* aMsg)
 {
     // Ensure the ALSA audio buffer is emptied.
@@ -826,58 +826,4 @@ Msg* DriverAlsa::ProcessMsg(MsgDrain* aMsg)
     aMsg->ReportDrained();
 
     return aMsg;
-}
-
-Msg* DriverAlsa::ProcessMsg(MsgDelay* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverAlsa::ProcessMsg(MsgEncodedStream* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverAlsa::ProcessMsg(MsgAudioEncoded* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverAlsa::ProcessMsg(MsgMetaText* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverAlsa::ProcessMsg(MsgStreamInterrupted * /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverAlsa::ProcessMsg(MsgFlush* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverAlsa::ProcessMsg(MsgWait* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverAlsa::ProcessMsg(MsgAudioPcm* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
-}
-
-Msg* DriverAlsa::ProcessMsg(MsgSilence* /*aMsg*/)
-{
-    ASSERTS();
-    return NULL;
 }
