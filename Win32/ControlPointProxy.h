@@ -66,7 +66,7 @@ private:
             HWND                                iHwnd;
             Net::CpProxyAvOpenhomeOrgPlaylist1 *iPlaylistProxy;
             Net::CpDeviceDv                    *iCpPlayer;
-            TBool                               iIsActive;;
+            TBool                               iIsActive;
 
             Functor iTransportStateChanged;
     };
@@ -90,7 +90,7 @@ private:
             HWND                             iHwnd;
             Net::CpProxyAvOpenhomeOrgRadio1 *iRadioProxy;
             Net::CpDeviceDv                 *iCpPlayer;
-            TBool                            iIsActive;;
+            TBool                            iIsActive;
 
             Functor iTransportStateChanged;
     };
@@ -114,7 +114,7 @@ private:
             HWND                                iHwnd;
             Net::CpProxyAvOpenhomeOrgReceiver1 *iReceiverProxy;
             Net::CpDeviceDv                    *iCpPlayer;
-            TBool                               iIsActive;;
+            TBool                               iIsActive;
 
             Functor iTransportStateChanged;
     };

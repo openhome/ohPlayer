@@ -91,7 +91,7 @@ private:
             Net::CpProxyAvOpenhomeOrgRadio1 *iRadioProxy;
             Net::CpDeviceDv                 *iCpPlayer;
             Media::DriverOsx                &iDriver;
-            TBool                            iIsActive;;
+            TBool                            iIsActive;
 
             Functor iTransportStateChanged;
     };
@@ -115,7 +115,7 @@ private:
             Net::CpProxyAvOpenhomeOrgReceiver1 *iReceiverProxy;
             Net::CpDeviceDv                    *iCpPlayer;
             Media::DriverOsx                   &iDriver;
-            TBool                               iIsActive;;
+            TBool                               iIsActive;
 
             Functor iTransportStateChanged;
     };
