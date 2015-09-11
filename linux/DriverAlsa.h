@@ -23,14 +23,14 @@ private:
 };
 
 
-class DriverAlsa : public Thread, public PipelineElement, public IPipelineAnimator
+class DriverAlsa : public PipelineElement, public IPipelineAnimator, private INonCopyable
 {
     static const TUint kSupportedMsgTypes;
 public:
     DriverAlsa(IPipeline& aPipeline, TUint aBufferUs);
     ~DriverAlsa();
-public: // Thread
-    void Run();
+public:
+    void AudioThread();
 private: // from IMsgProcessor
     Msg* ProcessMsg(MsgMode* aMsg) override;
     Msg* ProcessMsg(MsgDrain* aMsg) override;
@@ -46,6 +46,7 @@ private:
     IPipeline& iPipeline;
     Mutex iMutex;
     TBool iQuit;
+    ThreadFunctor *iThread;
 };
 
 } // namespace Media

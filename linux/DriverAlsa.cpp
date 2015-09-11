@@ -746,40 +746,45 @@ const TUint DriverAlsa::kSupportedMsgTypes = PipelineElement::MsgType::eMode
 | PipelineElement::MsgType::eQuit;
 
 DriverAlsa::DriverAlsa(IPipeline& aPipeline, TUint aBufferUs)
-    : Thread("alsa", kPriorityHighest)
-    , PipelineElement(kSupportedMsgTypes)
+    : PipelineElement(kSupportedMsgTypes)
     , iPimpl(new Pimpl("default", aBufferUs))
     , iPipeline(aPipeline)
     , iMutex("alsa")
     , iQuit(false)
 {
     iPipeline.SetAnimator(*this);
-    Start();
+
+    iThread = new ThreadFunctor("PipelineAnimator",
+                                MakeFunctor(*this, &DriverAlsa::AudioThread),
+                                kPrioritySystemHighest);
+    iThread->Start();
 }
 
 DriverAlsa::~DriverAlsa()
 {
-    Join();
+    delete iThread;
     delete iPimpl;
 }
 
-void DriverAlsa::Run()
+void DriverAlsa::AudioThread()
 {
-    for (;;)
+    try
     {
-        CheckForKill();
-
-        Msg* msg = iPipeline.Pull();
-        msg = msg->Process(*this);
-        if (msg != NULL)
+        for (;;)
         {
-            msg->RemoveRef();
-        }
+            Msg* msg = iPipeline.Pull();
+            msg = msg->Process(*this);
+            if (msg != NULL)
+            {
+                msg->RemoveRef();
+            }
 
-        AutoMutex am(iMutex);
-        if (iQuit)
-            break;
+            AutoMutex am(iMutex);
+            if (iQuit)
+                break;
+        }
     }
+    catch (ThreadKill&) {}
 }
 
 TUint DriverAlsa::PipelineDriverDelayJiffies(TUint aSampleRateFrom,
