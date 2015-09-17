@@ -113,12 +113,14 @@ class PcmProcessorLe : public PcmProcessorBase
 public:
     PcmProcessorLe(IDataSink& aSink, Bwx& aBuffer);
 public: // IPcmProcessor
-    virtual TBool ProcessFragment8(const Brx& aData, TUint aNumChannels);
-    virtual TBool ProcessFragment16(const Brx& aData, TUint aNumChannels);
-    virtual TBool ProcessFragment24(const Brx& aData, TUint aNumChannels);
+    virtual void ProcessFragment8(const Brx& aData, TUint aNumChannels);
+    virtual void ProcessFragment16(const Brx& aData, TUint aNumChannels);
+    virtual void ProcessFragment24(const Brx& aData, TUint aNumChannels);
+    virtual void ProcessFragment32(const Brx& aData, TUint aNumChannels);
     virtual void ProcessSample8(const TByte* aSample, TUint aNumChannels);
     virtual void ProcessSample16(const TByte* aSample, TUint aNumChannels);
     virtual void ProcessSample24(const TByte* aSample, TUint aNumChannels);
+    virtual void ProcessSample32(const TByte* aSample, TUint aNumChannels);
 };
 
 PcmProcessorLe::PcmProcessorLe(IDataSink& aSink, Bwx& aBuffer)
@@ -126,7 +128,7 @@ PcmProcessorLe::PcmProcessorLe(IDataSink& aSink, Bwx& aBuffer)
 {
 }
 
-TBool PcmProcessorLe::ProcessFragment8(const Brx& aData, TUint aNumChannels)
+void PcmProcessorLe::ProcessFragment8(const Brx& aData, TUint aNumChannels)
 {
     TByte *nData;
     TUint  bytes;
@@ -145,11 +147,7 @@ TBool PcmProcessorLe::ProcessFragment8(const Brx& aData, TUint aNumChannels)
     }
 
     nData = new TByte[bytes];
-
-    if (nData == NULL)
-    {
-        return false;
-    }
+    ASSERT(nData != NULL);
 
     TByte *ptr  = (TByte *)(aData.Ptr() + 0);
     TByte *ptr1 = (TByte *)nData;
@@ -174,11 +172,9 @@ TBool PcmProcessorLe::ProcessFragment8(const Brx& aData, TUint aNumChannels)
     Flush();
     iSink.Write(fragment);
     delete[] nData;
-
-    return true;
 }
 
-TBool PcmProcessorLe::ProcessFragment16(const Brx& aData, TUint aNumChannels)
+void PcmProcessorLe::ProcessFragment16(const Brx& aData, TUint aNumChannels)
 {
     TByte *nData;
     TUint  bytes;
@@ -192,11 +188,7 @@ TBool PcmProcessorLe::ProcessFragment16(const Brx& aData, TUint aNumChannels)
     }
 
     nData = new TByte[bytes];
-
-    if (nData == NULL)
-    {
-        return false;
-    }
+    ASSERT(nData != NULL);
 
     TByte *ptr  = (TByte *)(aData.Ptr() + 0);
     TByte *ptr1 = (TByte *)nData;
@@ -223,11 +215,9 @@ TBool PcmProcessorLe::ProcessFragment16(const Brx& aData, TUint aNumChannels)
     Flush();
     iSink.Write(fragment);
     delete[] nData;
-
-    return true;
 }
 
-TBool PcmProcessorLe::ProcessFragment24(const Brx& aData, TUint aNumChannels)
+void PcmProcessorLe::ProcessFragment24(const Brx& aData, TUint aNumChannels)
 {
     TByte *nData;
     TUint  bytes;
@@ -253,11 +243,7 @@ TBool PcmProcessorLe::ProcessFragment24(const Brx& aData, TUint aNumChannels)
     }
 
     nData = new TByte[bytes];
-
-    if (nData == NULL)
-    {
-        return false;
-    }
+    ASSERT(nData != NULL);
 
     TByte *ptr  = (TByte *)(aData.Ptr() + 0);
     TByte *ptr1 = (TByte *)nData;
@@ -292,8 +278,11 @@ TBool PcmProcessorLe::ProcessFragment24(const Brx& aData, TUint aNumChannels)
     Flush();
     iSink.Write(fragment);
     delete[] nData;
+}
 
-    return true;
+void PcmProcessorLe::ProcessFragment32(const Brx& aData, TUint aNumChannels)
+{
+    ASSERTS();
 }
 
 void PcmProcessorLe::ProcessSample8(const TByte* aSample, TUint aNumChannels)
@@ -376,6 +365,11 @@ void PcmProcessorLe::ProcessSample24(const TByte* aSample, TUint aNumChannels)
 
         byteIndex += 3;
     }
+}
+
+void PcmProcessorLe::ProcessSample32(const TByte* aSample, TUint aNumChannels)
+{
+    ASSERTS();
 }
 
 typedef std::pair<snd_pcm_format_t, TUint> OutputFormat;

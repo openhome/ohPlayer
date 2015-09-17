@@ -169,11 +169,8 @@ void OsxPcmProcessor::fillBuffer(AudioQueueBufferRef inBuffer)
  *
  * @param aData         Packed big endian pcm data.  Will always be a complete number of samples.
  * @param aNumChannels  Number of channels.
- *
- * @return  true if the fragment was processed (meaning that ProcessSample will not be called for aData);
- *          false otherwise (meaning that ProcessSample will be called for each sample in aData).
  */
-TBool OsxPcmProcessor::ProcessFragment(const Brx& aData, TByte aSampleSize, TUint aNumChannels)
+void OsxPcmProcessor::ProcessFragment(const Brx& aData, TByte aSampleSize, TUint aNumChannels)
 {
     AutoMutex _(iSampleBufferLock);
 
@@ -185,8 +182,6 @@ TBool OsxPcmProcessor::ProcessFragment(const Brx& aData, TByte aSampleSize, TUin
     memcpy(&(((char *)iBuff->mAudioData)[iWriteIndex]), aData.Ptr(), blocksize);
     iBytesToRead -= blocksize;
     iWriteIndex += blocksize;
-
-    return true;
 }
 
 /**
@@ -201,18 +196,22 @@ TBool OsxPcmProcessor::ProcessFragment(const Brx& aData, TByte aSampleSize, TUin
  * @return  true if the fragment was processed (meaning that ProcessSample will not be called for aData);
  *          false otherwise (meaning that ProcessSample will be called for each sample in aData).
  */
-TBool OsxPcmProcessor::ProcessFragment8(const Brx& aData, TUint aNumChannels)
+void OsxPcmProcessor::ProcessFragment8(const Brx& aData, TUint aNumChannels)
 {
-    return ProcessFragment(aData, 1, aNumChannels);
+    ProcessFragment(aData, 1, aNumChannels);
 }
 
-TBool OsxPcmProcessor::ProcessFragment16(const Brx& aData, TUint aNumChannels)
+void OsxPcmProcessor::ProcessFragment16(const Brx& aData, TUint aNumChannels)
 {
-    return ProcessFragment(aData, 2, aNumChannels);
+    ProcessFragment(aData, 2, aNumChannels);
 }
-TBool OsxPcmProcessor::ProcessFragment24(const Brx& aData, TUint aNumChannels)
+void OsxPcmProcessor::ProcessFragment24(const Brx& aData, TUint aNumChannels)
 {
-    return ProcessFragment(aData, 3, aNumChannels);
+    ProcessFragment(aData, 3, aNumChannels);
+}
+void OsxPcmProcessor::ProcessFragment32(const Brx& aData, TUint aNumChannels)
+{
+    ProcessFragment(aData, 4, aNumChannels);
 }
 
 
@@ -252,6 +251,7 @@ void OsxPcmProcessor::ProcessSample24(const TByte* aSample, TUint aNumChannels)
 {
     ProcessSample(aSample, 3, aNumChannels);
 }
-
-
-
+void OsxPcmProcessor::ProcessSample32(const TByte* aSample, TUint aNumChannels)
+{
+    ProcessSample(aSample, 4, aNumChannels);
+}

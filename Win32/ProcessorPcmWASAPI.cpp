@@ -17,15 +17,14 @@ ProcessorPcmBufWASAPI::ProcessorPcmBufWASAPI()
 {
 }
 
-TBool ProcessorPcmBufWASAPI::ProcessFragment8(const Brx& aData,
-                                              TUint /*aNumChannels*/)
+void ProcessorPcmBufWASAPI::ProcessFragment8(const Brx& aData,
+                                             TUint /*aNumChannels*/)
 {
     ProcessFragment(aData);
-    return true;
 }
 
-TBool ProcessorPcmBufWASAPI::ProcessFragment16(const Brx& aData,
-                                               TUint      /*aNumChannels*/)
+void ProcessorPcmBufWASAPI::ProcessFragment16(const Brx& aData,
+                                              TUint      /*aNumChannels*/)
 {
     TByte *nData;
     TUint  bytes;
@@ -36,7 +35,7 @@ TBool ProcessorPcmBufWASAPI::ProcessFragment16(const Brx& aData,
 
     if (nData == NULL)
     {
-        return false;
+        return;
     }
 
     TByte *ptr  = (TByte *)(aData.Ptr() + 0);
@@ -58,12 +57,10 @@ TBool ProcessorPcmBufWASAPI::ProcessFragment16(const Brx& aData,
     ProcessFragment(fragment);
 
     delete[] nData;
-
-    return true;
 }
 
-TBool ProcessorPcmBufWASAPI::ProcessFragment24(const Brx& aData,
-                                               TUint      /*aNumChannels*/)
+void ProcessorPcmBufWASAPI::ProcessFragment24(const Brx& aData,
+                                              TUint      /*aNumChannels*/)
 {
     TByte *nData;
     TUint  bytes;
@@ -71,11 +68,7 @@ TBool ProcessorPcmBufWASAPI::ProcessFragment24(const Brx& aData,
     bytes = aData.Bytes();
 
     nData = new TByte[bytes];
-
-    if (nData == NULL)
-    {
-        return false;
-    }
+    ASSERT(nData != NULL);
 
     TByte *ptr  = (TByte *)(aData.Ptr() + 0);
     TByte *ptr1 = (TByte *)nData;
@@ -97,8 +90,12 @@ TBool ProcessorPcmBufWASAPI::ProcessFragment24(const Brx& aData,
     ProcessFragment(fragment);
 
     delete[] nData;
+}
 
-    return true;
+void ProcessorPcmBufWASAPI::ProcessFragment32(const Brx& /*aData*/,
+                                              TUint      /*aNumChannels*/)
+{
+    ASSERTS();
 }
 
 void ProcessorPcmBufWASAPI::ProcessSample8(const TByte* aSample,
@@ -150,4 +147,10 @@ void ProcessorPcmBufWASAPI::ProcessSample24(const TByte* aSample,
         Brn sampleBuf(sample, sampleSize);
         ProcessFragment(sampleBuf);
     }
+}
+
+void ProcessorPcmBufWASAPI::ProcessSample32(const TByte* /*aSample*/,
+                                            TUint        /*aNumChannels*/)
+{
+    ASSERTS();
 }

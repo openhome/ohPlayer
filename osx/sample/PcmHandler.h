@@ -63,11 +63,8 @@ public:
      *
      * @param aData         Packed big endian pcm data.  Will always be a complete number of samples.
      * @param aNumChannels  Number of channels.
-     *
-     * @return  true if the fragment was processed (meaning that ProcessSample will not be called for aData);
-     *          false otherwise (meaning that ProcessSample will be called for each sample in aData).
      */
-    virtual TBool ProcessFragment(const Brx& aData, TByte aSampleSize, TUint aNumChannels);
+    virtual void ProcessFragment(const Brx& aData, TByte aSampleSize, TUint aNumChannels);
 
     /**
      * Optional function.  Gives the processor a chance to copy memory in a single block.
@@ -77,14 +74,11 @@ public:
      *
      * @param aData         Packed big endian pcm data.  Will always be a complete number of samples.
      * @param aNumChannels  Number of channels.
-     *
-     * @return  true if the fragment was processed (meaning that ProcessSample will not be called for aData);
-     *          false otherwise (meaning that ProcessSample will be called for each sample in aData).
      */
-    virtual TBool ProcessFragment8(const Brx& aData, TUint aNumChannels);
-    virtual TBool ProcessFragment16(const Brx& aData, TUint aNumChannels);
-    virtual TBool ProcessFragment24(const Brx& aData, TUint aNumChannels);
-
+    virtual void ProcessFragment8(const Brx& aData, TUint aNumChannels);
+    virtual void ProcessFragment16(const Brx& aData, TUint aNumChannels);
+    virtual void ProcessFragment24(const Brx& aData, TUint aNumChannels);
+    virtual void ProcessFragment32(const Brx& aData, TUint aNumChannels);
 
     /**
      * Process a single sample of audio.
@@ -107,6 +101,7 @@ public:
     virtual void ProcessSample8(const TByte* aSample, TUint aNumChannels);
     virtual void ProcessSample16(const TByte* aSample, TUint aNumChannels);
     virtual void ProcessSample24(const TByte* aSample, TUint aNumChannels);
+    virtual void ProcessSample32(const TByte* aSample, TUint aNumChannels);
 
     /**
      * Called once per call to MsgPlayable::Read.
