@@ -54,7 +54,7 @@ TUint VolumeProfile::FadeMax() const
 VolumeControl::VolumeControl()
 {
     const TChar *CARD          = "default";
-    const TChar *SELEM_NAMES[] = {"PCM", "Master"};
+    const TChar *SELEM_NAMES[] = {"Digital", "PCM", "Master"};
 
     // Get the mixer element for the default sound card.
     snd_mixer_open(&iHandle, 0);
