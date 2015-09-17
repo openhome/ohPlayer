@@ -19,7 +19,8 @@ Building OpenHome MediaPlayer sample apps:
 Linux (Ubuntu 12.x onward, Raspbian)
 -------------------------------------
 
-# install compiler dependencies 
+# install compiler dependencies
+sudo apt-get update
 sudo apt-get install gcc-4.8 g++-4.8 
 
 # set up gcc alternates; we need gcc4.8
@@ -34,7 +35,7 @@ sudo apt-get install gtk+-3-dev libnotify-dev notify-osd libasound2-dev
 
 # install package maker
 sudo apt-get install ruby-dev
-gem install fpm
+sudo gem install fpm
 
 # make the project
 cd LitePipeSampleApps/linux
@@ -52,7 +53,10 @@ or
 make raspbian-install   // build and install locally
 
 # generate a debian package for distribution
-./GeneratePkg.pl Ñplatform=raspbian Ñapplication=litepipe-test-app Ñversion=0.1.2.3
+./GeneratePkg.pl --platform=raspbian --application=litepipe-test-app --version=0.1.2.3
+
+# generate an installer package
+./GeneratePkg.pl --platform=raspbian --application=litepipe-test-app --version=0.1.2.3 --installer
 
 Cross-compilation is not yet supported. Test applications must be built on the target platform at present.
 The project will build a GTK menubar application.
