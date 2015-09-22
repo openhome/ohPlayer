@@ -19,6 +19,7 @@
 #include "ExampleMediaPlayer.h"
 #include "MemoryCheck.h"
 #include "MediaPlayerIF.h"
+#include "OptionalFeatures.h"
 #include "RamStore.h"
 
 using namespace OpenHome;

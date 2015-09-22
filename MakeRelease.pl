@@ -7,7 +7,7 @@
 
 use File::Basename;
 use File::Copy;
-use Cwd 'abs_path';
+use Cwd ('abs_path', 'cwd');
 use File::Path qw(remove_tree);
 use Getopt::Long;
 use POSIX qw(tmpnam);
@@ -30,6 +30,8 @@ BEGIN
 
 END
 {
+    chdir $SOURCE_DIR if (defined $SOURCE_DIR);
+
     my @savedHeaders = glob("$scratchDir/*h");
 
     # Reinstate any modified header.
@@ -70,10 +72,10 @@ sub updateVersion
     close OUTPUT_FILE;
 
     # Save the original file for restoration on exit.
-    copy($VERSION_HEADER, "$scratchDir/$VERSION_HEADER");
+    copy("$VERSION_HEADER", "$scratchDir/$VERSION_HEADER");
 
     # Overwrite the original file with our modified version.
-    copy("$scratchDir/$VERSION_HEADER.tmp", $VERSION_HEADER);
+    copy("$scratchDir/$VERSION_HEADER.tmp", "$VERSION_HEADER");
 }
 
 # Update the header file defining optional features and associated keys to enable
@@ -163,16 +165,16 @@ sub updateOoptionalFeatures
     close OUTPUT_FILE;
 
     # Save the original file for restoration on exit.
-    copy($OPTIONAL_FEATURES_HEADER, "$scratchDir/$OPTIONAL_FEATURES_HEADER");
+    copy("$OPTIONAL_FEATURES_HEADER", "$scratchDir/$OPTIONAL_FEATURES_HEADER");
 
     # Overwrite the original file with our modified version.
-    copy("$scratchDir/$OPTIONAL_FEATURES_HEADER.tmp", $OPTIONAL_FEATURES_HEADER);
+    copy("$scratchDir/$OPTIONAL_FEATURES_HEADER.tmp", "$OPTIONAL_FEATURES_HEADER");
 }
 
 # Build the release package and installer for Linux based platforms.
 sub buildLinuxRelease
 {
-    my ($platform, $version) = @_;
+    my ($platform, $version, $debug) = @_;
 
     # Cleanup any previous build.
     system("make clean");
@@ -186,7 +188,14 @@ sub buildLinuxRelease
     unlink glob("$platform/*deb");
 
     # Execute the build
-    system("make $platform");
+    if (defined $debug)
+    {
+        system("make DEBUG=0 $platform");
+    }
+    else
+    {
+        system("make $platform");
+    }
 
     if ($? != 0)
     {
@@ -202,13 +211,93 @@ sub buildLinuxRelease
     }
 }
 
+# Build the release package and installer for the Win32 platform.
+#
+# It is required that the script be run from a VS2013 command prompt and
+# the path *MUST* contain the INNO Setup utility location
+# (C:\Program Files (x86)\Inno Setup 5)
+sub buildWin32Release
+{
+    my ($version, $debug) = @_;
+
+    # Cleanup any previous build.
+    if (defined $debug)
+    {
+        system("msbuild LitePipeTestApp.sln /target:Clean /p:Platform=Win32 " .
+               "/p:Configuration=Debug");
+    }
+    else
+    {
+        system("msbuild LitePipeTestApp.sln /target:Clean /p:Platform=Win32 " .
+               "/p:Configuration=Release");
+    }
+
+    if ($? != 0)
+    {
+       die "ERROR: Cleanup Failed\n";
+    }
+
+    unlink glob("../Win32Installer/*.exe");
+
+    # Execute the build
+    if (defined $debug)
+    {
+        system("msbuild LitePipeTestApp.sln /p:Platform=Win32 " .
+               "/p:Configuration=Debug");
+    }
+    else
+    {
+        system("msbuild LitePipeTestApp.sln /p:Platform=Win32 " .
+               "/p:Configuration=Release");
+    }
+
+    if ($? != 0)
+    {
+       die "ERROR: Build Failed\n";
+    }
+
+    # Generate the release package.
+
+    # Move to the folder containing the ISetup installer generation script.
+
+    # Note the source directory before moving away. We must change back to
+    # the source diorectory on exit to restore the modified header file.
+    $SOURCE_DIR = cwd();
+
+    chdir "../Win32Installer" or
+        die "Error: Cannot move to Win32Installer folder. $!\n";
+
+    my $parentFolder = dirname(cwd());
+
+    if (defined $debug)
+    {
+        system("iscc \/dMySrcDir=\"$parentFolder\" "    .
+               "\/dMyAppVersion=\"$version\" \/dDebug " .
+               "LitePipeSampleAppInstaller.iss");
+    }
+    else
+    {
+        system("iscc \/dMySrcDir=\"$parentFolder\" " .
+               "\/dMyAppVersion=\"$version\" LitePipeSampleAppInstaller.iss");
+    }
+
+    if ($? != 0)
+    {
+       die "ERROR: Package Generation Failed\n";
+    }
+
+    # Annotate the installer with the version.
+    $version =~ s/\./-/g;
+    rename("setup.exe", "setup-$version.exe");
+}
+
 ###############################################################################
 # MAIN
 ###############################################################################
 
 my $USAGE = <<EndOfText;
-Usage: MakeRelease.pl --platform=<ubuntu|raspbian> --version=<version>
-                      [--enable-mp3] [--enable-aac]
+Usage: MakeRelease.pl --platform=<ubuntu|raspbian|Win32> --version=<version>
+                      [--debug] [--enable-mp3] [--enable-aac]
                       [--enable-radio --tunein-partner-id=<tunein partner id]
                       [--enable-tidal --tidal-token=<tidal token>]s
                       [--enable-qobuz --qobuz-secret=<qobuz secret>
@@ -217,6 +306,7 @@ EndOfText
 
 GetOptions("platform=s"          => \$platform,
            "version=s"           => \$version,
+           "debug"               => \$debug,
            "enable-mp3"          => \$enableMp3,
            "enable-aac"          => \$enableAac,
            "enable-radio"        => \$enableRadio,
@@ -233,7 +323,7 @@ if (! defined $platform || ! defined $version)
     die "$USAGE\n";
 }
 
-if ($platform !~ /ubuntu|raspbian/)
+if ($platform !~ /ubuntu|raspbian|Win32/)
 {
     die "Invalid Platform: $platform\n";
 }
@@ -282,7 +372,11 @@ chdir $sourceDir or
 # Generate the release
 if ($platform =~ /raspbian|ubuntu/)
 {
-    &buildLinuxRelease($platform, $version);
+    &buildLinuxRelease($platform, $version, $debug);
+}
+elsif ($platform =~ /Win32/)
+{
+    &buildWin32Release($version, $debug);
 }
 
 ;

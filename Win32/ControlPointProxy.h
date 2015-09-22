@@ -11,6 +11,8 @@
 
 #include <string>
 
+#include "OptionalFeatures.h"
+
 namespace OpenHome {
 
 namespace Net {

@@ -6,12 +6,16 @@
 #include <shellapi.h>
 #include <commctrl.h>
 #include <process.h>
+#include <string>
 #include <vector>
 
 #include "resource.h"
+#include "version.h"
 #include "CustomMessages.h"
 #include "MediaPlayerIF.h"
 #include "MemoryCheck.h"
+
+using namespace std;
 
 static const WCHAR WINDOW_CLASS[] = L"LitePipe"; // Window class name.
 static const INT   ICON_ID        = 100;         // System tray icon identifier.
@@ -452,7 +456,23 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 case IDM_ABOUT:
                 {
-                    MessageBox(hwnd,  L"LitePipe v1.0", L"About", MB_OK);
+                    WCHAR  *wcstring;
+                    size_t  convertedChars;
+                    UINT    length;
+                    string  aboutString("LitePipeTestApp " CURRENT_VERSION
+                                        "\n\nCopyright (c) OpenHome");
+
+                    // Convert to a wide string.
+                    length = strlen(aboutString.c_str());
+                    wcstring = new WCHAR[length+1];
+
+                    mbstowcs_s(&convertedChars, wcstring, length+1,
+                               aboutString.c_str(), length);
+
+                    MessageBox(hwnd,  wcstring, L"About", MB_OK);
+
+                    delete wcstring;
+
                     break;
                 }
 

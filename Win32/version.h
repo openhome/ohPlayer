@@ -5,4 +5,4 @@
 // ==--==
 #pragma once
 
-#define CURRENT_VERSION "0.9.0"
+#define CURRENT_VERSION "0.0.1"
