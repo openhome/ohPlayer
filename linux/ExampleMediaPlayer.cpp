@@ -20,6 +20,7 @@
 #include "ExampleMediaPlayer.h"
 #include "LitePipeTestApp.h"
 #include "MediaPlayerIF.h"
+#include "OptionalFeatures.h"
 #include "RamStore.h"
 
 using namespace OpenHome;

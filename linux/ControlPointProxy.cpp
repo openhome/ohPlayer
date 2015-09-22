@@ -6,6 +6,8 @@
 #include <OpenHome/Net/Core/CpDeviceDv.h>
 #include <OpenHome/Private/Printer.h>
 
+#include "OptionalFeatures.h"
+
 #include <CpAvOpenhomeOrgPlaylist1.h>
 #ifdef ENABLE_RADIO
 #include <CpAvOpenhomeOrgRadio1.h>

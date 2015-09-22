@@ -3,6 +3,8 @@
 #include <OpenHome/Media/PipelineManager.h>
 #include <OpenHome/Media/PipelineObserver.h>
 
+#include "OptionalFeatures.h"
+
 #include <string>
 
 namespace OpenHome {

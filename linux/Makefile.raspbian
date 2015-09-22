@@ -8,12 +8,6 @@
 #   NVWA_DIR=<source location>:
 #            Integrate a cross platform new/delete leak detector.
 #            Downloadable from http://wyw.dcweb.cn/leakage.htm
-#
-#   ENABLE_QOBUZ=0: Enable the, optional, Qobuz service
-#   ENABLE_TIDAL=0: Enable the, optional, Tidal service
-#   ENABLE_RADIO=0: Enable the, optional, Radio service
-#   ENABLE_AAC=0:   Enable AAC, optional, codec support
-#   ENABLE_MP3=0:   Enable MP3, optional, codec support
 #                     
 
 OSPLATFORM=raspbian
@@ -56,33 +50,7 @@ else
     OBJ_DIR   = $(OSPLATFORM)/objs
 endif
 
-# Optional Feature Support
-EXTRA_CODECS =
-EXTRA_SOURCES =
-
-ifdef ENABLE_RADIO
-    CFLAGS += -DENABLE_RADIO
-    EXTRA_SOURCES += -lSourceRadio
-endif
-
-ifdef ENABLE_TIDAL
-    CFLAGS += -DENABLE_TIDAL
-endif
-
-ifdef ENABLE_QOBUZ
-    CFLAGS += -DENABLE_QOBUZ
-endif
-
-ifdef ENABLE_AAC
-    CFLAGS += -DENABLE_AAC
-endif
-
-ifdef ENABLE_MP3
-    CFLAGS += -DENABLE_MP3
-    EXTRA_CODECS += -lCodecMp3
-endif
-
-LIBS         = $(GTK_LIBS) -lnotify -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv $(EXTRA_SOURCES) -lohMediaPlayer -lWebAppFramework -lConfigUi -lohNetGeneratedProxies -lohNetCore -lCodecAdts -lCodecAac -lCodecAacBase -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecFlac -lCodecWav $(EXTRA_CODECS) -lohPipeline -lpthread -lssl -lcrypto -ldl
+LIBS         = $(GTK_LIBS) -lnotify -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lSourceRadio -lohMediaPlayer -lWebAppFramework -lConfigUi -lohNetGeneratedProxies -lohNetCore -lCodecAdts -lCodecAac -lCodecAacBase -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecFlac -lCodecWav -lCodecMp3 -lohPipeline -lpthread -lssl -lcrypto -ldl
 
 INCLUDES     = -I../dependencies/$(TARG_ARCH)/ohMediaPlayer/include -I../dependencies/$(TARG_ARCH)/ohNetmon/include -I../dependencies/$(TARG_ARCH)/openssl/include -I../dependencies/$(TARG_ARCH)/ohNetGenerated-$(TARG_ARCH)-$(BUILD_TYPE)/include/ohnet/OpenHome/Net/Core
 

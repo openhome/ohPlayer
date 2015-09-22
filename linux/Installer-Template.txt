@@ -33,6 +33,7 @@ if [ $? -ne 0 ]
 then
     # Install any missing dependencies
     echo "Fixing External Dependencies"
+    echo "If this fails please try 'apt-get update' and retry"
     sudo apt-get -f install
 fi
 
