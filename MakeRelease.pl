@@ -259,7 +259,7 @@ if ((defined $enableQobuz && !(defined $qobuzSecret && defined $qobuzAppId)) ||
 # Move to the directory containing the platform source.
 my $sourceDir = abs_path(dirname($0));
 
-if ($platform =~ /raspbian|debian/)
+if ($platform =~ /raspbian|ubuntu/)
 {
     $sourceDir .= "/linux";
 }
@@ -280,7 +280,7 @@ chdir $sourceDir or
                          $qobuzSecret);
 
 # Generate the release
-if ($platform =~ /raspbian|debian/)
+if ($platform =~ /raspbian|ubuntu/)
 {
     &buildLinuxRelease($platform, $version);
 }
