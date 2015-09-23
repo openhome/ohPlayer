@@ -24,7 +24,7 @@ BEGIN
         $scratchDir = tmpnam();
     } while (-e "$scratchDir");
 
-    die "Cannot make temporary directory $scratchDir\n"
+    die "Cannot make temporary directory '$scratchDir'\n$!\n"
         unless mkdir $scratchDir;
 }
 
@@ -32,10 +32,11 @@ END
 {
     chdir $SOURCE_DIR if (defined $SOURCE_DIR);
 
-    my @savedHeaders = glob("$scratchDir/*h");
+    my @savedFiles = glob("$scratchDir/*h");
+    push @savedFiles, glob("$scratchDir/*plist");
 
-    # Reinstate any modified header.
-    foreach $file (@savedHeaders)
+    # Reinstate any saved files.
+    foreach $file (@savedFiles)
     {
         copy("$file", ".");
     }
@@ -50,11 +51,11 @@ sub updateVersion
 {
     my ($version) = @_;
 
-    die "ERROR: Cannot open version header file '$VERSION_HEADER' $!\n"
+    die "ERROR: Cannot open version header file '$VERSION_HEADER'\n$!\n"
         unless open INPUT_FILE, "<$VERSION_HEADER";
 
     die "ERROR: Cannot open tmp version header file " .
-        "'$scratchDir/$VERSION_HEADER.tmp' $!\n"
+        "'$scratchDir/$VERSION_HEADER.tmp'\n$!\n"
         unless open OUTPUT_FILE, ">$scratchDir/$VERSION_HEADER.tmp";
 
     while (<INPUT_FILE>)
@@ -72,25 +73,27 @@ sub updateVersion
     close OUTPUT_FILE;
 
     # Save the original file for restoration on exit.
-    copy("$VERSION_HEADER", "$scratchDir/$VERSION_HEADER");
+    copy("$VERSION_HEADER", "$scratchDir/$VERSION_HEADER") or
+        die "ERROR: Cannot backup \"$VERSION_HEADER\"\n$!\n";
 
     # Overwrite the original file with our modified version.
-    copy("$scratchDir/$VERSION_HEADER.tmp", "$VERSION_HEADER");
+    copy("$scratchDir/$VERSION_HEADER.tmp", "$VERSION_HEADER") or
+        die "ERROR: Cannot overwrite \"$VERSION_HEADER\"\n$!\n";
 }
 
-# Update the header file defining optional features and associated keys to enable
-# access to the required services.
+# Update the header file defining optional features and associated keys to
+# enable access to the required services.
 sub updateOoptionalFeatures
 {
     my ($enableMp3, $enableAac, $enableRadio, $tuneInPartnedId, $enableTidal,
         $tidalToken, $enableQobuz, $qobuzAppId, $qobuzSecret) = @_;
 
     die "ERROR: Cannot open optional feature heeder file " .
-        "'$OPTIONAL_FEATURES_HEADER' $!\n"
+        "'$OPTIONAL_FEATURES_HEADER'\n$!\n"
         unless open INPUT_FILE, "<$OPTIONAL_FEATURES_HEADER";
 
     die "ERROR: Cannot open tmp optional feature header file " .
-        "'$scratchDir/$OPTIONAL_FEATURES_HEADER.tmp' $!\n"
+        "'$scratchDir/$OPTIONAL_FEATURES_HEADER.tmp'\n$!\n"
         unless open OUTPUT_FILE, ">$scratchDir/$OPTIONAL_FEATURES_HEADER.tmp";
 
     while (<INPUT_FILE>)
@@ -165,10 +168,12 @@ sub updateOoptionalFeatures
     close OUTPUT_FILE;
 
     # Save the original file for restoration on exit.
-    copy("$OPTIONAL_FEATURES_HEADER", "$scratchDir/$OPTIONAL_FEATURES_HEADER");
+    copy("$OPTIONAL_FEATURES_HEADER", "$scratchDir/$OPTIONAL_FEATURES_HEADER")
+        or die "ERROR: Cannot backup \"$OPTIONAL_FEATURES_HEADER\"\n$!\n";
 
     # Overwrite the original file with our modified version.
-    copy("$scratchDir/$OPTIONAL_FEATURES_HEADER.tmp", "$OPTIONAL_FEATURES_HEADER");
+    copy("$scratchDir/$OPTIONAL_FEATURES_HEADER.tmp", "$OPTIONAL_FEATURES_HEADER")
+        or die "ERROR: Cannot overwrite \"$OPTIONAL_FEATURES_HEADER\"\n$!\n";
 }
 
 # Build the release package and installer for Linux based platforms.
@@ -179,10 +184,7 @@ sub buildLinuxRelease
     # Cleanup any previous build.
     system("make clean");
 
-    if ($? != 0)
-    {
-       die "ERROR: Cleanup Failed\n";
-    }
+    die "ERROR: Cleanup Failed\n" unless ($? == 0);
 
     unlink glob("$platform/*sh");
     unlink glob("$platform/*deb");
@@ -197,18 +199,12 @@ sub buildLinuxRelease
         system("make $platform");
     }
 
-    if ($? != 0)
-    {
-       die "ERROR: Build Failed\n";
-    }
+    die "ERROR: Build Failed\n" unless ($? == 0);
 
     # Generate the release package.
     system("./GeneratePkg.pl -p=$platform -a=litepipe-test-app -v=\"$version\" --i");
 
-    if ($? != 0)
-    {
-       die "ERROR: Package Generation Failed\n";
-    }
+    die "ERROR: Package Generation Failed\n" unless ($? == 0);
 }
 
 # Build the release package and installer for the Win32 platform.
@@ -232,10 +228,7 @@ sub buildWin32Release
                "/p:Configuration=Release");
     }
 
-    if ($? != 0)
-    {
-       die "ERROR: Cleanup Failed\n";
-    }
+    die "ERROR: Cleanup Failed\n" unless ($? == 0);
 
     unlink glob("../Win32Installer/*.exe");
 
@@ -251,10 +244,7 @@ sub buildWin32Release
                "/p:Configuration=Release");
     }
 
-    if ($? != 0)
-    {
-       die "ERROR: Build Failed\n";
-    }
+    die "ERROR: Build Failed\n" unless ($? == 0);
 
     # Generate the release package.
 
@@ -265,7 +255,7 @@ sub buildWin32Release
     $SOURCE_DIR = cwd();
 
     chdir "../Win32Installer" or
-        die "Error: Cannot move to Win32Installer folder. $!\n";
+        die "Error: Cannot move to Win32Installer folder\n$!\n";
 
     my $parentFolder = dirname(cwd());
 
@@ -281,14 +271,82 @@ sub buildWin32Release
                "\/dMyAppVersion=\"$version\" LitePipeSampleAppInstaller.iss");
     }
 
-    if ($? != 0)
-    {
-       die "ERROR: Package Generation Failed\n";
-    }
+    die "ERROR: Package Generation Failed\n" unless ($? == 0);
 
     # Annotate the installer with the version.
     $version =~ s/\./-/g;
-    rename("setup.exe", "setup-$version.exe");
+    rename("setup.exe", "setup-$version.exe") or
+        die "ERROR: Cannot rename 'setup.exe' -> 'setup-$version.exe'\n$!\n";
+}
+
+sub buildOsxRelease
+{
+    my ($version, $debug) = @_;
+    my $plistBuddy        = "/usr/libexec/PlistBuddy";
+    my $plistFile         = "Info.plist";
+
+    # Check the PlistBuddy utility is present and correct.
+    die "Error: Cannot run '$plistBuddy'\n" unless (-X $plistBuddy);
+
+    # Save the original Info.plist file for restoration on exit.
+    copy("$plistFile", "$scratchDir") or
+        die "ERROR: Cannot backup '$plistFile'. $!\n";
+
+    # Update the Info.plist file with the current release information.
+    system("$plistBuddy -c 'Set :CFBundleShortVersionString \"$version\"' " .
+           "$plistFile");
+
+    die "ERROR: Cannot update verion in '$plistFile'.\n$1\n"
+        unless ($? == 0);
+
+    # Note the source directory before moving away. We must change back to
+    # the source diorectory on exit to restore the modified header file.
+    $SOURCE_DIR = cwd();
+
+    # Move to folder containing the xcode project.
+    chdir "..";
+
+    # Cleanup any previous build.
+    if (defined $debug)
+    {
+        system("xcodebuild -project sample.xcodeproj -configuration Debug " .
+               "clean");
+        system("xcodebuild -scheme mediaplayer -configuration Debug " .
+               "clean");
+    }
+    else
+    {
+        system("xcodebuild -project sample.xcodeproj -configuration Release " .
+               "clean");
+        system("xcodebuild -scheme mediaplayer -configuration Release " .
+               "clean");
+    }
+
+    die "ERROR: Cleanup Failed\n" unless ($? == 0);
+
+    # Execute the build, not strictly required.
+    if (defined $debug)
+    {
+        system("xcodebuild -project sample.xcodeproj -configuration Debug");
+    }
+    else
+    {
+        system("xcodebuild -project sample.xcodeproj -configuration Release");
+    }
+
+    die "ERROR: Build Failed\n" unless ($? == 0);
+
+    # Generate the archive
+    if (defined $debug)
+    {
+        system("xcodebuild -scheme mediaplayer -configuration Debug archive");
+    }
+    else
+    {
+        system("xcodebuild -scheme mediaplayer -configuration Release archive");
+    }
+
+    die "ERROR: Archive Failed\n" unless ($? == 0);
 }
 
 ###############################################################################
@@ -296,7 +354,7 @@ sub buildWin32Release
 ###############################################################################
 
 my $USAGE = <<EndOfText;
-Usage: MakeRelease.pl --platform=<ubuntu|raspbian|Win32> --version=<version>
+Usage: MakeRelease.pl --platform=<ubuntu|raspbian|Win32|osx> --version=<version>
                       [--debug] [--enable-mp3] [--enable-aac]
                       [--enable-radio --tunein-partner-id=<tunein partner id]
                       [--enable-tidal --tidal-token=<tidal token>]s
@@ -323,7 +381,7 @@ if (! defined $platform || ! defined $version)
     die "$USAGE\n";
 }
 
-if ($platform !~ /ubuntu|raspbian|Win32/)
+if ($platform !~ /ubuntu|raspbian|Win32|osx/)
 {
     die "Invalid Platform: $platform\n";
 }
@@ -353,6 +411,10 @@ if ($platform =~ /raspbian|ubuntu/)
 {
     $sourceDir .= "/linux";
 }
+elsif ($platform =~ /osx/)
+{
+    $sourceDir .= "/$platform/sample";
+}
 else
 {
     $sourceDir .= "/$platform";
@@ -377,6 +439,10 @@ if ($platform =~ /raspbian|ubuntu/)
 elsif ($platform =~ /Win32/)
 {
     &buildWin32Release($version, $debug);
+}
+elsif ($platform =~ /osx/)
+{
+    &buildOsxRelease($version, $debug);
 }
 
 ;

@@ -10,7 +10,7 @@
 #define sample_version_h
 
 // current application version number
-#define CURRENT_VERSION "1.0.0"
+#define CURRENT_VERSION "0.0.1"
 
 // update check interval in seconds
 #define INITIAL_CHECK_INTERVAL  30 // 30 seconds

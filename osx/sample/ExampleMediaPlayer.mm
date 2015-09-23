@@ -12,6 +12,8 @@
 #include <OpenHome/Av/Debug.h>
 #include <OpenHome/Net/Core/DvDevice.h>
 
+#include "OptionalFeatures.h"
+
 #import "ConfigPersistentStore.h"
 
 using namespace OpenHome;
