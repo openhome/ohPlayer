@@ -27,6 +27,9 @@ void ConfigPersistentStore::Read(const Brx& aKey, Bwx& aDest)
     AutoMutex a(iLock);
     Brhz aKeyZ(aKey);
     
+    // Initialise the destination buffer.
+    aDest.SetBytes(0);
+
     NSString *value = [prefs getPref: [NSString stringWithUTF8String: (const char *)aKeyZ.Ptr()]];
     
     // we have a hex string representing the bytes we want to use to fill aDest.
