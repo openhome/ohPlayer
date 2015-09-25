@@ -424,7 +424,13 @@ chdir $sourceDir or
     die "ERROR: Cannot move to source directory: $sourceDir. $!\n";
 
 # Update 'version.h' with the release version.
-&updateVersion("$version");
+#
+# On Osx this isn't required as the version is read from the application
+# Info.plist
+if ($platform !~ /osx/)
+{
+    &updateVersion("$version");
+}
 
 # Update 'OptionalFeatures.h with enabled features and service keys
 &updateOoptionalFeatures($enableMp3, $enableAac, $enableRadio, $tuneInPartnedId,

@@ -45,10 +45,16 @@ NSMenuItem *subnetItem =  nil;
 {
     if(samplePlayer != nil)
     {
+        // Read the current version from application Info.plist
+        NSDictionary *dict    = [[NSBundle mainBundle] infoDictionary];
+        NSString     *version = [dict objectForKey:@"CFBundleShortVersionString"];
+
         long _minor = 0;
         long _major = 0;
         [self getOSVersion:&_major minor:&_minor];
-        char *uri = samplePlayer->checkForUpdate(_major & 0xffff, _minor & 0xffff);
+        char *uri = samplePlayer->checkForUpdate(_major & 0xffff,
+                                                 _minor & 0xffff,
+                                                 [version UTF8String]);
         
         if(uri !=nil)
         {

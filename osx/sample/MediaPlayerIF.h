@@ -32,48 +32,48 @@ public:
         TIpAddress       subnet;      // Subnet address
         OpenHome::TBool  isCurrent;   // Is this the current active subnet
     } SubnetRecord;
-    
+
     typedef struct InitArgs
     {
         static const TIpAddress NO_SUBNET = 0xFFFFFFFF;
         TIpAddress subnet;                   // Requested subnet
     } InitArgs;
 
-    
+
 public:
     MediaPlayerIF(TIpAddress subnet);
     ~MediaPlayerIF();
 
     TBool setup(TIpAddress subnet);
     void shutdown();
-    
+
     void PlayPipeLine();                     // Pipeline - Play
     void PausePipeLine();                    // Pipeline - Pause
     void StopPipeLine();                     // Pipeline - Stop
-    
-    TChar * checkForUpdate(TUint major, TUint minor);
+
+    TChar * checkForUpdate(TUint major, TUint minor, const TChar *currentVersion);
 
     Example::ExampleMediaPlayer* mediaPlayer() { return iExampleMediaPlayer; }
-    
+
     // Get a list of available subnets
     std::vector<SubnetRecord*> * GetSubnets();
-    
+
     // Free up a list of available subnets.
     void FreeSubnets(std::vector<SubnetRecord*> *subnetVector);
 
-    
+
 private:
- 
+
     OpenHome::Net::Library* CreateLibrary(TIpAddress preferredSubnet);
-    
+
     void volumeChanged();
-    
+
     TBool iMute;
     TUint iVolume;
     TUint iVolumeLimit;
     TUint iPlaylistTrackId;
     TBool iLive;
-    
+
     Net::Library* iLib;
     Media::PriorityArbitratorDriver* iArbDriver;
     Media::PriorityArbitratorPipeline* iArbPipeline;
@@ -87,8 +87,8 @@ private:
     Media::DriverOsx* iDriver;
 
 };
-  
+
 }  // namespace Example
 }  // namespace Av
 }  // namespace OpenHome
-    
+

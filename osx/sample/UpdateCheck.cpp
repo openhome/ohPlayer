@@ -21,7 +21,7 @@ using namespace OpenHome::Media;
 //
 // Returns true if version1 < version2. False otherwise.
 //
-bool UpdateChecker::isOlderVersion(TChar *version1, TChar *version2)
+bool UpdateChecker::isOlderVersion(const TChar *version1, const TChar *version2)
 {
     TUint major1, minor1, build1;
     TUint major2, minor2, build2;
@@ -92,6 +92,7 @@ Brn UpdateChecker::ReadValue(ReaderUntil& aReaderUntil, Brn& key)
 TBool UpdateChecker::updateAvailable(Environment& aEnv,
                                      const TChar* aFeed,
                                      Bwx& aUrl,
+                                     const TChar* currentVersion,
                                      unsigned int aOsMajor,
                                      unsigned int aOsMinor)
 {
@@ -137,7 +138,7 @@ TBool UpdateChecker::updateAvailable(Environment& aEnv,
                 jsonKey     = Brn("version");
                 Brn version = ReadValue(readerUntil, jsonKey);
 
-                if (isOlderVersion((TChar*)CURRENT_VERSION, (TChar *)(version.Ptr())))
+                if (isOlderVersion(currentVersion, (TChar *)(version.Ptr())))
                 {
                     jsonKey = Brn("uri");
                     Brn uri = ReadValue(readerUntil, jsonKey);

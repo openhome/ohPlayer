@@ -39,13 +39,16 @@ MediaPlayerIF::~MediaPlayerIF()
     shutdown();
 }
 
-TChar * MediaPlayerIF::checkForUpdate(TUint major, TUint minor)
+TChar * MediaPlayerIF::checkForUpdate(TUint major,
+                                      TUint minor,
+                                      const TChar *currentVersion)
 {
     Bws<1024> urlBuf;
     
     if (UpdateChecker::updateAvailable(iDvStack->Env(),
                                        [kUpdateUri cStringUsingEncoding:NSASCIIStringEncoding],
                                        urlBuf,
+                                       currentVersion,
                                        major,
                                        minor))
     {
