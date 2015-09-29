@@ -286,7 +286,7 @@ sub buildOsxRelease
     my $plistFile         = "Info.plist";
 
     # Check the PlistBuddy utility is present and correct.
-    die "Error: Cannot run '$plistBuddy'\n" unless (-X $plistBuddy);
+    eval { `$plistBuddy` }; die "$@\n" if $@;
 
     # Save the original Info.plist file for restoration on exit.
     copy("$plistFile", "$scratchDir") or
@@ -296,57 +296,43 @@ sub buildOsxRelease
     system("$plistBuddy -c 'Set :CFBundleShortVersionString \"$version\"' " .
            "$plistFile");
 
-    die "ERROR: Cannot update verion in '$plistFile'.\n$1\n"
+    die "ERROR: Cannot update version in '$plistFile'.\n$1\n"
         unless ($? == 0);
 
     # Note the source directory before moving away. We must change back to
-    # the source diorectory on exit to restore the modified header file.
+    # the source directory on exit to restore the modified header file.
     $SOURCE_DIR = cwd();
 
     # Move to folder containing the xcode project.
     chdir "..";
 
-    # Cleanup any previous build.
+    # Build and install the application to our temporary folder.
     if (defined $debug)
     {
         system("xcodebuild -project sample.xcodeproj -configuration Debug " .
-               "clean");
-        system("xcodebuild -scheme mediaplayer -configuration Debug " .
-               "clean");
+               "install DSTROOT=$scratchDir/sample.dst");
     }
     else
     {
         system("xcodebuild -project sample.xcodeproj -configuration Release " .
-               "clean");
-        system("xcodebuild -scheme mediaplayer -configuration Release " .
-               "clean");
+               "install DSTROOT=$scratchDir/sample.dst");
     }
 
-    die "ERROR: Cleanup Failed\n" unless ($? == 0);
+    die "ERROR: Installation Build Failed\n" unless ($? == 0);
 
-    # Execute the build, not strictly required.
-    if (defined $debug)
-    {
-        system("xcodebuild -project sample.xcodeproj -configuration Debug");
-    }
-    else
-    {
-        system("xcodebuild -project sample.xcodeproj -configuration Release");
-    }
+    # Generate the sample component package.
+    #
+    # The package is configured to install to '/Applications/mediaplayer.app'
+    system("pkgbuild --root $scratchDir/sample.dst/ --install-location \"/\" " .
+           "$scratchDir/Sample.pkg");
 
-    die "ERROR: Build Failed\n" unless ($? == 0);
+    die "ERROR: Component PAckage Generation Failed\n" unless ($? == 0);
 
-    # Generate the archive
-    if (defined $debug)
-    {
-        system("xcodebuild -scheme mediaplayer -configuration Debug archive");
-    }
-    else
-    {
-        system("xcodebuild -scheme mediaplayer -configuration Release archive");
-    }
+    # Generate the installer package.
+    system("productbuild --distribution sample/Distribution.xml " .
+           "--package-path $scratchDir --resources sample LitePipetestApp.pkg");
 
-    die "ERROR: Archive Failed\n" unless ($? == 0);
+    die "ERROR: Installer Package Generation Failed\n" unless ($? == 0);
 }
 
 ###############################################################################
@@ -451,4 +437,4 @@ elsif ($platform =~ /osx/)
     &buildOsxRelease($version, $debug);
 }
 
-;
+1;

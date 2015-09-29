@@ -5,4 +5,5 @@ build
 .DS_Store
 sample.xcodeproj/project.xcworkspace/xcuserdata
 sample.xcodeproj/xcuserdata
+LitePipetestApp.pkg
 

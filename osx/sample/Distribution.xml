@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<installer-gui-script minSpecVersion="1">
+    <pkg-ref id="com.openhome.mediaplayer"/>
+    <options customize="never" require-scripts="false"/>
+    <choices-outline>
+        <line choice="default">
+            <line choice="com.openhome.mediaplayer"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="com.openhome.mediaplayer" visible="false">
+        <pkg-ref id="com.openhome.mediaplayer"/>
+    </choice>
+    <license file="License.txt"/>
+    <pkg-ref id="com.openhome.mediaplayer" version="0.0.1" onConclusion="none">Sample.pkg</pkg-ref>
+</installer-gui-script>
