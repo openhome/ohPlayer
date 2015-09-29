@@ -216,6 +216,24 @@ sub buildWin32Release
 {
     my ($version, $debug) = @_;
 
+    # Check 'msbuild' is available and executable.
+    eval {my @dummy = `msbuild 2>nul` or die "$!\n"};
+
+    if ($@)
+    {
+        die "ERROR: Cannot execute 'msbuild'\n" .
+            "Please ensure this script is run from a VS2013 command prompt\n";
+    }
+
+    # Check INNO Setup 5 is available and executable.
+    eval {my @dummy = `iscc 2>nul` or die "$!\n"};
+
+    if ($@)
+    {
+        die "ERROR: Cannot execute 'iscc'\n" .
+            "Please ensure Inno Setup 5 is in the PATH \n";
+    }
+
     # Cleanup any previous build.
     if (defined $debug)
     {
@@ -286,7 +304,13 @@ sub buildOsxRelease
     my $plistFile         = "Info.plist";
 
     # Check the PlistBuddy utility is present and correct.
-    eval { `$plistBuddy` }; die "$@\n" if $@;
+    eval {my @dummy = `$plistBuddy 2>&1` or die "$!\n"};
+
+    if ($@)
+    {
+        die "ERROR: Cannot execute '$plistBuddy'\n" .
+            "Please ensure it is avaiable and executable\n";
+    }
 
     # Save the original Info.plist file for restoration on exit.
     copy("$plistFile", "$scratchDir") or
@@ -310,12 +334,12 @@ sub buildOsxRelease
     if (defined $debug)
     {
         system("xcodebuild -project sample.xcodeproj -configuration Debug " .
-               "install DSTROOT=$scratchDir/sample.dst");
+               "clean install DSTROOT=$scratchDir/sample.dst");
     }
     else
     {
         system("xcodebuild -project sample.xcodeproj -configuration Release " .
-               "install DSTROOT=$scratchDir/sample.dst");
+               "clean install DSTROOT=$scratchDir/sample.dst");
     }
 
     die "ERROR: Installation Build Failed\n" unless ($? == 0);
