@@ -13,6 +13,8 @@
 #include <OpenHome/Private/Printer.h>
 #include <OpenHome/Web/WebAppFramework.h>
 #include <OpenHome/Web/ConfigUi/ConfigUi.h>
+#include <OpenHome/Net/Private/Shell.h>
+#include <OpenHome/Net/Private/ShellCommandDebug.h>
 
 #include "ConfigGTKKeyStore.h"
 #include "ControlPointProxy.h"
@@ -48,6 +50,9 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
     , iRxTsMapper(NULL)
     , iUserAgent(aUserAgent)
 {
+    iShell = new Shell(aDvStack.Env(), kShellPort);
+    iShellDebug = new ShellCommandDebug(*iShell);
+
     Bws<256> friendlyName;
     friendlyName.Append(aRoom);
     friendlyName.Append(':');
@@ -111,7 +116,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
     iInitParams->SetStarvationMonitorMaxSize(100 * Jiffies::kPerMs);
 
     // create MediaPlayer
-    iMediaPlayer = new MediaPlayer( aDvStack, *iDevice, *iRamStore,
+    iMediaPlayer = new MediaPlayer( aDvStack, *iDevice, *iShell, *iRamStore,
                                    *iConfigStore, iInitParams,
                                     volumeInit, volumeProfile, aUdn,
                                     Brn(aRoom), Brn(aProductName));
@@ -139,6 +144,8 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
     delete iCpProxy;
     delete iPipelineStateLogger;
     delete iMediaPlayer;
+    delete iShellDebug;
+    delete iShell;
     delete iDevice;
     delete iDeviceUpnpAv;
     delete iRamStore;
@@ -274,7 +281,6 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
     iMediaPlayer->Add(SourceFactory::NewUpnpAv(*iMediaPlayer, *iDeviceUpnpAv));
 
     iMediaPlayer->Add(SourceFactory::NewReceiver(*iMediaPlayer,
-                                                  NULL,
                                                   iTxTimestamper,
                                                   iTxTsMapper,
                                                   iRxTimestamper,
@@ -303,7 +309,6 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 #ifdef ENABLE_RADIO
     // Radio is disabled by default as many stations depend on AAC
     iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer,
-                                              NULL,
                                               Brn(TUNEIN_PARTNER_ID)));
 #endif  // ENABLE_RADIO
 }

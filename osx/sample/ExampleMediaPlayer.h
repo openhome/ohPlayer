@@ -63,6 +63,7 @@ namespace OpenHome {
                 static const Brn kSongcastSenderIconFileName;
                 static const TUint kMaxUiTabs = 4;
                 static const TUint kUiSendQueueSize = 32;
+                static const TUint kShellPort       = 2323;
 
             public:
                 ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName, const Brx& aUserAgent);
@@ -116,6 +117,8 @@ namespace OpenHome {
                 IOhmTimestamper*        iTxTsMapper;
                 IOhmTimestamper*        iRxTsMapper;
                 Web::ConfigAppMediaPlayer* iConfigApp;
+                Net::Shell*             iShell;
+                Net::ShellCommandDebug* iShellDebug;
 
             };
         } // namespace Example

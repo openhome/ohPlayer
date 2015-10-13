@@ -11,6 +11,8 @@
 #include <OpenHome/Media/Debug.h>
 #include <OpenHome/Av/Debug.h>
 #include <OpenHome/Net/Core/DvDevice.h>
+#include <OpenHome/Net/Private/Shell.h>
+#include <OpenHome/Net/Private/ShellCommandDebug.h>
 
 #include "OptionalFeatures.h"
 
@@ -37,6 +39,9 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
 , iTxTimestamper(NULL)
 , iRxTimestamper(NULL)
 {
+    iShell = new Shell(aDvStack.Env(), kShellPort);
+    iShellDebug = new ShellCommandDebug(*iShell);
+
     Bws<256> friendlyName;
     friendlyName.Append(aRoom);
     friendlyName.Append(':');
@@ -97,6 +102,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
     // create MediaPlayer
     iMediaPlayer = new MediaPlayer( aDvStack,
                                    *iDevice,
+                                   *iShell,
                                    *iRamStore,
                                    *iConfigPersistentStore,
                                    pipelineParams,
@@ -119,6 +125,8 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
     Pipeline().Quit();
     delete iCpProxy;
     delete iMediaPlayer;
+    delete iShellDebug;
+    delete iShell;
     delete iDevice;
     delete iDeviceUpnpAv;
     delete iRamStore;
@@ -303,7 +311,6 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
                                                *iDeviceUpnpAv));
     
     iMediaPlayer->Add(SourceFactory::NewReceiver(*iMediaPlayer,
-                                                 NULL,
                                                  iTxTimestamper,
                                                  NULL,
                                                  iRxTimestamper,
@@ -329,7 +336,7 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
     
 #ifdef ENABLE_RADIO
     // Radio is disabled by default as many stations depend on AAC
-    iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer, NULL, Brn(TUNEIN_PARTNER_ID)));
+    iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer, Brn(TUNEIN_PARTNER_ID)));
 #endif  /* ENABLE_RADIO */
 }
 

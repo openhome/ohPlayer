@@ -14,6 +14,8 @@ namespace Net {
     class DviServerUpnp;
     class DvStack;
     class DvDevice;
+    class Shell;
+    class ShellCommandDebug;
 }
 namespace Media {
     class PipelineManager;
@@ -35,6 +37,7 @@ class ExampleMediaPlayer : private Net::IResourceManager
     static const Brn   kSongcastSenderIconFileName;
     static const TUint kMaxUiTabs       = 4;
     static const TUint kUiSendQueueSize = 32;
+    static const TUint kShellPort       = 2323;
 public:
     ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn,
                        const TChar* aRoom, const TChar* aProductName,
@@ -87,6 +90,8 @@ private:
     const Brx                 &iUserAgent;
     Web::ConfigAppMediaPlayer *iConfigApp;
     Bws<Uri::kMaxUriBytes+1>   iPresentationUrl;
+    Net::Shell* iShell;
+    Net::ShellCommandDebug* iShellDebug;
 };
 
 class ExampleMediaPlayerInit

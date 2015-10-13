@@ -55,11 +55,11 @@ protected:
 public: // IPcmProcessor
     virtual void BeginBlock();
     virtual void EndBlock();
+    virtual void Flush();
 public:
     void SetDuplicateChannel(TBool duplicateChannel);
 protected:
     void Append(const TByte* aData, TUint aBytes);
-    void Flush();
 protected:
     IDataSink& iSink;
     Bwx&       iBuffer;
