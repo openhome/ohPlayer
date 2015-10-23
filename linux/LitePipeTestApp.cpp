@@ -172,6 +172,7 @@ static void updateSelectionHandler()
             success = g_app_info_launch_default_for_uri(g_updateLocation,
                                                         NULL,
                                                        &error);
+
             if (success)
             {
                 // Exit the application to allow update.
@@ -188,6 +189,9 @@ static void updateSelectionHandler()
                 gtk_window_set_title(GTK_WINDOW(dialog), "Update");
                 gtk_dialog_run(GTK_DIALOG(dialog));
                 gtk_widget_destroy(dialog);
+
+                // Free up any error
+                g_error_free(error);
             }
 
             break;

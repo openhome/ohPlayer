@@ -2,18 +2,15 @@
  
 #
 # Command Line Options:
+#   USE_LIBAVCODEC=0:
+#            Use the platform libavcodecs for MP3/AAC instead of the embedded,
+#            license restricted variants. 
 #   DEBUG=0: Debug build.
 #            Glibc mtrace will be enabled. MALLOC_TRACE must be defined in the
 #            environment to activate.
 #   NVWA_DIR=<source location>:
 #            Integrate a cross platform new/delete leak detector.
 #            Downloadable from http://wyw.dcweb.cn/leakage.htm
-#
-#   ENABLE_QOBUZ=0: Enable the, optional, Qobuz service
-#   ENABLE_TIDAL=0: Enable the, optional, Tidal service
-#   ENABLE_RADIO=0: Enable the, optional, Radio service
-#   ENABLE_AAC=0:   Enable AAC, optional, codec support
-#   ENABLE_MP3=0:   Enable MP3, optional, codec support
 #                     
 
 .PHONY: default all clean ubuntu raspbian ubuntu-install ubuntu-uninstall raspbian-install raspbian-uninstall

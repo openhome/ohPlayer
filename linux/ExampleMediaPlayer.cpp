@@ -2,6 +2,7 @@
 #include <string>
 
 #include <OpenHome/Media/Codec/CodecFactory.h>
+#include <OpenHome/Media/Codec/ContainerFactory.h>
 #include <OpenHome/Media/Protocol/ProtocolFactory.h>
 #include <OpenHome/Av/Product.h>
 #include <OpenHome/Av/SourceFactory.h>
@@ -249,21 +250,33 @@ DvDevice* ExampleMediaPlayer::UpnpAvDevice()
 
 void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 {
+    // Register containers.
+    iMediaPlayer->Add(Codec::ContainerFactory::NewId3v2());
+    iMediaPlayer->Add(Codec::ContainerFactory::NewMpegTs(iMediaPlayer->MimeTypes()));
+
     // Add codecs
     iMediaPlayer->Add(Codec::CodecFactory::NewFlac(iMediaPlayer->MimeTypes()));
     iMediaPlayer->Add(Codec::CodecFactory::NewWav(iMediaPlayer->MimeTypes()));
     iMediaPlayer->Add(Codec::CodecFactory::NewAiff(iMediaPlayer->MimeTypes()));
     iMediaPlayer->Add(Codec::CodecFactory::NewAifc(iMediaPlayer->MimeTypes()));
+#ifdef USE_LIBAVCODEC
+#if defined (ENABLE_AAC) || defined (ENABLE_MP3)
+    // Use distributable MP3/AAC Codec, using libavcodec
+    iMediaPlayer->Add(Codec::CodecFactory::NewMp3(iMediaPlayer->MimeTypes()));
+#endif // ENABLE_AAC || ENABLE_MP3
+#else // USE_LIBAVCODEC
 #ifdef ENABLE_AAC
     // Disabled by default - requires patent license
     iMediaPlayer->Add(Codec::CodecFactory::NewAac(iMediaPlayer->MimeTypes()));
     iMediaPlayer->Add(Codec::CodecFactory::NewAdts(iMediaPlayer->MimeTypes()));
 #endif // ENABLE_AAC
-    iMediaPlayer->Add(Codec::CodecFactory::NewAlac(iMediaPlayer->MimeTypes()));
+
 #ifdef ENABLE_MP3
     // Disabled by default - requires patent and copyright licenses
     iMediaPlayer->Add(Codec::CodecFactory::NewMp3(iMediaPlayer->MimeTypes()));
 #endif // ENABLE_MP3
+#endif // USE_LIBAVCODEC
+    iMediaPlayer->Add(Codec::CodecFactory::NewAlac(iMediaPlayer->MimeTypes()));
     iMediaPlayer->Add(Codec::CodecFactory::NewPcm());
     iMediaPlayer->Add(Codec::CodecFactory::NewVorbis(iMediaPlayer->MimeTypes()));
 

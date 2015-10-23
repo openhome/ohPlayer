@@ -68,7 +68,7 @@ ConfigGTKKeyStore::ConfigGTKKeyStore()
 
     if (homePath != NULL)
     {
-        GError *error = NULL;;
+        GError *error = NULL;
 
         // User specific configuration root folder.
         string configDir(homePath);
@@ -90,13 +90,19 @@ ConfigGTKKeyStore::ConfigGTKKeyStore()
                   (GKeyFileFlags)(G_KEY_FILE_KEEP_COMMENTS |
                                   G_KEY_FILE_KEEP_TRANSLATIONS),
                                  &error);
+
+        // Free up any allocated error.
+        if (error != NULL)
+        {
+            g_error_free(error);
+        }
     }
 }
 
 void ConfigGTKKeyStore::Read(const Brx& aKey, Bwx& aDest)
 {
     gchar  *propertyValue;
-    GError *error = NULL;;
+    GError *error = NULL;
     string  keyStr((const char *)(aKey.Ptr()), aKey.Bytes());
 
     if (! iKeyFile)
@@ -134,14 +140,20 @@ void ConfigGTKKeyStore::Read(const Brx& aKey, Bwx& aDest)
     aDest.SetBytes(decodedLen);
 
     g_free(decodedData);
+    g_free(propertyValue);
+
+    // Free up any allocated error.
+    if (error != NULL)
+    {
+        g_error_free(error);
+    }
 }
 
 void ConfigGTKKeyStore::Write(const Brx& aKey, const Brx& aSource)
 {
     string  keyStr((const char *)(aKey.Ptr()), aKey.Bytes());
     gchar  *encodedData;
-    GError *error = NULL;;
-
+    GError *error = NULL;
 
     if (! iKeyFile)
     {
@@ -171,6 +183,12 @@ void ConfigGTKKeyStore::Write(const Brx& aKey, const Brx& aSource)
     g_key_file_save_to_file(iKeyFile,
                             iConfigFile.c_str(),
                            &error);
+
+    // Free up any allocated error.
+    if (error != NULL)
+    {
+        g_error_free(error);
+    }
 }
 
 void ConfigGTKKeyStore::Delete(const Brx& aKey)
@@ -190,6 +208,9 @@ void ConfigGTKKeyStore::Delete(const Brx& aKey)
                                  keyStr.c_str(),
                                  &error))
     {
+        // Free up any allocated error.
+        g_error_free(error);
+
         THROW(StoreKeyNotFound);
     }
 
@@ -203,4 +224,10 @@ void ConfigGTKKeyStore::Delete(const Brx& aKey)
     g_key_file_save_to_file(iKeyFile,
                             iConfigFile.c_str(),
                            &error);
+
+    // Free up any allocated error.
+    if (error != NULL)
+    {
+        g_error_free(error);
+    }
 }

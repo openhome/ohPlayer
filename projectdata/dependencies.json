@@ -21,20 +21,20 @@
     {   "name": "openssl",
         "type": "openhome",
         "platform-specific": true,
-        "version": "0.2.60",
+        "version": "0.2.61",
         "archive-filename": "${name}-${version}-${archive-platform}-${debugmode}.tar.bz2"
     },
     {   "name": "ohMediaPlayer",
         "type": "openhome",
         "platform-specific": true,
-        "version": "0.4.230",
+        "version": "0.4.237",
         "archive-suffix": "-${debugmode}",
         "source-git": "https://github.com/openhome/LitePipe.git"
     },
     {   "name": "ohNetGenerated",
         "type": "openhome",
         "platform-specific": true,
-        "version": "1.0.79",
+        "version": "1.0.81",
         "archive-filename": "${name}-${version}-${archive-platform}-${debugmode}.tar.gz",
         "source-git": "https://github.com/openhome/ohNetGenerated.git"
     }
