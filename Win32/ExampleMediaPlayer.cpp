@@ -1,6 +1,7 @@
 #include <Windows.h>
 
 #include <OpenHome/Media/Codec/CodecFactory.h>
+#include <OpenHome/Media/Codec/ContainerFactory.h>
 #include <OpenHome/Media/Protocol/ProtocolFactory.h>
 #include <OpenHome/Av/Product.h>
 #include <OpenHome/Av/SourceFactory.h>
@@ -244,6 +245,11 @@ DvDevice* ExampleMediaPlayer::UpnpAvDevice()
 
 void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 {
+    // Add containers
+    iMediaPlayer->Add(Codec::ContainerFactory::NewId3v2());
+    iMediaPlayer->Add(Codec::ContainerFactory::NewMpeg4(iMediaPlayer->MimeTypes()));
+    iMediaPlayer->Add(Codec::ContainerFactory::NewMpegTs(iMediaPlayer->MimeTypes()));
+
     // Add codecs
     iMediaPlayer->Add(Codec::CodecFactory::NewFlac(iMediaPlayer->MimeTypes()));
     iMediaPlayer->Add(Codec::CodecFactory::NewWav(iMediaPlayer->MimeTypes()));
