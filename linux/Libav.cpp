@@ -693,7 +693,7 @@ void CodecLibAV::Process()
 #endif // DEBUG
 
             av_free_packet(&iAvPacket);
-            THROW(CodecStreamCorrupt);
+
             return;
         }
 
