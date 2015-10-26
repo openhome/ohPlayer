@@ -35,7 +35,6 @@ const Brn ExampleMediaPlayer::kSongcastSenderIconFileName("SongcastSenderIcon");
 ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName, const Brx& aUserAgent) :
   iDisabled("test", 0)
 , iUserAgent(aUserAgent)
-, iObservableFriendlyName(new Bws<RaopDevice::kMaxNameBytes>())
 , iTxTimestamper(NULL)
 , iRxTimestamper(NULL)
 {
@@ -264,6 +263,11 @@ void ExampleMediaPlayer::HaltPipeline()
 
 void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 {
+    // Add containers
+    iMediaPlayer->Add(Codec::ContainerFactory::NewId3v2());
+    iMediaPlayer->Add(Codec::ContainerFactory::NewMpeg4(iMediaPlayer->MimeTypes()));
+    iMediaPlayer->Add(Codec::ContainerFactory::NewMpegTs(iMediaPlayer->MimeTypes()));
+
     // Add codecs
     Log::Print("Codec Registration: [\n");
 

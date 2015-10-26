@@ -19,6 +19,7 @@
 #include <OpenHome/Private/Debug.h>
 #include <OpenHome/Private/OptionParser.h>
 #include <OpenHome/Media/Codec/CodecFactory.h>
+#include <OpenHome/Media/Codec/ContainerFactory.h>
 #include <OpenHome/Media/Protocol/ProtocolFactory.h>
 #include <OpenHome/Av/SourceFactory.h>
 #include <OpenHome/Av/KvpStore.h>
@@ -56,7 +57,7 @@ namespace OpenHome {
     namespace Av {
         class RamStore;
         namespace Example {
-            
+
             class ExampleMediaPlayer :  private Net::IResourceManager
             {
             private:
@@ -76,7 +77,7 @@ namespace OpenHome {
                 VolumeControl& VolumeControl() {return iVolume;}
                 void SetSongcastTimestampers(IOhmTimestamper& aTxTimestamper, IOhmTimestamper& aRxTimestamper);
                 void SetSongcastTimestampMappers(IOhmTimestamper& aTxTsMapper, IOhmTimestamper& aRxTsMapper);
-                
+
                 // Pipeline status and control
                 void                    StopPipeline();
                 TBool                   CanPlay();
@@ -85,9 +86,9 @@ namespace OpenHome {
                 void                    PausePipeline();
                 TBool                   CanHalt();
                 void                    HaltPipeline();
-                
+
                 void                    SetHost(Media::DriverOsx *driver) { iDriver = driver; }
-                
+
             private: // from Net::IResourceManager
                 void WriteResource(const Brx& aUriTail, TIpAddress aInterface, std::vector<char*>& aLanguageList, Net::IResourceWriter& aResourceWriter) override;
 
@@ -97,7 +98,7 @@ namespace OpenHome {
                 void PresentationUrlChanged(const Brx& aUrl);
                 TBool TryDisable(Net::DvDevice& aDevice);
                 void Disabled();
-                
+
             protected:
                 MediaPlayer*            iMediaPlayer;
                 Net::DvDeviceStandard*  iDevice;
@@ -109,7 +110,6 @@ namespace OpenHome {
             private:
                 Semaphore iDisabled;
                 Av::VolumeControl       iVolume;
-                ObservableBrx           iObservableFriendlyName;
                 const Brx &             iUserAgent;
                 ControlPointProxy *     iCpProxy;
                 IOhmTimestamper*        iTxTimestamper;

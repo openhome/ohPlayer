@@ -110,6 +110,11 @@ public:
      */
     virtual void EndBlock() {}
 
+    /**
+     * If this is called, the processor should pass on any buffered audio.
+     */
+    virtual void Flush() {}
+
 private:
     AudioQueueBufferRef   iBuff;
     TUint32 iBuffsize;

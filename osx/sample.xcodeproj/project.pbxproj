@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C6C8801A1BDE405D00987717 /* libShell.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A241B31B64300205BAC /* libShell.a */; };
 		EB3670581ADEA86B00AC684B /* PcmHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB3670571ADEA86B00AC684B /* PcmHandler.cpp */; };
 		EB40D9241A9B23A20043722C /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB40D9231A9B23A20043722C /* AppDelegate.mm */; };
 		EB40D9261A9B23A20043722C /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = EB40D9251A9B23A20043722C /* main.m */; };
@@ -138,6 +139,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C6C8801A1BDE405D00987717 /* libShell.a in Frameworks */,
 				F023B1BD1B550F6200689777 /* libCodecMp3.a in Frameworks */,
 				EB650A611B31B7BC00205BAC /* libTestFramework.a in Frameworks */,
 				EB650A4B1B31B68600205BAC /* libCodecAlac.a in Frameworks */,
