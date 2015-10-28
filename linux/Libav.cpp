@@ -31,8 +31,8 @@ namespace Codec {
 typedef struct
 {
    ICodecController *controller;
-   TInt64           *filePos;
    TBool            *readBufferFull;
+   TUint            streamId;
 } OpaqueType;
 
 class CodecLibAV : public CodecBase
@@ -48,8 +48,11 @@ private: // from CodecBase
     void StreamCompleted();
 private:
     static const TUint   kInBufBytes = 4096;
-    static const TInt32 kInt24Max    = 8388607L;
-    static const TInt32 kInt24Min    = -8388608L;
+    static const TInt32  kInt24Max   = 8388607L;
+    static const TInt32  kInt24Min   = -8388608L;
+
+    const TChar         *kFmtMp3;
+    const TChar         *kFmtAac;
 
     static int     avCodecRead(void* ptr, TUint8* buf, TInt buf_size);
     static TInt64  avCodecSeek(void* ptr, TInt64 offset, TInt whence);
@@ -70,8 +73,8 @@ private:
     AVPacket         iAvPacket;
     AVFrame         *iAvFrame;
     TInt             iStreamId;
+    const TChar     *iStreamFormat;
     TUint            iBitDepth;
-    TInt64           iBytePos;
     TBool            iReadBufferFull;
     OpaqueType       iClassData;
 };
@@ -93,6 +96,8 @@ CodecBase* CodecFactory::NewMp3(IMimeTypeList& aMimeTypeList)
 
 CodecLibAV::CodecLibAV(IMimeTypeList& aMimeTypeList)
     : CodecBase("LIBAV")
+    , kFmtMp3("Mp3")
+    , kFmtAac("Aac")
     , iTotalSamples(0)
     , iTrackLengthJiffies(0)
     , iTrackOffset(0)
@@ -102,8 +107,8 @@ CodecLibAV::CodecLibAV(IMimeTypeList& aMimeTypeList)
     , iAvCodecContext(NULL)
     , iAvFrame(NULL)
     , iStreamId(-1)
+    , iStreamFormat(NULL)
     , iBitDepth(0)
-    , iBytePos(-1)
     , iReadBufferFull(false)
 {
 #ifdef ENABLE_MP3
@@ -194,9 +199,7 @@ TInt64 CodecLibAV::avCodecSeek(void* ptr, TInt64 offset, TInt whence)
 {
     OpaqueType       *classData  = (OpaqueType *)ptr;
     ICodecController *controller = classData->controller;;
-    TInt64           *bytePos    = classData->filePos;
-
-    *bytePos = -1;
+    TUint             streamId   = classData->streamId;
 
     // Ignore the force bit.
     whence = whence & ~AVSEEK_FORCE;
@@ -204,33 +207,44 @@ TInt64 CodecLibAV::avCodecSeek(void* ptr, TInt64 offset, TInt whence)
     switch (whence)
     {
         case SEEK_SET:
-            Log::Print("Seek [SET] ");
-            *bytePos = offset;
-            break;
+        {
+            Log::Print("Seek [SET] [%jd]\n", offset);
+
+            if (controller->TrySeekTo(streamId, offset))
+            {
+                Log::Print("TrySeekTo Passed: Id [%d], Offset [%jd]\n",
+                           streamId, offset);
+
+                return 0;
+            }
+            else
+            {
+                Log::Print("TrySeekTo Failed: Id [%d], Offset [%jd]\n",
+                           streamId, offset);
+
+                return -1;
+            }
+        }
         case SEEK_CUR:
-            Log::Print("Seek [CUR] ");
-            break;
+        {
+            Log::Print("Unsupported Seek [CUR] [%jd]\n", offset);
+            return -1;
+        }
         case SEEK_END:
-            Log::Print("Seek [END] ");
-            *bytePos = controller->StreamLength() + offset;
-            break;
+        {
+            Log::Print("Unsupported Seek [END] [%jd]\n", offset);
+            return -1;
+        }
         case AVSEEK_SIZE:
+        {
             Log::Print("Seek [Size] %d\n", controller->StreamLength());
             return controller->StreamLength();
+        }
         default:
+        {
             Log::Print("UNSUPPORTED SEEK\n");
             return -1;
-    }
-
-    Log::Print("[%jd]\n", offset);
-
-    if (*bytePos < 0)
-    {
-        return -1;
-    }
-    else
-    {
-        return 0;
+        }
     }
 }
 
@@ -286,8 +300,8 @@ void CodecLibAV::StreamInitialise()
 
     // Data to be passed to the AVCodec callbacks.
     iClassData.controller     = iController;
-    iClassData.filePos        = &iBytePos;
     iClassData.readBufferFull = &iReadBufferFull;
+    iClassData.streamId       = 0;
 
     // Manually create AVIO context, supplying our own read/seek functions.
     iAvioCtx = avio_alloc_context(avcodecBuf,
@@ -340,6 +354,19 @@ void CodecLibAV::StreamInitialise()
         if (iAvFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO)
         {
             iStreamId = i;
+
+            switch (iAvFormatCtx->streams[i]->codec->codec_id)
+            {
+                case AV_CODEC_ID_AAC:
+                    iStreamFormat = kFmtAac;
+                    break;
+                case AV_CODEC_ID_MP3:
+                    iStreamFormat = kFmtMp3;
+                    break;
+                default:
+                    Log::Print("AUDIO FORMAT: UNKNOWN\n");
+                    break;
+            }
 
             break;
         }
@@ -424,7 +451,7 @@ void CodecLibAV::StreamInitialise()
                                      iBitDepth,
                                      iAvCodecContext->sample_rate,
                                      iAvCodecContext->channels,
-                                     Brn(iFormat->name),
+                                     Brn(iStreamFormat),
                                      iTrackLengthJiffies,
                                      0,
                                      false);
@@ -479,7 +506,8 @@ void CodecLibAV::StreamCompleted()
 
 TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
 {
-    Log::Print("CodecLibAV::TrySeek Sample[%jd]\n", aSample);
+    Log::Print("CodecLibAV::TrySeek StreamId [%d] Sample[%jd]\n",
+               aStreamId, aSample);
 
     double  frac       = (double)aSample / (double)iTotalSamples;
     TInt64 seekTarget  = TInt64(frac * (iAvFormatCtx->duration + 5000));
@@ -490,38 +518,27 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
     if (iAvFormatCtx->start_time != AV_NOPTS_VALUE)
         seekTarget += iAvFormatCtx->start_time;
 
-    if (av_seek_frame(iAvFormatCtx, -1, seekTarget, AVSEEK_FLAG_ANY) < 0)
+    iClassData.streamId = aStreamId;
+
+    if (avformat_seek_file(iAvFormatCtx, -1, INT64_MIN, seekTarget,
+                           INT64_MAX, 0) < 0)
     {
+        Log::Print("CodecLibAV::av_seek_frame failed\n");
         return false;
     }
 
-    // keep seek within file bounds
-    if (iBytePos >= (TInt64)iController->StreamLength())
-    {
-        iBytePos = iController->StreamLength() - 1;
-    }
+    iTrackOffset =
+        (aSample * Jiffies::kPerSecond) / iAvCodecContext->sample_rate;
 
-    TBool canSeek = iController->TrySeekTo(aStreamId, iBytePos);
-    if (canSeek)
-    {
-        iTrackOffset =
-            (aSample * Jiffies::kPerSecond) / iAvCodecContext->sample_rate;
-
-        iController->OutputDecodedStream(iAvCodecContext->bit_rate,
-                                         iBitDepth,
-                                         iAvCodecContext->sample_rate,
-                                         iAvCodecContext->channels,
-                                         Brn(iFormat->name),
-                                         iTrackLengthJiffies,
-                                         aSample,
-                                         false);
-    }
-    else
-    {
-        Log::Print("CodecLibAV::TrySeek: Failed To Seek To [%jd]\n", iBytePos);
-    }
-
-    return canSeek;
+    iController->OutputDecodedStream(iAvCodecContext->bit_rate,
+                                     iBitDepth,
+                                     iAvCodecContext->sample_rate,
+                                     iAvCodecContext->channels,
+                                     Brn(iStreamFormat),
+                                     iTrackLengthJiffies,
+                                     aSample,
+                                     false);
+    return true;
 }
 
 // Convert native endian interleaved/planar PCM to interleaved big endian PCM and
