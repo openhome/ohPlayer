@@ -208,19 +208,25 @@ TInt64 CodecLibAV::avCodecSeek(void* ptr, TInt64 offset, TInt whence)
     {
         case SEEK_SET:
         {
+#ifdef DEBUG
             Log::Print("Seek [SET] [%jd]\n", offset);
+#endif // DEBUG
 
             if (controller->TrySeekTo(streamId, offset))
             {
+#ifdef DEBUG
                 Log::Print("TrySeekTo Passed: Id [%d], Offset [%jd]\n",
                            streamId, offset);
+#endif // DEBUG
 
                 return 0;
             }
             else
             {
+#ifdef DEBUG
                 Log::Print("TrySeekTo Failed: Id [%d], Offset [%jd]\n",
                            streamId, offset);
+#endif // DEBUG
 
                 return -1;
             }
@@ -506,24 +512,30 @@ void CodecLibAV::StreamCompleted()
 
 TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
 {
+#ifdef DEBUG
     Log::Print("CodecLibAV::TrySeek StreamId [%d] Sample[%jd]\n",
                aStreamId, aSample);
+#endif // DEBUG
 
     double  frac       = (double)aSample / (double)iTotalSamples;
     TInt64 seekTarget  = TInt64(frac * (iAvFormatCtx->duration + 5000));
 
+#ifdef DEBUG
     Log::Print("CodecLibAV::TrySeek Target Timestamp [%jd]\n", seekTarget);
     Log::Print("CodecLibAV::TrySeek Fraction Of Duration [%G]\n", frac);
+#endif // DEBUG
 
     if (iAvFormatCtx->start_time != AV_NOPTS_VALUE)
         seekTarget += iAvFormatCtx->start_time;
 
     iClassData.streamId = aStreamId;
 
-    if (avformat_seek_file(iAvFormatCtx, -1, INT64_MIN, seekTarget,
-                           INT64_MAX, 0) < 0)
+    if (avformat_seek_file(iAvFormatCtx, -1, seekTarget, seekTarget,
+                           seekTarget, 0) < 0)
     {
+#ifdef DEBUG
         Log::Print("CodecLibAV::av_seek_frame failed\n");
+#endif // DEBUG
         return false;
     }
 
@@ -538,11 +550,15 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
                                      iTrackLengthJiffies,
                                      aSample,
                                      false);
+
+    // Ditch any PCM we have buffered.
+    iOutput.SetBytes(0);
+
     return true;
 }
 
-// Convert native endian interleaved/planar PCM to interleaved big endian PCM and
-// output.
+// Convert native endian interleaved/planar PCM to interleaved big endian PCM
+// and output.
 void CodecLibAV::processPCM(TInt plane_size, TInt inSampleBytes, TInt outSampleBytes)
 {
     TInt    outIndex = 0;
