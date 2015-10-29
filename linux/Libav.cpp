@@ -31,7 +31,8 @@ namespace Codec {
 typedef struct
 {
    ICodecController *controller;
-   TBool            *readBufferFull;
+   TBool            *streamStart;
+   TBool            *streamEnded;
    TUint            streamId;
 } OpaqueType;
 
@@ -75,7 +76,8 @@ private:
     TInt             iStreamId;
     const TChar     *iStreamFormat;
     TUint            iBitDepth;
-    TBool            iReadBufferFull;
+    TBool            iStreamStart;
+    TBool            iStreamEnded;
     OpaqueType       iClassData;
 };
 
@@ -109,7 +111,8 @@ CodecLibAV::CodecLibAV(IMimeTypeList& aMimeTypeList)
     , iStreamId(-1)
     , iStreamFormat(NULL)
     , iBitDepth(0)
-    , iReadBufferFull(false)
+    , iStreamStart(false)
+    , iStreamEnded(false)
 {
 #ifdef ENABLE_MP3
     aMimeTypeList.Add("audio/mpeg");
@@ -177,15 +180,31 @@ TInt CodecLibAV::avCodecRead(void* ptr, TUint8* buf, TInt buf_size)
 {
     OpaqueType       *classData       = (OpaqueType *)ptr;
     ICodecController *controller      = classData->controller;;
-    TBool            *readBufferFull  = classData->readBufferFull;
+    TBool            *streamStart     = classData->streamStart;
+    TBool            *streamEnded     = classData->streamEnded;
     Bwn               inputBuffer(buf, buf_size);
 
     inputBuffer.SetBytes(0);
 
-    // Read the requested amount of data.
-    controller->Read(inputBuffer, buf_size);
-
-    *readBufferFull = ((TUint)buf_size == inputBuffer.Bytes());
+    try
+    {
+        // Read the requested amount of data.
+        controller->Read(inputBuffer, buf_size);
+    }
+    catch(CodecStreamStart&)
+    {
+#ifdef DEBUG
+        Log::Print("Info: CodecStreamStart\n");
+#endif // DEBUG
+        *streamStart = true;
+    }
+    catch(CodecStreamEnded&)
+    {
+#ifdef DEBUG
+        Log::Print("Info: CodecStreamEnd\n");
+#endif // DEBUG
+        *streamEnded = true;
+    }
 
     return inputBuffer.Bytes();
 }
@@ -293,6 +312,10 @@ void CodecLibAV::StreamInitialise()
     // Initialise the track offset in jiffies.
     iTrackOffset = 0;
 
+    // Initialise Stream State
+    iStreamStart = false;
+    iStreamEnded = false;
+
     // Initialise the codec data buffer.
     //
     // NB. This may be free'd/realloced out with our control.
@@ -306,7 +329,8 @@ void CodecLibAV::StreamInitialise()
 
     // Data to be passed to the AVCodec callbacks.
     iClassData.controller     = iController;
-    iClassData.readBufferFull = &iReadBufferFull;
+    iClassData.streamStart    = &iStreamStart;
+    iClassData.streamEnded    = &iStreamEnded;
     iClassData.streamId       = 0;
 
     // Manually create AVIO context, supplying our own read/seek functions.
@@ -563,8 +587,8 @@ void CodecLibAV::processPCM(TInt plane_size, TInt inSampleBytes, TInt outSampleB
 {
     TInt    outIndex = 0;
     TUint8 *out      = (TUint8 *)(iOutput.Ptr() + iOutput.Bytes());
-    TInt   planeSamples;
-    TInt   planes;
+    TInt    planeSamples;
+    TInt    planes;
 
     if (plane_size == -1)
     {
@@ -709,7 +733,8 @@ void CodecLibAV::Process()
 #ifdef DEBUG
         Log::Print("Info: Frame read error or EOF\n");
 #endif // DEBUG
-        THROW(CodecStreamCorrupt);
+
+        THROW(CodecStreamEnded);
     }
 
     if (iAvPacket.stream_index == iStreamId)
@@ -721,6 +746,9 @@ void CodecLibAV::Process()
 
         if (! frameFinished)
         {
+            // Couldn't decode a full frame.
+            // This can happen after seek or on initial switch to radio so
+            // don't throw an exception.
 #ifdef DEBUG
             Log::Print("Info: Error decoding frame\n");
 #endif // DEBUG
@@ -817,21 +845,31 @@ void CodecLibAV::Process()
 
     av_free_packet(&iAvPacket);
 
-    if (! iReadBufferFull)
+    if (iStreamStart || iStreamEnded)
     {
 #ifdef DEBUG
         Log::Print("Info: EOF ?\n");
 #endif // DEBUG
 
-        // Flush PCM buffer.
-        iTrackOffset +=
-            iController->OutputAudioPcm(
-                            iOutput,
-                            iAvCodecContext->channels,
-                            iAvCodecContext->sample_rate,
-                            iBitDepth,
-                            EMediaDataEndianBig,
-                            iTrackOffset);
+        if (iOutput.Bytes() > 0)
+        {
+            // Flush PCM buffer.
+            iTrackOffset +=
+                iController->OutputAudioPcm(
+                                iOutput,
+                                iAvCodecContext->channels,
+                                iAvCodecContext->sample_rate,
+                                iBitDepth,
+                                EMediaDataEndianBig,
+                                iTrackOffset);
+
+            iOutput.SetBytes(0);
+        }
+
+        if (iStreamStart)
+        {
+            THROW(CodecStreamStart);
+        }
 
         THROW(CodecStreamEnded);
     }
