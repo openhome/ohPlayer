@@ -46,13 +46,14 @@ BINDIR = $(PREFIX)/bin
 # The directory to install the resource files to.
 RESDIR = $(PREFIX)/share/litepipe-test-app
 
-CFLAGS = -c -Wall -std=c++11 $(GTK_CFLAGS) -DTARG_ARCH=$(TARG_ARCH)
+CFLAGS = -c -Wall -std=c++11 $(GTK_CFLAGS) -DTARG_ARCH=$(TARG_ARCH) \
+         -fstack-protector -fstack-check
 
 # If 'DEBUG=0 is specified on the command line build a debug biuld.
 ifdef DEBUG
     BUILD_TYPE = Debug
     OBJ_DIR = $(OSPLATFORM)/debug-objs
-    CFLAGS += -g -O0 -DDEBUG -fstack-protector
+    CFLAGS += -g -O0 -DDEBUG
 else
     BUILD_TYPE = Release
     OBJ_DIR   = $(OSPLATFORM)/objs

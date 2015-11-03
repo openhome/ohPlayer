@@ -13,6 +13,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+//#define BUFFER_GUARD_CHECK
+
+#ifdef BUFFER_GUARD_CHECK
+#include <assert.h>
+#endif // BUFFER_GUARD_CHECK
+
 extern "C"
 {
 #include "libavutil/mathematics.h"
@@ -33,8 +39,42 @@ typedef struct
    ICodecController *controller;
    TBool            *streamStart;
    TBool            *streamEnded;
-   TUint            streamId;
+   TUint             streamId;
+   TBool            *seekExecuted;
+   TBool            *seekResult;
 } OpaqueType;
+
+#ifdef BUFFER_GUARD_CHECK
+static TInt kGuardSize = 4;
+
+void SetGuardBytes(Bwx& buffer)
+{
+    TUint8 *ptr;
+
+    ptr = (TUint8 *)buffer.Ptr();
+
+    ptr = ptr + buffer.MaxBytes() - kGuardSize;
+
+    *ptr++ = 0xde;
+    *ptr++ = 0xad;
+    *ptr++ = 0xbe;
+    *ptr++ = 0xef;
+}
+
+void CheckGuardBytes(Bwx& buffer)
+{
+    TUint8 *ptr;
+
+    ptr = (TUint8 *)buffer.Ptr();
+
+    ptr = ptr + buffer.MaxBytes() - kGuardSize;
+
+    assert (*ptr++ == 0xde);
+    assert (*ptr++ == 0xad);
+    assert (*ptr++ == 0xbe);
+    assert (*ptr++ == 0xef);
+}
+#endif // BUFFER_GUARD_CHECK
 
 class CodecLibAV : public CodecBase
 {
@@ -48,9 +88,10 @@ private: // from CodecBase
     TBool TrySeek(TUint aStreamId, TUint64 aSample);
     void StreamCompleted();
 private:
-    static const TUint   kInBufBytes = 4096;
-    static const TInt32  kInt24Max   = 8388607L;
-    static const TInt32  kInt24Min   = -8388608L;
+    static const TUint   kInBufBytes      = 4096;
+    static const TInt32  kInt24Max        = 8388607L;
+    static const TInt32  kInt24Min        = -8388608L;
+    static const TInt    kDurationRoundUp = 50000;
 
     const TChar         *kFmtMp3;
     const TChar         *kFmtAac;
@@ -65,19 +106,21 @@ private:
     TUint64                      iTrackLengthJiffies;
     TUint64                      iTrackOffset;
     Bws<DecodedAudio::kMaxBytes> iOutput;
-    Bws<32*1024>                 iRecogBuf;
 
     AVInputFormat   *iFormat;
     AVIOContext     *iAvioCtx;
     AVFormatContext *iAvFormatCtx;
     AVCodecContext  *iAvCodecContext;
     AVPacket         iAvPacket;
+    TBool            iAvPacketPrePopulated;
     AVFrame         *iAvFrame;
     TInt             iStreamId;
     const TChar     *iStreamFormat;
     TUint            iBitDepth;
     TBool            iStreamStart;
     TBool            iStreamEnded;
+    TBool            iSeekExecuted;
+    TBool            iSeekResult;
     OpaqueType       iClassData;
 };
 
@@ -107,12 +150,15 @@ CodecLibAV::CodecLibAV(IMimeTypeList& aMimeTypeList)
     , iAvioCtx(NULL)
     , iAvFormatCtx(NULL)
     , iAvCodecContext(NULL)
+    , iAvPacketPrePopulated(false)
     , iAvFrame(NULL)
     , iStreamId(-1)
     , iStreamFormat(NULL)
     , iBitDepth(0)
     , iStreamStart(false)
     , iStreamEnded(false)
+    , iSeekExecuted(false)
+    , iSeekResult(false)
 {
 #ifdef ENABLE_MP3
     aMimeTypeList.Add("audio/mpeg");
@@ -135,7 +181,7 @@ CodecLibAV::~CodecLibAV()
 {
 }
 
-#ifdef DEUG
+#ifdef DEBUG
 void printBuf(TChar *buf, TInt bufLen)
 {
     Log::Print("Buffer Contents: %d\n", bufLen);
@@ -189,7 +235,7 @@ TInt CodecLibAV::avCodecRead(void* ptr, TUint8* buf, TInt buf_size)
     try
     {
         // Read the requested amount of data.
-        controller->Read(inputBuffer, buf_size);
+        controller->Read(inputBuffer, inputBuffer.MaxBytes());
     }
     catch(CodecStreamStart&)
     {
@@ -216,9 +262,11 @@ TInt CodecLibAV::avCodecRead(void* ptr, TUint8* buf, TInt buf_size)
 // time offset).
 TInt64 CodecLibAV::avCodecSeek(void* ptr, TInt64 offset, TInt whence)
 {
-    OpaqueType       *classData  = (OpaqueType *)ptr;
-    ICodecController *controller = classData->controller;;
-    TUint             streamId   = classData->streamId;
+    OpaqueType       *classData    = (OpaqueType *)ptr;
+    ICodecController *controller   = classData->controller;;
+    TUint             streamId     = classData->streamId;
+    TBool            *seekExecuted = classData->seekExecuted;
+    TBool            *seekResult   = classData->seekResult;
 
     // Ignore the force bit.
     whence = whence & ~AVSEEK_FORCE;
@@ -231,6 +279,7 @@ TInt64 CodecLibAV::avCodecSeek(void* ptr, TInt64 offset, TInt whence)
             Log::Print("Seek [SET] [%jd]\n", offset);
 #endif // DEBUG
 
+            *seekExecuted = true;
             if (controller->TrySeekTo(streamId, offset))
             {
 #ifdef DEBUG
@@ -238,7 +287,8 @@ TInt64 CodecLibAV::avCodecSeek(void* ptr, TInt64 offset, TInt whence)
                            streamId, offset);
 #endif // DEBUG
 
-                return 0;
+                *seekResult = true;
+                return offset;
             }
             else
             {
@@ -247,6 +297,7 @@ TInt64 CodecLibAV::avCodecSeek(void* ptr, TInt64 offset, TInt whence)
                            streamId, offset);
 #endif // DEBUG
 
+                *seekResult = false;
                 return -1;
             }
         }
@@ -275,25 +326,42 @@ TInt64 CodecLibAV::avCodecSeek(void* ptr, TInt64 offset, TInt whence)
 
 TBool CodecLibAV::Recognise(const EncodedStreamInfo& aStreamInfo)
 {
+    Bws<16*1024> recogBuf;
+
     if (aStreamInfo.RawPcm())
     {
         return false;
     }
 
     // Initialise and fill the recognise buffer.
-    iRecogBuf.SetBytes(0);
-    iRecogBuf.FillZ();
+    recogBuf.SetBytes(0);
+    recogBuf.FillZ();
 
-    iController->Read(iRecogBuf, iRecogBuf.MaxBytes() - AVPROBE_PADDING_SIZE);
+#ifdef BUFFER_GUARD_CHECK
+    SetGuardBytes(recogBuf);
+
+    iController->Read(recogBuf, recogBuf.MaxBytes() - AVPROBE_PADDING_SIZE -
+                                kGuardSize);
+#else // BUFFER_GUARD_CHECK
+    iController->Read(recogBuf, recogBuf.MaxBytes() - AVPROBE_PADDING_SIZE);
+#endif // BUFFER_GUARD_CHECK
 
     // Attempt to detect the stream format.
     AVProbeData probeData;
 
     probeData.filename  = "";
-    probeData.buf       = (unsigned char *)iRecogBuf.Ptr();
-    probeData.buf_size  = iRecogBuf.Bytes();
+    probeData.buf       = (unsigned char *)recogBuf.Ptr();
+#ifdef BUFFER_GUARD_CHECK
+    probeData.buf_size  = recogBuf.MaxBytes() - kGuardSize;
+#else // BUFFER_GUARD_CHECK
+    probeData.buf_size  = recogBuf.MaxBytes();
+#endif // BUFFER_GUARD_CHECK
 
     iFormat = av_probe_input_format(&probeData, 1);
+
+#ifdef BUFFER_GUARD_CHECK
+    CheckGuardBytes(recogBuf);
+#endif // BUFFER_GUARD_CHECK
 
     if (iFormat == NULL)
     {
@@ -308,6 +376,9 @@ void CodecLibAV::StreamInitialise()
 {
     // Initialise PCM buffer.
     iOutput.SetBytes(0);
+#ifdef BUFFER_GUARD_CHECK
+    SetGuardBytes(iOutput);
+#endif // BUFFER_GUARD_CHECK
 
     // Initialise the track offset in jiffies.
     iTrackOffset = 0;
@@ -332,6 +403,8 @@ void CodecLibAV::StreamInitialise()
     iClassData.streamStart    = &iStreamStart;
     iClassData.streamEnded    = &iStreamEnded;
     iClassData.streamId       = 0;
+    iClassData.seekExecuted   = &iSeekExecuted;
+    iClassData.seekResult     = &iSeekResult;
 
     // Manually create AVIO context, supplying our own read/seek functions.
     iAvioCtx = avio_alloc_context(avcodecBuf,
@@ -459,7 +532,7 @@ void CodecLibAV::StreamInitialise()
     {
         TInt64 duration;
 
-        duration = iAvFormatCtx->duration + 5000;
+        duration = iAvFormatCtx->duration + kDurationRoundUp;
 
         if (iAvFormatCtx->start_time != AV_NOPTS_VALUE)
         {
@@ -541,8 +614,9 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
                aStreamId, aSample);
 #endif // DEBUG
 
-    double  frac       = (double)aSample / (double)iTotalSamples;
-    TInt64 seekTarget  = TInt64(frac * (iAvFormatCtx->duration + 5000));
+    double frac        = (double)aSample / (double)iTotalSamples;
+    TInt64 seekTarget  = TInt64(frac *
+                                (iAvFormatCtx->duration + kDurationRoundUp));
 
 #ifdef DEBUG
     Log::Print("CodecLibAV::TrySeek Target Timestamp [%jd]\n", seekTarget);
@@ -554,12 +628,61 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
 
     iClassData.streamId = aStreamId;
 
+    iSeekResult   = false;
+    iSeekExecuted = false;
+
     if (avformat_seek_file(iAvFormatCtx, -1, seekTarget, seekTarget,
                            seekTarget, 0) < 0)
     {
 #ifdef DEBUG
         Log::Print("CodecLibAV::av_seek_frame failed\n");
 #endif // DEBUG
+        return false;
+    }
+
+    // It is not guaranteed the av codec 'seek' operation will have been
+    // executed yet.
+    //
+    // It must be executed before this function returns so we force the issue
+    // by executing a read.
+    if (! iSeekExecuted)
+    {
+        if (iAvPacketPrePopulated)
+        {
+            av_free_packet(&iAvPacket);
+            iAvPacketPrePopulated = false;
+        }
+
+        avio_flush(iAvioCtx);
+        if (av_read_frame(iAvFormatCtx,&iAvPacket) >= 0)
+        {
+            iAvPacketPrePopulated = true;
+
+            if (iSeekExecuted)
+            {
+                if (iSeekResult == false)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // Last resort. Assume the read has delivered the correct
+                // packet and to it's position in the stream.
+                if (! iController->TrySeekTo(aStreamId, iAvPacket.pos))
+                {
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    if (iSeekResult == false)
+    {
         return false;
     }
 
@@ -603,13 +726,20 @@ void CodecLibAV::processPCM(TInt plane_size, TInt inSampleBytes, TInt outSampleB
         planes       = iAvCodecContext->channels;
     }
 
+    TUint frameSize   = outSampleBytes * iAvCodecContext->channels;
+    TUint bufferLimit =  iOutput.MaxBytes() - (iOutput.MaxBytes() % frameSize);
+
+#ifdef BUFFER_GUARD_CHECK
+    bufferLimit -=
+        (frameSize > (TUint)kGuardSize) ? frameSize : (TUint)kGuardSize;
+#endif // BUFFER_GUARD_CHECK
+
     for (TInt ps=0; ps<planeSamples; ps++)
     {
         for (TInt plane=0; plane<planes; plane++)
         {
             // Flush the output buffer when full.
-            if (iOutput.Bytes() >= iOutput.MaxBytes() -
-                    (outSampleBytes * iAvCodecContext->channels))
+            if (iOutput.Bytes() == bufferLimit)
             {
                 iTrackOffset +=
                     iController->OutputAudioPcm(
@@ -718,6 +848,10 @@ void CodecLibAV::processPCM(TInt plane_size, TInt inSampleBytes, TInt outSampleB
                 }
             }
 
+#ifdef BUFFER_GUARD_CHECK
+            CheckGuardBytes(iOutput);
+#endif // BUFFER_GUARD_CHECK
+
             iOutput.SetBytes(iOutput.Bytes() + outSampleBytes);
         }
     }
@@ -728,14 +862,19 @@ void CodecLibAV::Process()
     TInt frameFinished = 0;
     TInt plane_size;
 
-    if (av_read_frame(iAvFormatCtx,&iAvPacket) < 0)
+    if (! iAvPacketPrePopulated)
     {
+        if (av_read_frame(iAvFormatCtx,&iAvPacket) < 0)
+        {
 #ifdef DEBUG
-        Log::Print("Info: Frame read error or EOF\n");
+            Log::Print("Info: Frame read error or EOF\n");
 #endif // DEBUG
 
-        THROW(CodecStreamEnded);
+            THROW(CodecStreamEnded);
+        }
     }
+
+    iAvPacketPrePopulated = false;
 
     if (iAvPacket.stream_index == iStreamId)
     {
