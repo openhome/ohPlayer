@@ -256,6 +256,14 @@ TInt CodecLibAV::avCodecRead(void* ptr, TUint8* buf, TInt buf_size)
 #endif // DEBUG
         *streamEnded = true;
     }
+    catch(CodecStreamStopped&)
+    {
+#ifdef DEBUG
+        Log::Print("Info: [CodecLibAV] avCodecRead - CodecStreamStopped "
+                   "Exception Caught\n");
+#endif // DEBUG
+        *streamEnded = true;
+    }
 
     return inputBuffer.Bytes();
 }
