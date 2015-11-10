@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Uncomment to enable out of bounds checkig in OpenHome buffers.
 //#define BUFFER_GUARD_CHECK
 
 #ifdef BUFFER_GUARD_CHECK
@@ -22,8 +23,10 @@
 extern "C"
 {
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
 #include "libavformat/avformat.h"
+#include "libavresample/avresample.h"
 }
 
 #include "OptionalFeatures.h"
@@ -100,24 +103,27 @@ private:
     static int     avCodecRead(void* ptr, TUint8* buf, TInt buf_size);
     static TInt64  avCodecSeek(void* ptr, TInt64 offset, TInt whence);
     static TBool   isPlatformBigEndian(void);
+    static TBool   isFormatPlanar(AVSampleFormat fmt);
 
-    void processPCM(TInt plane_size, TInt inSampleBytes, TInt outSampleBytes);
+    void processPCM(TUint8 **pcmData, AVSampleFormat fmt, TInt plane_size);
 
     TUint64                      iTotalSamples;
     TUint64                      iTrackLengthJiffies;
     TUint64                      iTrackOffset;
     Bws<DecodedAudio::kMaxBytes> iOutput;
 
-    AVInputFormat   *iFormat;
-    AVIOContext     *iAvioCtx;
-    AVFormatContext *iAvFormatCtx;
-    AVCodecContext  *iAvCodecContext;
-    TBool            iAvPacketCached;
-    AVPacket         iAvPacket;
-    AVFrame         *iAvFrame;
+    AVInputFormat          *iFormat;
+    AVIOContext            *iAvioCtx;
+    AVFormatContext        *iAvFormatCtx;
+    AVCodecContext         *iAvCodecContext;
+    TBool                   iAvPacketCached;
+    AVPacket                iAvPacket;
+    AVFrame                *iAvFrame;
+    AVAudioResampleContext *iAvResampleCtx;
     TInt             iStreamId;
     const TChar     *iStreamFormat;
-    TUint            iBitDepth;
+    TUint            iOutputBitDepth;
+    AVSampleFormat   iConvertedFormat;
     TBool            iStreamStart;
     TBool            iStreamEnded;
     TBool            iSeekExpected;
@@ -154,9 +160,11 @@ CodecLibAV::CodecLibAV(IMimeTypeList& aMimeTypeList)
     , iAvCodecContext(NULL)
     , iAvPacketCached(false)
     , iAvFrame(NULL)
+    , iAvResampleCtx(NULL)
     , iStreamId(-1)
     , iStreamFormat(NULL)
-    , iBitDepth(0)
+    , iOutputBitDepth(0)
+    , iConvertedFormat(AV_SAMPLE_FMT_NONE)
     , iStreamStart(false)
     , iStreamEnded(false)
     , iSeekExpected(false)
@@ -222,6 +230,14 @@ TBool CodecLibAV::isPlatformBigEndian(void)
     } bint = {0x01020304};
 
     return bint.c[0] == 1;
+}
+
+// Is the supplied format planar.
+TBool CodecLibAV::isFormatPlanar(AVSampleFormat fmt)
+{
+    return ((fmt == AV_SAMPLE_FMT_U8P)  || (fmt == AV_SAMPLE_FMT_S16P) ||
+            (fmt == AV_SAMPLE_FMT_S32P) || (fmt == AV_SAMPLE_FMT_FLTP) ||
+            (fmt == AV_SAMPLE_FMT_DBLP));
 }
 
 // AVCodec callback to read stream data into avcodec buffer.
@@ -420,7 +436,8 @@ void CodecLibAV::StreamInitialise()
     // Initialise the track offset in jiffies.
     iTrackOffset = 0;
 
-    iAvPacketCached = false;
+    iAvPacketCached  = false;
+    iConvertedFormat = AV_SAMPLE_FMT_NONE;
 
     // Initialise Stream State
     iStreamStart  = false;
@@ -554,19 +571,67 @@ void CodecLibAV::StreamInitialise()
     {
         case AV_SAMPLE_FMT_U8:
         case AV_SAMPLE_FMT_U8P:
-            iBitDepth = 8;
+            iOutputBitDepth = 8;
             break;
         case AV_SAMPLE_FMT_S16:
         case AV_SAMPLE_FMT_S16P:
-            iBitDepth = 16;
+            iOutputBitDepth = 16;
             break;
         case AV_SAMPLE_FMT_S32:
         case AV_SAMPLE_FMT_S32P:
-            iBitDepth = 24;
+            iOutputBitDepth = 24;
             break;
         case AV_SAMPLE_FMT_FLTP:
         case AV_SAMPLE_FMT_FLT:
-            iBitDepth = 24;
+            // For best playback quality use 'libavresample' to convert this
+            // format to a PCM format we can handle.
+
+            iAvResampleCtx = avresample_alloc_context();
+
+            if (iAvResampleCtx != NULL)
+            {
+                TInt64 channelLayout = AV_CH_LAYOUT_STEREO;
+
+                if (iAvCodecContext->channels == 1)
+                {
+                    channelLayout = AV_CH_LAYOUT_MONO;
+                }
+
+                av_opt_set_int(iAvResampleCtx, "in_channel_layout",
+                               channelLayout, 0);
+                av_opt_set_int(iAvResampleCtx, "out_channel_layout",
+                               channelLayout, 0);
+                av_opt_set_int(iAvResampleCtx, "in_sample_rate",
+                               iAvCodecContext->sample_rate, 0);
+                av_opt_set_int(iAvResampleCtx, "out_sample_rate",
+                               iAvCodecContext->sample_rate, 0);
+                av_opt_set_int(iAvResampleCtx, "in_sample_fmt",
+                               iAvCodecContext->sample_fmt, 0);
+
+                // Convert to S32P (this will be sampled down manually to 24
+                // bit for output)
+                iOutputBitDepth  = 24;
+                iConvertedFormat = AV_SAMPLE_FMT_S32P;
+
+                av_opt_set_int(iAvResampleCtx, "out_sample_fmt",
+                               iConvertedFormat, 0);
+
+                if (avresample_open(iAvResampleCtx) < 0)
+                {
+                    Log::Print("[CodecLibAV] StreamInitialise - Cannot "
+                               "Open Resampler\n");
+
+                    goto failure;
+                }
+            }
+            else
+            {
+                Log::Print("[CodecLibAV] StreamInitialise - Cannot "
+                           "Create Resampler Context\n");
+
+                goto failure;
+            }
+
             break;
         case AV_SAMPLE_FMT_DBL:
             Log::Print("[CodecLibAV] StreamInitialise - Format "
@@ -605,7 +670,7 @@ void CodecLibAV::StreamInitialise()
     }
 
     iController->OutputDecodedStream(iAvCodecContext->bit_rate,
-                                     iBitDepth,
+                                     iOutputBitDepth,
                                      iAvCodecContext->sample_rate,
                                      iAvCodecContext->channels,
                                      Brn(iStreamFormat),
@@ -634,6 +699,12 @@ void CodecLibAV::StreamCompleted()
 #ifdef DEBUG
     Log::Print("[CodecLibAV] StreamCompleted\n");
 #endif
+
+    if (iAvResampleCtx != NULL)
+    {
+        avresample_free(&iAvResampleCtx);
+        iAvResampleCtx = NULL;
+    }
 
     if (iAvPacketCached)
     {
@@ -751,7 +822,7 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
         (aSample * Jiffies::kPerSecond) / iAvCodecContext->sample_rate;
 
     iController->OutputDecodedStream(iAvCodecContext->bit_rate,
-                                     iBitDepth,
+                                     iOutputBitDepth,
                                      iAvCodecContext->sample_rate,
                                      iAvCodecContext->channels,
                                      Brn(iStreamFormat),
@@ -767,28 +838,30 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
 
 // Convert native endian interleaved/planar PCM to interleaved big endian PCM
 // and output.
-void CodecLibAV::processPCM(TInt plane_size, TInt inSampleBytes, TInt outSampleBytes)
+void CodecLibAV::processPCM(TUint8 **pcmData, AVSampleFormat fmt,
+                            TInt plane_size)
 {
-    TInt    outIndex = 0;
-    TUint8 *out      = (TUint8 *)(iOutput.Ptr() + iOutput.Bytes());
+    TInt    outIndex       = 0;
+    TUint8 *out            = (TUint8 *)(iOutput.Ptr() + iOutput.Bytes());
+    TInt    outSampleBytes = iOutputBitDepth/8;
     TInt    planeSamples;
     TInt    planes;
 
-    if (plane_size == -1)
+    planeSamples = plane_size/av_get_bytes_per_sample(fmt);
+
+    if (isFormatPlanar(fmt))
     {
-        // For Interleaved PCM the frames are delivered in a single plane.
-        planeSamples = iAvFrame->linesize[0]/inSampleBytes;
-        planes       = 1;
+        // For Planar PCM there is a plane for each channel.
+        planes = iAvCodecContext->channels;
     }
     else
     {
-        // For Planar PCM there is a plane for each channel.
-        planeSamples = plane_size/inSampleBytes;
-        planes       = iAvCodecContext->channels;
+        // For Interleaved PCM the frames are delivered in a single plane.
+        planes = 1;
     }
 
     TUint frameSize   = outSampleBytes * iAvCodecContext->channels;
-    TUint bufferLimit =  iOutput.MaxBytes() - (iOutput.MaxBytes() % frameSize);
+    TUint bufferLimit = iOutput.MaxBytes() - (iOutput.MaxBytes() % frameSize);
 
 #ifdef BUFFER_GUARD_CHECK
     bufferLimit -=
@@ -807,7 +880,7 @@ void CodecLibAV::processPCM(TInt plane_size, TInt inSampleBytes, TInt outSampleB
                                     iOutput,
                                     iAvCodecContext->channels,
                                     iAvCodecContext->sample_rate,
-                                    iBitDepth,
+                                    iOutputBitDepth,
                                     EMediaDataEndianBig,
                                     iTrackOffset);
 
@@ -817,12 +890,11 @@ void CodecLibAV::processPCM(TInt plane_size, TInt inSampleBytes, TInt outSampleB
             }
 
             // Switch on required output PCM bit depth.
-            switch (iBitDepth)
+            switch (iOutputBitDepth)
             {
                 case 8:
                 {
-                    TUint8  sample =
-                        ((TUint8 *)iAvFrame->extended_data[plane])[ps];
+                    TUint8  sample   = ((TUint8 *)pcmData[plane])[ps];
                     TUint8 *samplePtr = (TUint8 *)&sample;
 
                     out[outIndex++] = *samplePtr;
@@ -832,8 +904,7 @@ void CodecLibAV::processPCM(TInt plane_size, TInt inSampleBytes, TInt outSampleB
 
                 case 16:
                 {
-                    TUint16  sample =
-                        ((TUint16 *)iAvFrame->extended_data[plane])[ps];
+                    TUint16  sample    = ((TUint16 *)pcmData[plane])[ps];
                     TUint8  *samplePtr = (TUint8 *)&sample;
 
                     if (isPlatformBigEndian())
@@ -854,49 +925,22 @@ void CodecLibAV::processPCM(TInt plane_size, TInt inSampleBytes, TInt outSampleB
 
                 case 24:
                 {
-                    TUint8   *samplePtr;
-                    TUint32   sample;
-
-                    // FLTP/FLT is converted to 24 bit PCM for our purposes.
-                    if (iAvCodecContext->sample_fmt == AV_SAMPLE_FMT_FLTP ||
-                        iAvCodecContext->sample_fmt == AV_SAMPLE_FMT_FLT)
-                    {
-                        float sampleFloat =
-                            ((float *)iAvFrame->extended_data[plane])[ps];
-
-                        sampleFloat *= (kInt24Max + 1);
-                        if (sampleFloat > kInt24Max)
-                        {
-                            sampleFloat = kInt24Max;
-                        }
-
-                        if (sampleFloat < kInt24Min)
-                        {
-                            sampleFloat = kInt24Min;
-                        }
-
-                        sample    = (TUint32)sampleFloat;
-                        samplePtr = (TUint8 *)&sample;
-                    }
-                    else
-                    {
-                        sample    = ((TUint32 *)iAvFrame->extended_data[plane])[ps];
-                        samplePtr = (TUint8 *)&sample;
-                    }
+                    TUint32  sample    = ((TUint32 *)pcmData[plane])[ps];
+                    TUint8  *samplePtr = (TUint8 *)&sample;
 
                     if (isPlatformBigEndian())
                     {
                         // No conversion required.
-                        out[outIndex++] = *(samplePtr+0);
                         out[outIndex++] = *(samplePtr+1);
                         out[outIndex++] = *(samplePtr+2);
+                        out[outIndex++] = *(samplePtr+3);
                     }
                     else
                     {
                         // Convert to big endian
+                        out[outIndex++] = *(samplePtr+3);
                         out[outIndex++] = *(samplePtr+2);
                         out[outIndex++] = *(samplePtr+1);
-                        out[outIndex++] = *(samplePtr+0);
                     }
 
                     break;
@@ -905,7 +949,7 @@ void CodecLibAV::processPCM(TInt plane_size, TInt inSampleBytes, TInt outSampleB
                 default:
                 {
                     Log::Print("[CodecLibAV] processPCM - Unsupported bit "
-                               "depth [%d]\n", iBitDepth);
+                               "depth [%d]\n", iOutputBitDepth);
                     break;
                 }
             }
@@ -974,71 +1018,87 @@ void CodecLibAV::Process()
             THROW(CodecStreamCorrupt);
         }
 
-        TInt    inSampleBytes  = iBitDepth/8;
-        TInt    outSampleBytes = inSampleBytes;
-
         switch (iAvCodecContext->sample_fmt)
         {
-            // Planar formats.
             case AV_SAMPLE_FMT_FLTP:
+            case AV_SAMPLE_FMT_FLT:
             {
-                // Convert FLTP to S24
-                inSampleBytes  = sizeof(float);
-                outSampleBytes = 3;
+                // Use 'libavresample' to convert FLT[P] to a more
+                // usable format.
+                //
+                // The transform is setup in StreamInitialise()
+                TInt    outSamples;
+                TInt    outLinesize;
+                TUint8 *convertedData;
+                TInt    ret;
 
-                processPCM(plane_size, inSampleBytes, outSampleBytes);
+                // The number of samples expected in the converted buffer.
+                //
+                // This should equal the number in the input buffer as the
+                // sample rate is not being modified.
+                outSamples =
+                    avresample_available(iAvResampleCtx) +
+                    av_rescale_rnd(avresample_get_delay(iAvResampleCtx) +
+                                   iAvFrame->nb_samples,
+                                   iAvCodecContext->sample_rate,
+                                   iAvCodecContext->sample_rate,
+                                   AV_ROUND_UP);
+
+                // Allocate a buffer for the conversion output.
+                ret = av_samples_alloc((TUint8 **)&convertedData,
+                                       &outLinesize,
+                                       iAvCodecContext->channels,
+                                       outSamples,
+                                       iConvertedFormat,
+                                       0);
+
+                if (ret < 0)
+                {
+                    Log::Print("[CodecLibAV] Process - ERROR: Cannot "
+                               "Allocate Sample Conversion Buffer\n");
+                    THROW(CodecStreamEnded);
+                }
+
+                avresample_convert(iAvResampleCtx,
+                                   (TUint8 **)&convertedData,
+                                   outLinesize,
+                                   outSamples,
+                                   iAvFrame->extended_data,
+                                   plane_size,
+                                   iAvFrame->nb_samples);
+
+                processPCM((TUint8 **)&convertedData, iConvertedFormat,
+                           outLinesize);
+
+                av_freep(&convertedData);
+
                 break;
             }
             case AV_SAMPLE_FMT_S32P:
-            {
-                // Convert S32P to S24
-                outSampleBytes = 3;
-
-                processPCM(plane_size, inSampleBytes, outSampleBytes);
-                break;
-            }
+                // Fallthrough
             case AV_SAMPLE_FMT_S16P:
-            {
-                processPCM(plane_size, inSampleBytes, outSampleBytes);
-                break;
-            }
+                // Fallthrough
             case AV_SAMPLE_FMT_U8P:
             {
-                processPCM(plane_size, inSampleBytes, outSampleBytes);
+                processPCM(iAvFrame->extended_data, iAvCodecContext->sample_fmt,
+                           plane_size);
                 break;
             }
 
-            // Interleaved formats
-            case AV_SAMPLE_FMT_FLT:
-            {
-                // Convert FLT to S24
-                inSampleBytes  = sizeof(float);
-                outSampleBytes = 3;
-
-                processPCM(-1, inSampleBytes, outSampleBytes);
-                break;
-            }
             case AV_SAMPLE_FMT_S32:
-            {
-                // Convert S32 to S24
-                outSampleBytes = 3;
-
-                processPCM(-1, inSampleBytes, outSampleBytes);
-                break;
-            }
+                // Fallthrough
             case AV_SAMPLE_FMT_S16:
-            {
-                processPCM(-1, inSampleBytes, outSampleBytes);
-                break;
-            }
+                // Fallthrough
             case AV_SAMPLE_FMT_U8:
             {
-                processPCM(-1, inSampleBytes, outSampleBytes);
+                processPCM(iAvFrame->extended_data, iAvCodecContext->sample_fmt,
+                           iAvFrame->linesize[0]);
                 break;
             }
             default:
             {
-                Log::Print("ERROR: Format Not Supported Yet\n");
+                Log::Print("[CodecLibAV] Process - ERROR: Format Not "
+                           "Supported Yet\n");
                 break;
             }
         }
@@ -1056,7 +1116,7 @@ void CodecLibAV::Process()
                                 iOutput,
                                 iAvCodecContext->channels,
                                 iAvCodecContext->sample_rate,
-                                iBitDepth,
+                                iOutputBitDepth,
                                 EMediaDataEndianBig,
                                 iTrackOffset);
 

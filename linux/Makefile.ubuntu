@@ -68,7 +68,7 @@ endif
 RESTRICTED_CODECS=
 
 ifdef USE_LIBAVCODEC
-    RESTRICTED_CODECS = -lavutil -lavcodec -lavformat
+    RESTRICTED_CODECS = -lavresample -lavutil -lavcodec -lavformat
     CFLAGS += -DUSE_LIBAVCODEC
 else
     RESTRICTED_CODECS = -lCodecAdts -lCodecAac -lCodecAacBase -lCodecMp3
