@@ -296,7 +296,7 @@ TInt64 CodecLibAV::avCodecSeek(void* ptr, TInt64 offset, TInt whence)
     TUint             streamId     = classData->streamId;
     TBool            *seekExpected = classData->seekExpected;
     TBool            *seekExecuted = classData->seekExecuted;
-    TBool            *seekSuccess   = classData->seekSuccess;
+    TBool            *seekSuccess  = classData->seekSuccess;
 
     // Ignore the force bit.
     whence = whence & ~AVSEEK_FORCE;
@@ -763,20 +763,11 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
     iSeekSuccess  = false;
 
     TInt ret = avformat_seek_file(iAvFormatCtx, -1, seekTarget, seekTarget,
-                           seekTarget, AVSEEK_FLAG_ANY);
+                                  seekTarget, AVSEEK_FLAG_ANY);
 
     if (iSeekSuccess)
     {
         avcodec_flush_buffers(iAvCodecContext);
-    }
-
-    if (ret < 0)
-    {
-#ifdef DEBUG
-        Log::Print("[CodecLibAV] TrySeek - av_seek_frame failed\n");
-#endif // DEBUG
-
-        return false;
     }
 
     // It is not guaranteed the av codec 'seek' operation will have been
@@ -799,15 +790,30 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
 
         if (! iSeekExecuted)
         {
-#ifdef DEBUG
-            Log::Print("[CodecLibAV] TrySeek - Failed To Execute Seek\n");
-#endif // DEBUG
 
             iAvPacketCached = true;
             iSeekExpected   = false;
 
-            // Give up and throw an error.
-            THROW(CodecStreamCorrupt);
+#ifdef DEBUG
+            Log::Print("[CodecLibAV] TrySeek - Forcing Seek To [%jd]\n",
+                       iAvPacket.pos);
+#endif // DEBUG
+
+            // Last resort force a seek to the current stream position.
+            if (iController->TrySeekTo(aStreamId, iAvPacket.pos))
+            {
+                avcodec_flush_buffers(iAvCodecContext);
+
+                iSeekSuccess = true;
+            }
+            else
+            {
+#ifdef DEBUG
+                Log::Print("[CodecLibAV] TrySeek - Forced Seek Failed\n");
+#endif // DEBUG
+
+                iSeekSuccess = false;
+            }
         }
     }
 
