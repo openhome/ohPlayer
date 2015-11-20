@@ -251,8 +251,8 @@ DvDevice* ExampleMediaPlayer::UpnpAvDevice()
 void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 {
     // Register containers.
-    iMediaPlayer->Add(Codec::ContainerFactory::NewId3v2());
 #ifndef USE_LIBAVCODEC
+    iMediaPlayer->Add(Codec::ContainerFactory::NewId3v2());
     // Registering this container breaks the Libavcodec AAC ptobe.
     iMediaPlayer->Add(Codec::ContainerFactory::NewMpeg4(iMediaPlayer->MimeTypes()));
 #endif // USE_LIBAVCODEC

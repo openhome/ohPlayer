@@ -13,12 +13,27 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Uncomment to enable out of bounds checkig in OpenHome buffers.
+// Uncomment to enable out of bounds checking in OpenHome buffers.
 //#define BUFFER_GUARD_CHECK
 
 #ifdef BUFFER_GUARD_CHECK
 #include <assert.h>
 #endif // BUFFER_GUARD_CHECK
+
+
+// Uncomment to enable timestamping of log messages
+//#define TIMESTAMP_LOGGING
+
+#ifdef TIMESTAMP_LOGGING
+#include <chrono>
+
+#define DBUG_F(...)                                                            \
+    Log::Print("[%jd] ",                                                       \
+        std::chrono::high_resolution_clock::now().time_since_epoch().count()); \
+    Log::Print(__VA_ARGS__)
+#else
+#define DBUG_F(...) Log::Print(__VA_ARGS__)
+#endif
 
 extern "C"
 {
@@ -46,6 +61,7 @@ typedef struct
    TBool            *seekExpected;
    TBool            *seekExecuted;
    TBool            *seekSuccess;
+   TUint64          *byteTotal;
 } OpaqueType;
 
 #ifdef BUFFER_GUARD_CHECK
@@ -129,6 +145,7 @@ private:
     TBool            iSeekExpected;
     TBool            iSeekExecuted;
     TBool            iSeekSuccess;
+    TUint64          iByteTotal;
     OpaqueType       iClassData;
 };
 
@@ -170,6 +187,7 @@ CodecLibAV::CodecLibAV(IMimeTypeList& aMimeTypeList)
     , iSeekExpected(false)
     , iSeekExecuted(false)
     , iSeekSuccess(false)
+    , iByteTotal(0)
 {
 #ifdef ENABLE_MP3
     aMimeTypeList.Add("audio/mpeg");
@@ -195,7 +213,7 @@ CodecLibAV::~CodecLibAV()
 #ifdef DEBUG
 void printBuf(TChar *buf, TInt bufLen)
 {
-    Log::Print("Buffer Contents: %d\n", bufLen);
+    DBUG_F("Buffer Contents: %d\n", bufLen);
 
     TInt lines = bufLen/20;
     if (bufLen % 20 != 0)
@@ -212,10 +230,10 @@ void printBuf(TChar *buf, TInt bufLen)
                 break;
             }
 
-            Log::Print("%02x ", buf[(i*20) + j]);
+            DBUG_F("%02x ", buf[(i*20) + j]);
         }
 
-        Log::Print("\n");
+        DBUG_F("\n");
     }
 }
 #endif
@@ -247,6 +265,7 @@ TInt CodecLibAV::avCodecRead(void* ptr, TUint8* buf, TInt buf_size)
     ICodecController *controller      = classData->controller;;
     TBool            *streamStart     = classData->streamStart;
     TBool            *streamEnded     = classData->streamEnded;
+    TUint64          *byteTotal       = classData->byteTotal;
     Bwn               inputBuffer(buf, buf_size);
 
     inputBuffer.SetBytes(0);
@@ -259,27 +278,29 @@ TInt CodecLibAV::avCodecRead(void* ptr, TUint8* buf, TInt buf_size)
     catch(CodecStreamStart&)
     {
 #ifdef DEBUG
-        Log::Print("Info: [CodecLibAV]: avCodecRead - CodecStreamStart "
-                   "Exception Caught\n");
+        DBUG_F("Info: [CodecLibAV]: avCodecRead - CodecStreamStart "
+               "Exception Caught\n");
 #endif // DEBUG
         *streamStart = true;
     }
     catch(CodecStreamEnded&)
     {
 #ifdef DEBUG
-        Log::Print("Info: [CodecLibAV] avCodecRead - CodecStreamEnded "
-                   "Exception Caught\n");
+        DBUG_F("Info: [CodecLibAV] avCodecRead - CodecStreamEnded "
+               "Exception Caught\n");
 #endif // DEBUG
         *streamEnded = true;
     }
     catch(CodecStreamStopped&)
     {
 #ifdef DEBUG
-        Log::Print("Info: [CodecLibAV] avCodecRead - CodecStreamStopped "
-                   "Exception Caught\n");
+        DBUG_F("Info: [CodecLibAV] avCodecRead - CodecStreamStopped "
+               "Exception Caught\n");
 #endif // DEBUG
         *streamEnded = true;
     }
+
+    *byteTotal += inputBuffer.Bytes();
 
     return inputBuffer.Bytes();
 }
@@ -297,6 +318,7 @@ TInt64 CodecLibAV::avCodecSeek(void* ptr, TInt64 offset, TInt whence)
     TBool            *seekExpected = classData->seekExpected;
     TBool            *seekExecuted = classData->seekExecuted;
     TBool            *seekSuccess  = classData->seekSuccess;
+    TUint64          *byteTotal    = classData->byteTotal;
 
     // Ignore the force bit.
     whence = whence & ~AVSEEK_FORCE;
@@ -306,16 +328,15 @@ TInt64 CodecLibAV::avCodecSeek(void* ptr, TInt64 offset, TInt whence)
         case SEEK_SET:
         {
 #ifdef DEBUG
-            Log::Print("Info: [CodecLibAV] avCodecSeek Seek [SET] [%jd]\n",
-                       offset);
+            DBUG_F("Info: [CodecLibAV] avCodecSeek Seek [SET] [%jd]\n",
+                   offset);
 #endif // DEBUG
 
             // Avoid attempting to seek when not initiated from TrySeek()
             if (! *seekExpected)
             {
 #ifdef DEBUG
-                Log::Print("Info: [CodecLibAV] avCodecSeek Seek [SET] "
-                           "Ignored\n");
+                DBUG_F("Info: [CodecLibAV] avCodecSeek Seek [SET] Ignored\n");
 #endif // DEBUG
                 return -1;
             }
@@ -327,18 +348,17 @@ TInt64 CodecLibAV::avCodecSeek(void* ptr, TInt64 offset, TInt whence)
             if (controller->TrySeekTo(streamId, offset))
             {
 #ifdef DEBUG
-                Log::Print("Info: [CodecLibAV] avCodecSeek Seek [SET] "
-                           "Succeeded\n");
-#endif // DEBUG
+                DBUG_F("Info: [CodecLibAV] avCodecSeek Seek [SET] Succeeded\n");
+#endif
 
+                *byteTotal   = offset;
                 *seekSuccess = true;
                 return offset;
             }
             else
             {
 #ifdef DEBUG
-                Log::Print("Info: [CodecLibAV] avCodecSeek Seek [SET] "
-                           "Failed\n");
+                DBUG_F("Info: [CodecLibAV] avCodecSeek Seek [SET] Failed\n");
 #endif // DEBUG
 
                 return -1;
@@ -346,28 +366,28 @@ TInt64 CodecLibAV::avCodecSeek(void* ptr, TInt64 offset, TInt whence)
         }
         case SEEK_CUR:
         {
-            Log::Print("[CodecLibAV] avCodecSeek Unsupported Seek "
-                       "[CUR] [%jd]\n", offset);
+            DBUG_F("[CodecLibAV] avCodecSeek Unsupported Seek "
+                   "[CUR] [%jd]\n", offset);
             return -1;
         }
         case SEEK_END:
         {
-            Log::Print("[CodecLibAV] avCodecSeek Unsupported Seek "
-                       "[END] [%jd]\n", offset);
+            DBUG_F("[CodecLibAV] avCodecSeek Unsupported Seek "
+                   "[END] [%jd]\n", offset);
             return -1;
         }
         case AVSEEK_SIZE:
         {
 #ifdef DEBUG
-            Log::Print("[CodecLibAV] avCodecSeek Seek [SIZE] [%jd]\n",
-                       controller->StreamLength());
+            DBUG_F("[CodecLibAV] avCodecSeek Seek [SIZE] [%jd]\n",
+                   controller->StreamLength());
 #endif // DEBUG
 
             return controller->StreamLength();
         }
         default:
         {
-            Log::Print("[CodecLibAV] avCodecSeek Unsupported Seek\n");
+            DBUG_F("[CodecLibAV] avCodecSeek Unsupported Seek\n");
             return -1;
         }
     }
@@ -414,7 +434,7 @@ TBool CodecLibAV::Recognise(const EncodedStreamInfo& aStreamInfo)
 
     if (iFormat == NULL)
     {
-        Log::Print("[CodecLibAV] Recognise - Probe Failed\n");
+        DBUG_F("[CodecLibAV] Recognise - Probe Failed\n");
         return false;
     }
 
@@ -424,7 +444,7 @@ TBool CodecLibAV::Recognise(const EncodedStreamInfo& aStreamInfo)
 void CodecLibAV::StreamInitialise()
 {
 #ifdef DEBUG
-    Log::Print("[CodecLibAV] StreamInitialise\n");
+    DBUG_F("[CodecLibAV] StreamInitialise\n");
 #endif
 
     // Initialise PCM buffer.
@@ -447,6 +467,8 @@ void CodecLibAV::StreamInitialise()
     iSeekExecuted  = false;
     iSeekSuccess   = false;
 
+    iByteTotal     = 0;
+
     // Initialise the codec data buffer.
     //
     // NB. This may be free'd/realloced out with our control.
@@ -454,8 +476,7 @@ void CodecLibAV::StreamInitialise()
 
     if (avcodecBuf == NULL)
     {
-        Log::Print("[CodecLibAV] StreamInitialise - Cannot allocate AV "
-                   "buffer\n");
+        DBUG_F("[CodecLibAV] StreamInitialise - Cannot allocate AV buffer\n");
         goto failure;
     }
 
@@ -467,6 +488,7 @@ void CodecLibAV::StreamInitialise()
     iClassData.seekExpected   = &iSeekExpected;
     iClassData.seekExecuted   = &iSeekExecuted;
     iClassData.seekSuccess    = &iSeekSuccess;
+    iClassData.byteTotal      = &iByteTotal;
 
     // Manually create AVIO context, supplying our own read/seek functions.
     iAvioCtx = avio_alloc_context(avcodecBuf,
@@ -479,8 +501,8 @@ void CodecLibAV::StreamInitialise()
 
     if (iAvioCtx == NULL)
     {
-        Log::Print("[CodecLibAV] StreamInitialise - Cannot allocate AV IO "
-                   "Context\n");
+        DBUG_F("[CodecLibAV] StreamInitialise - Cannot allocate AV IO "
+               "Context\n");
         goto failure;
     }
 
@@ -489,8 +511,8 @@ void CodecLibAV::StreamInitialise()
 
     if (iAvFormatCtx == NULL)
     {
-        Log::Print("[CodecLibAV] StreamInitialise - Cannot allocate AV Format "
-                   "Context\n");
+        DBUG_F("[CodecLibAV] StreamInitialise - Cannot allocate AV Format "
+               "Context\n");
         goto failure;
     }
 
@@ -501,15 +523,15 @@ void CodecLibAV::StreamInitialise()
 
     if (avformat_open_input(&iAvFormatCtx, "", 0, 0) != 0)
     {
-        Log::Print("[CodecLibAV] StreamInitialise - Could not open AV "
-                   "input stream");
+        DBUG_F("[CodecLibAV] StreamInitialise - Could not open AV input "
+               "stream\n");
         goto failure;
     }
 
     if (avformat_find_stream_info(iAvFormatCtx, NULL) < 0)
     {
-        Log::Print("[CodecLibAV] StreamInitialise - Could not find AV "
-                   "stream info");
+        DBUG_F("[CodecLibAV] StreamInitialise - Could not find AV stream "
+               "info\n");
         goto failure;
     }
 
@@ -533,8 +555,8 @@ void CodecLibAV::StreamInitialise()
                     iStreamFormat = kFmtMp3;
                     break;
                 default:
-                    Log::Print("[CodecLibAV] StreamInitialise - AUDIO FORMAT: "
-                               "UNKNOWN\n");
+                    DBUG_F("[CodecLibAV] StreamInitialise - AUDIO FORMAT: "
+                           "UNKNOWN\n");
                     break;
             }
 
@@ -544,8 +566,7 @@ void CodecLibAV::StreamInitialise()
 
     if (iStreamId == -1)
     {
-        Log::Print("[CodecLibAV] StreamInitialise - Could not find Audio "
-                   "Stream");
+        DBUG_F("[CodecLibAV] StreamInitialise - Could not find Audio Stream\n");
         goto failure;
     }
 
@@ -557,13 +578,13 @@ void CodecLibAV::StreamInitialise()
 
     if (codec == NULL)
     {
-        Log::Print("[CodecLibAV] StreamInitialise - Cannot find codec!");
+        DBUG_F("[CodecLibAV] StreamInitialise - Cannot find codec!\n");
         goto failure;
     }
 
     if (avcodec_open2(iAvCodecContext,codec,NULL) < 0)
     {
-        Log::Print("[CodecLibAV] StreamInitialise - Codec cannot be opened");
+        DBUG_F("[CodecLibAV] StreamInitialise - Codec cannot be opened\n");
         goto failure;
     }
 
@@ -618,32 +639,31 @@ void CodecLibAV::StreamInitialise()
 
                 if (avresample_open(iAvResampleCtx) < 0)
                 {
-                    Log::Print("[CodecLibAV] StreamInitialise - Cannot "
-                               "Open Resampler\n");
+                    DBUG_F("[CodecLibAV] StreamInitialise - Cannot "
+                           "Open Resampler\n");
 
                     goto failure;
                 }
             }
             else
             {
-                Log::Print("[CodecLibAV] StreamInitialise - Cannot "
-                           "Create Resampler Context\n");
+                DBUG_F("[CodecLibAV] StreamInitialise - Cannot "
+                       "Create Resampler Context\n");
 
                 goto failure;
             }
 
             break;
         case AV_SAMPLE_FMT_DBL:
-            Log::Print("[CodecLibAV] StreamInitialise - Format "
-                       "'AV_SAMPLE_FMT_DBL' unsupported\n");
+            DBUG_F("[CodecLibAV] StreamInitialise - Format "
+                   "'AV_SAMPLE_FMT_DBL' unsupported\n");
             goto failure;
         case AV_SAMPLE_FMT_DBLP:
-            Log::Print("[CodecLibAV] StreamInitialise - Format "
-                       "'AV_SAMPLE_FMT_DBLP' unsupported\n");
+            DBUG_F("[CodecLibAV] StreamInitialise - Format "
+                   "'AV_SAMPLE_FMT_DBLP' unsupported\n");
             goto failure;
         default:
-            Log::Print("[CodecLibAV] StreamInitialise - Unknown Sample "
-                       "Format\n");
+            DBUG_F("[CodecLibAV] StreamInitialise - Unknown Sample Format\n");
             goto failure;
     }
 
@@ -683,7 +703,7 @@ void CodecLibAV::StreamInitialise()
 
     if (iAvFrame == NULL)
     {
-        Log::Print("[CodecLibAV] StreamInitialise - Cannot create iAvFrame\n");
+        DBUG_F("[CodecLibAV] StreamInitialise - Cannot create iAvFrame\n");
         goto failure;
     }
 
@@ -697,7 +717,7 @@ failure:
 void CodecLibAV::StreamCompleted()
 {
 #ifdef DEBUG
-    Log::Print("[CodecLibAV] StreamCompleted\n");
+    DBUG_F("[CodecLibAV] StreamCompleted\n");
 #endif
 
     if (iAvResampleCtx != NULL)
@@ -745,8 +765,8 @@ void CodecLibAV::StreamCompleted()
 TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
 {
 #ifdef DEBUG
-    Log::Print("[CodecLibAV] TrySeek - StreamId [%d] Sample[%jd]\n",
-               aStreamId, aSample);
+    DBUG_F("[CodecLibAV] TrySeek - StreamId [%d] Sample[%jd]\n",
+           aStreamId, aSample);
 #endif // DEBUG
 
     double frac        = (double)aSample / (double)iTotalSamples;
@@ -756,14 +776,35 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
     if (iAvFormatCtx->start_time != AV_NOPTS_VALUE)
         seekTarget += iAvFormatCtx->start_time;
 
+#ifdef DEBUG
+    DBUG_F("[CodecLibAV] TrySeek - SeekTarget [%jd]\n", seekTarget);
+#endif // DEBUG
+
     iClassData.streamId = aStreamId;
 
     iSeekExpected = true;
     iSeekExecuted = false;
     iSeekSuccess  = false;
 
-    TInt ret = avformat_seek_file(iAvFormatCtx, -1, seekTarget, seekTarget,
-                                  seekTarget, AVSEEK_FLAG_ANY);
+    TUint64 currentPos = iByteTotal;
+    TInt ret = av_seek_frame(iAvFormatCtx, -1, seekTarget, AVSEEK_FLAG_ANY);
+
+    if ((ret < 0) && iSeekExecuted)
+    {
+         // It looks like the seek operation involved a number of stream
+         // reads followed by a seek, which failed.
+         //
+         // In this event we pretend the seek operation succeeded.
+         // Playback will proceed from teh current position.
+        if (currentPos != iByteTotal)
+        {
+#ifdef DEBUG
+            DBUG_F("[CodecLibAV] TrySeek - Read/Failed Seek Case\n");
+#endif
+
+            iSeekSuccess = true;
+        }
+    }
 
     if (iSeekSuccess)
     {
@@ -773,15 +814,13 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
     // It is not guaranteed the av codec 'seek' operation will have been
     // executed yet.
     //
-    // It must be executed before this function returns so we attempt to force
-    // the issue by executing a read.
+    // We attempt to force the issue by executing a read.
     if (! iSeekExecuted)
     {
-#ifdef DEBUG
-        Log::Print("[CodecLibAV] TrySeek - Calling Read Frame\n");
-#endif // DEBUG
-
-        av_read_frame(iAvFormatCtx,&iAvPacket);
+        if (av_read_frame(iAvFormatCtx,&iAvPacket) >= 0)
+        {
+            iAvPacketCached = true;
+        }
 
         if (iSeekSuccess)
         {
@@ -790,30 +829,15 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
 
         if (! iSeekExecuted)
         {
-
-            iAvPacketCached = true;
-            iSeekExpected   = false;
-
+            // In the event that a we are unable to force a seek we assume
+            // the seek operation was achieved via a sequence of stream
+            // reads.
 #ifdef DEBUG
-            Log::Print("[CodecLibAV] TrySeek - Forcing Seek To [%jd]\n",
-                       iAvPacket.pos);
+            DBUG_F("[CodecLibAV] TrySeek - Acheved Via Stream Reads\n");
 #endif // DEBUG
 
-            // Last resort force a seek to the current stream position.
-            if (iController->TrySeekTo(aStreamId, iAvPacket.pos))
-            {
-                avcodec_flush_buffers(iAvCodecContext);
-
-                iSeekSuccess = true;
-            }
-            else
-            {
-#ifdef DEBUG
-                Log::Print("[CodecLibAV] TrySeek - Forced Seek Failed\n");
-#endif // DEBUG
-
-                iSeekSuccess = false;
-            }
+            iSeekExpected = false;
+            iSeekSuccess  = true;
         }
     }
 
@@ -821,8 +845,6 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
     {
         return false;
     }
-
-    iSeekExpected = false;
 
     iTrackOffset =
         (aSample * Jiffies::kPerSecond) / iAvCodecContext->sample_rate;
@@ -954,8 +976,8 @@ void CodecLibAV::processPCM(TUint8 **pcmData, AVSampleFormat fmt,
 
                 default:
                 {
-                    Log::Print("[CodecLibAV] processPCM - Unsupported bit "
-                               "depth [%d]\n", iOutputBitDepth);
+                    DBUG_F("[CodecLibAV] processPCM - Unsupported bit "
+                           "depth [%d]\n", iOutputBitDepth);
                     break;
                 }
             }
@@ -978,9 +1000,9 @@ void CodecLibAV::Process()
     {
         if (av_read_frame(iAvFormatCtx,&iAvPacket) < 0)
         {
-    #ifdef DEBUG
-            Log::Print("Info: [CodecLibAV] Process - Frame read error or EOF\n");
-    #endif // DEBUG
+#ifdef DEBUG
+            DBUG_F("Info: [CodecLibAV] Process - Frame read error or EOF\n");
+#endif // DEBUG
 
             THROW(CodecStreamEnded);
         }
@@ -1001,7 +1023,7 @@ void CodecLibAV::Process()
             // This can happen after seek or on initial switch to radio so
             // don't throw an exception.
 #ifdef DEBUG
-        Log::Print("Info: [CodecLibAV] Process - Error Decoding Frame\n");
+            DBUG_F("Info: [CodecLibAV] Process - Error Decoding Frame\n");
 #endif // DEBUG
 
             av_free_packet(&iAvPacket);
@@ -1018,7 +1040,7 @@ void CodecLibAV::Process()
 
         if (data_size <= 0)
         {
-            Log::Print("ERROR:  Cannot obtain frame plane size\n");
+            DBUG_F("ERROR:  Cannot obtain frame plane size\n");
 
             av_free_packet(&iAvPacket);
             THROW(CodecStreamCorrupt);
@@ -1060,8 +1082,8 @@ void CodecLibAV::Process()
 
                 if (ret < 0)
                 {
-                    Log::Print("[CodecLibAV] Process - ERROR: Cannot "
-                               "Allocate Sample Conversion Buffer\n");
+                    DBUG_F("[CodecLibAV] Process - ERROR: Cannot "
+                           "Allocate Sample Conversion Buffer\n");
                     THROW(CodecStreamEnded);
                 }
 
@@ -1103,11 +1125,16 @@ void CodecLibAV::Process()
             }
             default:
             {
-                Log::Print("[CodecLibAV] Process - ERROR: Format Not "
-                           "Supported Yet\n");
+                DBUG_F("[CodecLibAV] Process - ERROR: Format Not "
+                       "Supported Yet\n");
                 break;
             }
         }
+    }
+    else
+    {
+        DBUG_F("[CodecLibAV] Process Unrecognised StreamId [%d], Expected "
+               "[%d]\n", iAvPacket.stream_index, iStreamId);
     }
 
     av_free_packet(&iAvPacket);
@@ -1131,11 +1158,11 @@ void CodecLibAV::Process()
 
         if (iStreamStart)
         {
-            Log::Print("[CodecLibAV] Process - Throw CodecStreamStart\n");
+            DBUG_F("[CodecLibAV] Process - Throw CodecStreamStart\n");
             THROW(CodecStreamStart);
         }
 
-        Log::Print("[CodecLibAV] Process - Throw CodecStreamEnded\n");
+        DBUG_F("[CodecLibAV] Process - Throw CodecStreamEnded\n");
         THROW(CodecStreamEnded);
     }
 }
