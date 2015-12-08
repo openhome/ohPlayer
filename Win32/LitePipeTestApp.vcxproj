@@ -103,7 +103,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>comctl32.lib;Ws2_32.lib;IPHLPAPI.lib;Dbghelp.lib;Avrt.lib;ohNetCore.lib;shell.lib;ohPipeline.lib;libeay32.lib;ssleay32.lib;ohMediaPlayer.lib;ohNetGeneratedProxies.lib;CodecAacBase.lib;CodecAac.lib;CodecAifc.lib;CodecAlacBase.lib;CodecAlac.lib;CodecPcm.lib;CodecAiffBase.lib;CodecAiff.lib;libOgg.lib;CodecVorbis.lib;CodecAdts.lib;CodecFlac.lib;CodecWav.lib;CodecMp3.lib;SourcePlaylist.lib;SourceUpnpAv.lib;SourceSongcast.lib;SourceRadio.lib;ohMediaPlayerTestUtils.lib;WebAppFramework.lib;ConfigUi.lib;Shell.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>comctl32.lib;Ws2_32.lib;IPHLPAPI.lib;Dbghelp.lib;Avrt.lib;ohNetCore.lib;shell.lib;ohPipeline.lib;libeay32.lib;ssleay32.lib;ohMediaPlayer.lib;ohNetGeneratedProxies.lib;CodecAacBase.lib;CodecAac.lib;CodecAifc.lib;CodecAlacBase.lib;CodecAlac.lib;CodecPcm.lib;CodecAiffBase.lib;CodecAiff.lib;libOgg.lib;CodecVorbis.lib;CodecAdts.lib;CodecFlac.lib;CodecWav.lib;CodecMp3.lib;SourcePlaylist.lib;SourceUpnpAv.lib;SourceSongcast.lib;SourceRadio.lib;WebAppFramework.lib;ConfigUi.lib;Shell.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
@@ -125,7 +125,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>comctl32.lib;Ws2_32.lib;IPHLPAPI.lib;Dbghelp.lib;Avrt.lib;ohNetCore.lib;shell.lib;ohPipeline.lib;libeay32.lib;ssleay32.lib;ohMediaPlayer.lib;ohNetGeneratedProxies.lib;CodecAacBase.lib;CodecAac.lib;CodecAifc.lib;CodecAlacBase.lib;CodecAlac.lib;CodecPcm.lib;CodecAiffBase.lib;CodecAiff.lib;libOgg.lib;CodecVorbis.lib;CodecAdts.lib;CodecFlac.lib;CodecWav.lib;SourcePlaylist.lib;SourceUpnpAv.lib;SourceSongcast.lib;ohMediaPlayerTestUtils.lib;WebAppFramework.lib;ConfigUi.lib;Shell.lib;SourceRadio.lib;CodecMp3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>comctl32.lib;Ws2_32.lib;IPHLPAPI.lib;Dbghelp.lib;Avrt.lib;ohNetCore.lib;shell.lib;ohPipeline.lib;libeay32.lib;ssleay32.lib;ohMediaPlayer.lib;ohNetGeneratedProxies.lib;CodecAacBase.lib;CodecAac.lib;CodecAifc.lib;CodecAlacBase.lib;CodecAlac.lib;CodecPcm.lib;CodecAiffBase.lib;CodecAiff.lib;libOgg.lib;CodecVorbis.lib;CodecAdts.lib;CodecFlac.lib;CodecWav.lib;SourcePlaylist.lib;SourceUpnpAv.lib;SourceSongcast.lib;WebAppFramework.lib;ConfigUi.lib;Shell.lib;SourceRadio.lib;CodecMp3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
