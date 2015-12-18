@@ -10,14 +10,12 @@
 #include "MediaPlayerIF.h"
 #include "MemoryCheck.h"
 #include "UpdateCheck.h"
+#include "version.h"
 
 using namespace OpenHome;
 using namespace OpenHome::Av;
 using namespace OpenHome::Media;
 using namespace OpenHome::Net;
-
-// Location of application release JSON file.
-static const TChar RELEASE_URL[] = "http://elmo/~alans/application.json";
 
 static ExampleMediaPlayer* g_emp = NULL; // Example media player instance.
 static Library*            g_lib = NULL; // Library instance.

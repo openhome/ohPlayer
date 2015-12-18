@@ -15,14 +15,13 @@
 #include "LitePipeTestApp.h"
 #include "MediaPlayerIF.h"
 #include "UpdateCheck.h"
+#include "version.h"
 
 using namespace OpenHome;
 using namespace OpenHome::Av;
 using namespace OpenHome::Media;
 using namespace OpenHome::Net;
 
-// Location of application release JSON file.
-static const TChar RELEASE_URL[] = "http://elmo/~alans/application.json";
 static const TInt  TenSeconds    = 10;
 static const TInt  FourHours     = 4 * 60 * 60;
 

@@ -19,7 +19,7 @@ using namespace OpenHome::Configuration;
 using namespace OpenHome::Media;
 using namespace OpenHome::Net;
 
-static NSString *const kUpdateUri = OPENHOME_UPDATE_URI;
+static NSString *const kUpdateUri = @RELEASE_URL;
 
 MediaPlayerIF::MediaPlayerIF(TIpAddress subnet)
 {
