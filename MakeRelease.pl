@@ -179,7 +179,7 @@ sub updateOoptionalFeatures
 # Build the release package and installer for Linux based platforms.
 sub buildLinuxRelease
 {
-    my ($platform, $version, $debug) = @_;
+    my ($platform, $version, $debug, $nativeCodecs) = @_;
 
     # Cleanup any previous build.
     system("make clean");
@@ -189,15 +189,13 @@ sub buildLinuxRelease
     unlink glob("$platform/*sh");
     unlink glob("$platform/*deb");
 
+    my $options;
+
+    $options .= " DEBUG=0" if (defined $debug);
+    $options .= " USE_LIBAVCODEC=0" if (defined $nativeCodecs);
+
     # Execute the build
-    if (defined $debug)
-    {
-        system("make DEBUG=0 $platform");
-    }
-    else
-    {
-        system("make $platform");
-    }
+    system("make $options $platform");
 
     die "ERROR: Build Failed\n" unless ($? == 0);
 
@@ -365,7 +363,8 @@ sub buildOsxRelease
 
 my $USAGE = <<EndOfText;
 Usage: MakeRelease.pl --platform=<ubuntu|raspbian|Win32|osx> --version=<version>
-                      [--debug] [--enable-mp3] [--enable-aac]
+                      [--debug] [--use-native-codecs] [--enable-mp3]
+                      [--enable-aac]
                       [--enable-radio --tunein-partner-id=<tunein partner id]
                       [--enable-tidal --tidal-token=<tidal token>]s
                       [--enable-qobuz --qobuz-secret=<qobuz secret>
@@ -375,6 +374,7 @@ EndOfText
 GetOptions("platform=s"          => \$platform,
            "version=s"           => \$version,
            "debug"               => \$debug,
+           "use-native-codecs"   => \$nativeCodecs,
            "enable-mp3"          => \$enableMp3,
            "enable-aac"          => \$enableAac,
            "enable-radio"        => \$enableRadio,
@@ -414,6 +414,12 @@ if ((defined $enableQobuz && !(defined $qobuzSecret && defined $qobuzAppId)) ||
     die "$USAGE\n";
 }
 
+if (defined $nativeCodecs &&
+    ($platform != "ubuntu" && $platform != "raspbian"))
+{
+    die "Native Codecs curerntly unavailable for this platform\n";
+}
+
 # Move to the directory containing the platform source.
 my $sourceDir = abs_path(dirname($0));
 
@@ -450,7 +456,7 @@ if ($platform !~ /osx/)
 # Generate the release
 if ($platform =~ /raspbian|ubuntu/)
 {
-    &buildLinuxRelease($platform, $version, $debug);
+    &buildLinuxRelease($platform, $version, $debug, $nativeCodecs);
 }
 elsif ($platform =~ /Win32/)
 {
