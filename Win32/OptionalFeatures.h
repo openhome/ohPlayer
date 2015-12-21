@@ -1,3 +1,8 @@
+#define ENABLE_AAC
+#define ENABLE_MP3
+#define ENABLE_TIDAL
+#define ENABLE_QOBUZ
+#define ENABLE_RADIO
 // Optional Features
 
 // Uncomment this line to enable MP3 support

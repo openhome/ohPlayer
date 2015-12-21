@@ -245,9 +245,12 @@ DvDevice* ExampleMediaPlayer::UpnpAvDevice()
 
 void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 {
-    // Add containers
+    // Register containers.
+#ifndef USE_IMFCODEC
     iMediaPlayer->Add(Codec::ContainerFactory::NewId3v2());
+    // Registering this container breaks the Media Foundation AAC recognition.
     iMediaPlayer->Add(Codec::ContainerFactory::NewMpeg4(iMediaPlayer->MimeTypes()));
+#endif // USE_IMFCODEC
     iMediaPlayer->Add(Codec::ContainerFactory::NewMpegTs(iMediaPlayer->MimeTypes()));
 
     // Add codecs
@@ -255,18 +258,24 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
     iMediaPlayer->Add(Codec::CodecFactory::NewWav(iMediaPlayer->MimeTypes()));
     iMediaPlayer->Add(Codec::CodecFactory::NewAiff(iMediaPlayer->MimeTypes()));
     iMediaPlayer->Add(Codec::CodecFactory::NewAifc(iMediaPlayer->MimeTypes()));
-
+#ifdef USE_IMFCODEC
+#if defined (ENABLE_AAC) || defined (ENABLE_MP3)
+    // Use distributable MP3/AAC Codec, using Media Foundation
+    iMediaPlayer->Add(Codec::CodecFactory::NewMp3(iMediaPlayer->MimeTypes()));
+#endif // ENABLE_AAC || ENABLE_MP3
+#else // USE_IMFCODEC
 #ifdef ENABLE_AAC
     // Disabled by default - requires patent license
     iMediaPlayer->Add(Codec::CodecFactory::NewAac(iMediaPlayer->MimeTypes()));
     iMediaPlayer->Add(Codec::CodecFactory::NewAdts(iMediaPlayer->MimeTypes()));
 #endif // ENABLE_AAC
-    iMediaPlayer->Add(Codec::CodecFactory::NewAlac(iMediaPlayer->MimeTypes()));
+
 #ifdef ENABLE_MP3
     // Disabled by default - requires patent and copyright licenses
     iMediaPlayer->Add(Codec::CodecFactory::NewMp3(iMediaPlayer->MimeTypes()));
 #endif // ENABLE_MP3
-
+#endif // USE_IMFCODEC
+    iMediaPlayer->Add(Codec::CodecFactory::NewAlac(iMediaPlayer->MimeTypes()));
     iMediaPlayer->Add(Codec::CodecFactory::NewPcm());
     iMediaPlayer->Add(Codec::CodecFactory::NewVorbis(iMediaPlayer->MimeTypes()));
 
@@ -280,7 +289,9 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 
     // Add sources
     iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer));
+
     iMediaPlayer->Add(SourceFactory::NewUpnpAv(*iMediaPlayer, *iDeviceUpnpAv));
+
     iMediaPlayer->Add(SourceFactory::NewReceiver(*iMediaPlayer,
                                                   iTxTimestamper,
                                                   iTxTsMapper,
