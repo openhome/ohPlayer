@@ -87,7 +87,7 @@ NSMenuItem *subnetItem =  nil;
 {
     NSAlert *alert = [[NSAlert alloc] init];
     [alert setMessageText:@"Update available"];
-    [alert setInformativeText:@"An update is available for the OpenHome mediaplayer. Do you want to download and install it?"];
+    [alert setInformativeText:@"An update is available for the OpenHome Sample Application. Do you want to download and install it?"];
     [alert addButtonWithTitle:@"Yes"];
     [alert addButtonWithTitle:@"No"];
     
@@ -305,7 +305,7 @@ NSMenuItem *subnetItem =  nil;
 - (NSURL *)applicationDocumentsDirectory {
     // The directory the application uses to store the Core Data store file. This code uses a directory named "com.openhome.mediaplayer" in the user's Application Support directory.
     NSURL *appSupportURL = [[[NSFileManager defaultManager] URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask] lastObject];
-    return [appSupportURL URLByAppendingPathComponent:@"com.openhome.mediaplayer"];
+    return [appSupportURL URLByAppendingPathComponent:@"com.openhome.player"];
 }
 
 - (NSManagedObjectModel *)managedObjectModel {

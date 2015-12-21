@@ -331,28 +331,29 @@ sub buildOsxRelease
     # Build and install the application to our temporary folder.
     if (defined $debug)
     {
-        system("xcodebuild -project sample.xcodeproj -configuration Debug " .
-               "clean install DSTROOT=$scratchDir/sample.dst");
+        system("xcodebuild -project OpenHomePlayer.xcodeproj -configuration " .
+               "Debug clean install DSTROOT=$scratchDir/OpenHomePlayer.dst");
     }
     else
     {
-        system("xcodebuild -project sample.xcodeproj -configuration Release " .
-               "clean install DSTROOT=$scratchDir/sample.dst");
+        system("xcodebuild -project OpenHomePlayer.xcodeproj -configuration " .
+               "Release clean install DSTROOT=$scratchDir/OpenHomePlayer.dst");
     }
 
     die "ERROR: Installation Build Failed\n" unless ($? == 0);
 
-    # Generate the sample component package.
+    # Generate the OpenHomePlayer component package.
     #
     # The package is configured to install to '/Applications/mediaplayer.app'
-    system("pkgbuild --root $scratchDir/sample.dst/ --install-location \"/\" " .
-           "$scratchDir/Sample.pkg");
+    system("pkgbuild --root $scratchDir/OpenHomePlayer.dst/ " .
+           "--install-location \"/\" $scratchDir/OpenHomePlayer.pkg");
 
-    die "ERROR: Component PAckage Generation Failed\n" unless ($? == 0);
+    die "ERROR: Component Package Generation Failed\n" unless ($? == 0);
 
     # Generate the installer package.
-    system("productbuild --distribution sample/Distribution.xml " .
-           "--package-path $scratchDir --resources sample LitePipetestApp.pkg");
+    system("productbuild --distribution OpenHomePlayer/Distribution.xml " .
+           "--package-path $scratchDir --resources OpenHomePlayer " .
+           "OpenHomePlayer.pkg");
 
     die "ERROR: Installer Package Generation Failed\n" unless ($? == 0);
 }
@@ -429,7 +430,7 @@ if ($platform =~ /raspbian|ubuntu/)
 }
 elsif ($platform =~ /osx/)
 {
-    $sourceDir .= "/$platform/sample";
+    $sourceDir .= "/$platform/OpenHomePlayer";
 }
 else
 {

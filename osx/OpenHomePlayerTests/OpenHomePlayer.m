@@ -1,6 +1,6 @@
 //
-//  sampleTests.m
-//  sampleTests
+//  OpenHomePlayerTests.m
+//  OpenHomePlayerTests
 //
 //  Created by Pete McLaughlin on 23/02/2015.
 //  Copyright (c) 2015 Linn Products Limited. All rights reserved.
@@ -9,11 +9,11 @@
 #import <Cocoa/Cocoa.h>
 #import <XCTest/XCTest.h>
 
-@interface sampleTests : XCTestCase
+@interface OpenHomePlayerTests : XCTestCase
 
 @end
 
-@implementation sampleTests
+@implementation OpenHomePlayerTests
 
 - (void)setUp {
     [super setUp];

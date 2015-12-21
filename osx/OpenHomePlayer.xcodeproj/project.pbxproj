@@ -11,7 +11,7 @@
 		EB3670581ADEA86B00AC684B /* PcmHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB3670571ADEA86B00AC684B /* PcmHandler.cpp */; };
 		EB40D9241A9B23A20043722C /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB40D9231A9B23A20043722C /* AppDelegate.mm */; };
 		EB40D9261A9B23A20043722C /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = EB40D9251A9B23A20043722C /* main.m */; };
-		EB40D92C1A9B23A20043722C /* sample.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = EB40D92A1A9B23A20043722C /* sample.xcdatamodeld */; };
+		EB40D92C1A9B23A20043722C /* OpenHomePlayer.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = EB40D92A1A9B23A20043722C /* OpenHomePlayer.xcdatamodeld */; };
 		EB40D92E1A9B23A20043722C /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EB40D92D1A9B23A20043722C /* Images.xcassets */; };
 		EB40D9311A9B23A20043722C /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EB40D92F1A9B23A20043722C /* Main.storyboard */; };
 		EB463CB21ACAD87D002AF5B2 /* RamStore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB463CB01ACAD87D002AF5B2 /* RamStore.cpp */; };
@@ -63,22 +63,22 @@
 
 /* Begin PBXFileReference section */
 		EB3670571ADEA86B00AC684B /* PcmHandler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PcmHandler.cpp; sourceTree = "<group>"; };
-		EB40D91D1A9B23A20043722C /* mediaplayer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = mediaplayer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EB40D91D1A9B23A20043722C /* OpenHomePlayer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenHomePlayer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EB40D9211A9B23A20043722C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		EB40D9221A9B23A20043722C /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		EB40D9231A9B23A20043722C /* AppDelegate.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
 		EB40D9251A9B23A20043722C /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		EB40D92B1A9B23A20043722C /* sample.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = sample.xcdatamodel; sourceTree = "<group>"; };
+		EB40D92B1A9B23A20043722C /* OpenHomePlayer.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = OpenHomePlayer.xcdatamodel; sourceTree = "<group>"; };
 		EB40D92D1A9B23A20043722C /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		EB40D9301A9B23A20043722C /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		EB40D93B1A9B23A20043722C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		EB40D93C1A9B23A20043722C /* sampleTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = sampleTests.m; sourceTree = "<group>"; };
+		EB40D93C1A9B23A20043722C /* OpenHomePlayerTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = OpenHomePlayerTests.m; sourceTree = "<group>"; };
 		EB463CAC1ACA03FE002AF5B2 /* ExampleMediaPlayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ExampleMediaPlayer.h; sourceTree = "<group>"; };
 		EB463CB01ACAD87D002AF5B2 /* RamStore.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RamStore.cpp; sourceTree = "<group>"; };
 		EB463CB11ACAD87D002AF5B2 /* RamStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RamStore.h; sourceTree = "<group>"; };
 		EB463CB31ACAE083002AF5B2 /* DriverOsx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DriverOsx.cpp; sourceTree = "<group>"; };
 		EB463CB41ACAE083002AF5B2 /* DriverOsx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DriverOsx.h; sourceTree = "<group>"; };
-		EB553D0A1B52D75300B0D17D /* SoftPlayer */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SoftPlayer; path = sample/SoftPlayer; sourceTree = "<group>"; };
+		EB553D0A1B52D75300B0D17D /* SoftPlayer */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SoftPlayer; path = OpenHomePlayer/SoftPlayer; sourceTree = "<group>"; };
 		EB650A211B31B64300205BAC /* libohNetDevices.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libohNetDevices.a; path = "../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib/libohNetDevices.a"; sourceTree = "<group>"; };
 		EB650A221B31B64300205BAC /* libohNetProxies.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libohNetProxies.a; path = "../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib/libohNetProxies.a"; sourceTree = "<group>"; };
 		EB650A231B31B64300205BAC /* ohNetTestsCore.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = ohNetTestsCore.a; path = "../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib/ohNetTestsCore.a"; sourceTree = "<group>"; };
@@ -188,8 +188,8 @@
 				EB650A621B32A09500205BAC /* ohNetLibs */,
 				EB796A691AD5BA1C00684025 /* AudioToolbox.framework */,
 				EB796A591AD2B2C700684025 /* SystemConfiguration.framework */,
-				EB40D91F1A9B23A20043722C /* sample */,
-				EB40D9391A9B23A20043722C /* sampleTests */,
+				EB40D91F1A9B23A20043722C /* OpenHomePlayer */,
+				EB40D9391A9B23A20043722C /* OpenHomePlayerTests */,
 				EB40D91E1A9B23A20043722C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -197,12 +197,12 @@
 		EB40D91E1A9B23A20043722C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				EB40D91D1A9B23A20043722C /* mediaplayer.app */,
+				EB40D91D1A9B23A20043722C /* OpenHomePlayer.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		EB40D91F1A9B23A20043722C /* sample */ = {
+		EB40D91F1A9B23A20043722C /* OpenHomePlayer */ = {
 			isa = PBXGroup;
 			children = (
 				EBCA55AE1B44398B00CE28B4 /* ControlPointProxy.cpp */,
@@ -229,13 +229,13 @@
 				EBA0E8EE1AC5D8AF00903A7F /* MediaPlayerIF.mm */,
 				EB40D92D1A9B23A20043722C /* Images.xcassets */,
 				EB40D92F1A9B23A20043722C /* Main.storyboard */,
-				EB40D92A1A9B23A20043722C /* sample.xcdatamodeld */,
+				EB40D92A1A9B23A20043722C /* OpenHomePlayer.xcdatamodeld */,
 				EB40D9201A9B23A20043722C /* Supporting Files */,
 				EB8692B21B3AEEAE00C49C74 /* Prefs.mm */,
 				EB8692B41B3AEEBB00C49C74 /* Prefs.h */,
 				EBCA55AD1B4112A600CE28B4 /* version.h */,
 			);
-			path = sample;
+			path = OpenHomePlayer;
 			sourceTree = "<group>";
 		};
 		EB40D9201A9B23A20043722C /* Supporting Files */ = {
@@ -247,13 +247,13 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
-		EB40D9391A9B23A20043722C /* sampleTests */ = {
+		EB40D9391A9B23A20043722C /* OpenHomePlayerTests */ = {
 			isa = PBXGroup;
 			children = (
-				EB40D93C1A9B23A20043722C /* sampleTests.m */,
+				EB40D93C1A9B23A20043722C /* OpenHomePlayerTests.m */,
 				EB40D93A1A9B23A20043722C /* Supporting Files */,
 			);
-			path = sampleTests;
+			path = OpenHomePlayerTests;
 			sourceTree = "<group>";
 		};
 		EB40D93A1A9B23A20043722C /* Supporting Files */ = {
@@ -307,9 +307,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		EB40D91C1A9B23A20043722C /* mediaplayer */ = {
+		EB40D91C1A9B23A20043722C /* OpenHomePlayer */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EB40D9401A9B23A20043722C /* Build configuration list for PBXNativeTarget "mediaplayer" */;
+			buildConfigurationList = EB40D9401A9B23A20043722C /* Build configuration list for PBXNativeTarget "OpenHomePlayer" */;
 			buildPhases = (
 				EB40D9191A9B23A20043722C /* Sources */,
 				EB40D91A1A9B23A20043722C /* Frameworks */,
@@ -319,9 +319,9 @@
 			);
 			dependencies = (
 			);
-			name = mediaplayer;
-			productName = sample;
-			productReference = EB40D91D1A9B23A20043722C /* mediaplayer.app */;
+			name = OpenHomePlayer;
+			productName = OpenHomePlayer;
+			productReference = EB40D91D1A9B23A20043722C /* OpenHomePlayer.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -338,7 +338,7 @@
 					};
 				};
 			};
-			buildConfigurationList = EB40D9181A9B23A20043722C /* Build configuration list for PBXProject "sample" */;
+			buildConfigurationList = EB40D9181A9B23A20043722C /* Build configuration list for PBXProject "OpenHomePlayer" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -351,7 +351,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				EB40D91C1A9B23A20043722C /* mediaplayer */,
+				EB40D91C1A9B23A20043722C /* OpenHomePlayer */,
 			);
 		};
 /* End PBXProject section */
@@ -381,7 +381,7 @@
 				EB3670581ADEA86B00AC684B /* PcmHandler.cpp in Sources */,
 				EB8692A51B38695600C49C74 /* ConfigPersistentStore.mm in Sources */,
 				EB796A521AD2A7A200684025 /* ExampleMediaPlayer.mm in Sources */,
-				EB40D92C1A9B23A20043722C /* sample.xcdatamodeld in Sources */,
+				EB40D92C1A9B23A20043722C /* OpenHomePlayer.xcdatamodeld in Sources */,
 				EB8692B31B3AEEAE00C49C74 /* Prefs.mm in Sources */,
 				EB40D9261A9B23A20043722C /* main.m in Sources */,
 				EBCA55B01B44398B00CE28B4 /* ControlPointProxy.cpp in Sources */,
@@ -507,7 +507,7 @@
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Debug/include/ohnet",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Debug/include/ohnet",
 				);
-				INFOPLIST_FILE = sample/Info.plist;
+				INFOPLIST_FILE = OpenHomePlayer/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
@@ -536,7 +536,7 @@
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Release/include/ohnet",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Release/include/ohnet",
 				);
-				INFOPLIST_FILE = sample/Info.plist;
+				INFOPLIST_FILE = OpenHomePlayer/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
@@ -553,7 +553,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		EB40D9181A9B23A20043722C /* Build configuration list for PBXProject "sample" */ = {
+		EB40D9181A9B23A20043722C /* Build configuration list for PBXProject "OpenHomePlayer" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EB40D93E1A9B23A20043722C /* Debug */,
@@ -562,7 +562,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EB40D9401A9B23A20043722C /* Build configuration list for PBXNativeTarget "mediaplayer" */ = {
+		EB40D9401A9B23A20043722C /* Build configuration list for PBXNativeTarget "OpenHomePlayer" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EB40D9411A9B23A20043722C /* Debug */,
@@ -574,13 +574,13 @@
 /* End XCConfigurationList section */
 
 /* Begin XCVersionGroup section */
-		EB40D92A1A9B23A20043722C /* sample.xcdatamodeld */ = {
+		EB40D92A1A9B23A20043722C /* OpenHomePlayer.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
-				EB40D92B1A9B23A20043722C /* sample.xcdatamodel */,
+				EB40D92B1A9B23A20043722C /* OpenHomePlayer.xcdatamodel */,
 			);
-			currentVersion = EB40D92B1A9B23A20043722C /* sample.xcdatamodel */;
-			path = sample.xcdatamodeld;
+			currentVersion = EB40D92B1A9B23A20043722C /* OpenHomePlayer.xcdatamodel */;
+			path = OpenHomePlayer.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;
 		};
