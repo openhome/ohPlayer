@@ -31,7 +31,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_NOTIFICATIONICON    ICON                    "LitePipeTestApp.ico"
+IDI_NOTIFICATIONICON    ICON                    "OpenHomePlayer.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -93,8 +93,8 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_APP_TITLE               "LitePipe Sample"
-    IDS_TOOLTIP                 "LitePipe Sample Application"
+    IDS_APP_TITLE               "OpenHome Player"
+    IDS_TOOLTIP                 "OpenHome Player"
     IDS_UPDATE_TITLE            "Update"
     IDS_UPDATE_TEXT             "There are updates available for this application"
     IDS_AUDIO_DISCONNECT_TITLE  "Audio Client Disconnected"

@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="LitePipeTestApp"
+	Name="OpenHomePlayer"
 	ProjectGUID="{E96BBD31-75F6-4CC2-B76E-91C1C9E5AF83}"
-	RootNamespace="LitePipeTestApp"
+	RootNamespace="OpenHomePlayer"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -325,15 +325,15 @@
 	</References>
 	<Files>
 		<File
-			RelativePath=".\LitePipeTestApp.cpp"
+			RelativePath=".\OpenHomePlayer.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\LitePipeTestApp.ico"
+			RelativePath=".\OpenHomePlayer.ico"
 			>
 		</File>
 		<File
-			RelativePath=".\LitePipeTestApp.rc"
+			RelativePath=".\OpenHomePlayer.rc"
 			>
 		</File>
 		<File

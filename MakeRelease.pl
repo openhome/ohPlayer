@@ -235,12 +235,12 @@ sub buildWin32Release
     # Cleanup any previous build.
     if (defined $debug)
     {
-        system("msbuild LitePipeTestApp.sln /target:Clean /p:Platform=Win32 " .
+        system("msbuild OpenHomePlayer.sln /target:Clean /p:Platform=Win32 " .
                "/p:Configuration=Debug");
     }
     else
     {
-        system("msbuild LitePipeTestApp.sln /target:Clean /p:Platform=Win32 " .
+        system("msbuild OpenHomePlayer.sln /target:Clean /p:Platform=Win32 " .
                "/p:Configuration=Release");
     }
 
@@ -251,12 +251,12 @@ sub buildWin32Release
     # Execute the build
     if (defined $debug)
     {
-        system("msbuild LitePipeTestApp.sln /p:Platform=Win32 " .
+        system("msbuild OpenHomePlayer.sln /p:Platform=Win32 " .
                "/p:Configuration=Debug");
     }
     else
     {
-        system("msbuild LitePipeTestApp.sln /p:Platform=Win32 " .
+        system("msbuild OpenHomePlayer.sln /p:Platform=Win32 " .
                "/p:Configuration=Release");
     }
 
@@ -279,20 +279,20 @@ sub buildWin32Release
     {
         system("iscc \/dMySrcDir=\"$parentFolder\" "    .
                "\/dMyAppVersion=\"$version\" \/dDebug " .
-               "LitePipeSampleAppInstaller.iss");
+               "OpenHomePlayerInstaller.iss");
     }
     else
     {
         system("iscc \/dMySrcDir=\"$parentFolder\" " .
-               "\/dMyAppVersion=\"$version\" LitePipeSampleAppInstaller.iss");
+               "\/dMyAppVersion=\"$version\" OpenHomePlayerInstaller.iss");
     }
 
     die "ERROR: Package Generation Failed\n" unless ($? == 0);
 
     # Annotate the installer with the version.
     $version =~ s/\./-/g;
-    rename("setup.exe", "setup-$version.exe") or
-        die "ERROR: Cannot rename 'setup.exe' -> 'setup-$version.exe'\n$!\n";
+    rename("setup.exe", "OpenHomePlayerSetup-$version.exe") or
+        die "ERROR: Cannot rename 'setup.exe' -> 'OpenHomePlayerSetup-$version.exe'\n$!\n";
 }
 
 sub buildOsxRelease

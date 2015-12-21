@@ -1,4 +1,4 @@
-End-User License Agreement for the LitePipe Win32 Sample Application
+End-User License Agreement for the OpenHomePlayer Win32 Sample Application
 --------------------------------------------------------------------
 
 DO NOT SHIP WITH THIS PLACEHOLDER LICENSE

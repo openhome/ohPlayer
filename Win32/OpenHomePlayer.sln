@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LitePipeTestApp", "LitePipeTestApp.vcxproj", "{E96BBD31-75F6-4CC2-B76E-91C1C9E5AF83}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenHomePlayer", "OpenHomePlayer.vcxproj", "{E96BBD31-75F6-4CC2-B76E-91C1C9E5AF83}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -17,12 +17,12 @@
 
 using namespace std;
 
-static const WCHAR WINDOW_CLASS[] = L"LitePipe"; // Window class name.
+static const WCHAR WINDOW_CLASS[] = L"OpenHomePlayer"; // Window class name.
 static const INT   ICON_ID        = 100;         // System tray icon identifier.
 
 // Application menu item positions.
 //
-// These reflect the IDC_CONTEXTMENU defined in LitePipeTestApp.rc
+// These reflect the IDC_CONTEXTMENU defined in OpenHomePlayer.rc
 // and modified programatically in ShowContextMenu().
 static const UINT MENU_PLAY    = 0;
 static const UINT MENU_PAUSE   = 1;
@@ -459,7 +459,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                     WCHAR  *wcstring;
                     size_t  convertedChars;
                     UINT    length;
-                    string  aboutString("LitePipeTestApp " CURRENT_VERSION
+                    string  aboutString("OpenHome Player " CURRENT_VERSION
                                         "\n\nCopyright (c) OpenHome");
 
                     // Convert to a wide string.

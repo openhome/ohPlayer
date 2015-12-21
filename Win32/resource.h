@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by LitePipeTestApp.rc
+// Used by OpenHomePlayer.rc
 
 #pragma once
 

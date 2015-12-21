@@ -20,9 +20,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E96BBD31-75F6-4CC2-B76E-91C1C9E5AF83}</ProjectGuid>
-    <RootNamespace>LitePipeTestApp</RootNamespace>
+    <RootNamespace>OpenHomePlayer</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <ProjectName>LitePipeTestApp</ProjectName>
+    <ProjectName>OpenHomePlayer</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -192,7 +192,7 @@
     <ClCompile Include="AudioSessionEvents.cpp" />
     <ClCompile Include="ConfigRegStore.cpp" />
     <ClCompile Include="ControlPointProxy.cpp" />
-    <ClCompile Include="LitePipeTestApp.cpp" />
+    <ClCompile Include="OpenHomePlayer.cpp" />
     <ClCompile Include="ExampleMediaPlayer.cpp" />
     <ClCompile Include="MediaPlayerIF.cpp" />
     <ClCompile Include="ProcessorPcmWASAPI.cpp" />
@@ -203,10 +203,10 @@
     <ClCompile Include="WWUtil.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="LitePipeTestApp.ico" />
+    <Image Include="OpenHomePlayer.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="LitePipeTestApp.rc" />
+    <ResourceCompile Include="OpenHomePlayer.rc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Resource.h" />
