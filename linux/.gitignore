@@ -11,7 +11,7 @@ objs/
 debug-objs/
 
 # Executables
-litepipe-test-app
+openhome-player
 
 # Generated install packages
 *.deb

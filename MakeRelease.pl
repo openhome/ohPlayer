@@ -200,7 +200,7 @@ sub buildLinuxRelease
     die "ERROR: Build Failed\n" unless ($? == 0);
 
     # Generate the release package.
-    system("./GeneratePkg.pl -p=$platform -a=litepipe-test-app -v=\"$version\" --i");
+    system("./GeneratePkg.pl -p=$platform -a=openhome-player -v=\"$version\" --i");
 
     die "ERROR: Package Generation Failed\n" unless ($? == 0);
 }

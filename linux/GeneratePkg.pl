@@ -256,7 +256,7 @@ $fpmCmd .= ' -m "Openhome Admin <admin@openhome.org>"';
 $fpmCmd .= ' --vendor "Openhome Admin <admin@openhome.org>"';
 $fpmCmd .= ' --url "http://www.openhome.org/"';
 $fpmCmd .= ' --license "Do Not Ship"';
-$fpmCmd .= ' --description "LitePipe Test Application"';
+$fpmCmd .= ' --description "OpenHome Player"';
 $fpmCmd .= " usr";
 
 system("$fpmCmd");

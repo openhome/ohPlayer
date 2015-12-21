@@ -9,7 +9,7 @@
 #include <stdlib.h>
 
 #include "ConfigGTKKeyStore.h"
-#include "LitePipeTestApp.h"
+#include "OpenHomePlayer.h"
 
 using namespace OpenHome;
 using namespace OpenHome::Configuration;

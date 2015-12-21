@@ -1,5 +1,5 @@
 # Makefile
- 
+
 #
 # Command Line Options:
 #   DEBUG=0: Debug build.
@@ -8,7 +8,7 @@
 #   NVWA_DIR=<source location>:
 #            Integrate a cross platform new/delete leak detector.
 #            Downloadable from http://wyw.dcweb.cn/leakage.htm
-#                     
+#
 
 .PHONY: default all clean build install uninstall
 
@@ -32,15 +32,15 @@ $(OBJ_DIR)/%.o: %.cpp $(HEADERS)
 
 $(TARGET): $(OBJECTS)
 	$(CC) $(OBJECTS) -Wall $(LIBS) -o $@
-    
+
 build: $(TARGET)
     # GTK Specifics
     GTK_CFLAGS := $(shell pkg-config --cflags gtk+-3.0)
     GTK_LIBS   := $(shell pkg-config --libs gtk+-3.0)
 
     $(error OS platform is [$(OSPLATFORM)])
-    
-    TARGET    = litepipe-test-app
+
+    TARGET    = openhome-player
 
     INSTALL      = install
     RESOURCEDIR  = ../dependencies/$(TARG_ARCH)/ohMediaPlayer/res
@@ -51,7 +51,7 @@ build: $(TARGET)
     BINDIR = $(PREFIX)/bin
 
     # The directory to install the resource files to.
-    RESDIR = $(PREFIX)/share/litepipe-test-app
+    RESDIR = $(PREFIX)/share/openhome-player
 
     CFLAGS = -c -Wall -std=c++11 $(GTK_CFLAGS)
 
@@ -72,7 +72,7 @@ build: $(TARGET)
             TARG_ARCH   = $(TARG_ARCH)
         endif
     endif
-    
+
     ifdef DEBUG
         BUILD_TYPE = DEBUG
         OBJ_DIR = debug-objs
@@ -106,9 +106,9 @@ build: $(TARGET)
     INCLUDES += -I$(NVWA_DIR)
     HEADERS  += $(wildcard $(NVWA_DIR)/*.h)
     endif
-   
+
    	@mkdir -p $(OBJ_DIR)
-    
+
 clean:
 	rm -rf $(OBJ_DIR) $(OBJ_DIR)
 	rm -f $(TARGET)

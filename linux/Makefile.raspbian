@@ -28,7 +28,7 @@ else
     TARG_ARCH   = Linux-armhf
 endif
 
-TARGET    = $(OSPLATFORM)/litepipe-test-app
+TARGET    = $(OSPLATFORM)/openhome-player
 
 INSTALL      = install
 RESOURCEDIR  = ../dependencies/$(TARG_ARCH)/ohMediaPlayer/res
@@ -39,7 +39,7 @@ PREFIX = /usr
 BINDIR = $(PREFIX)/bin
 
 # The directory to install the resource files to.
-RESDIR = $(PREFIX)/share/litepipe-test-app
+RESDIR = $(PREFIX)/share/openhome-player
 
 CFLAGS = -c -Wall -std=c++11 $(GTK_CFLAGS) -DTARG_ARCH=$(TARG_ARCH) \
          -fstack-protector -fstack-check

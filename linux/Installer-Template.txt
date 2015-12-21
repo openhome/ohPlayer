@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Self extracting installer for the litepipe-test-app
+# Self extracting installer for OpenHome Player
 
 pkgFile=<PUT PKG FILE HERE>
 

@@ -50,13 +50,13 @@ static GThread  *g_mplayerThread    = NULL;  // Media Player thread
 static InitArgs  g_mPlayerArgs;              // Media Player arguments.
 
 #ifdef USE_UNITY
-static const gchar *g_light_icon_path = "/usr/share/litepipe-test-app";
+static const gchar *g_light_icon_path = "/usr/share/openhome-player";
 static const gchar *g_light_icon_name = "OpenHome-Light-48x48";
 #endif // USE_UNITY
 static const gchar *g_icon_path =
-                        "/usr/share/litepipe-test-app/OpenHome-48x48.png";
+                        "/usr/share/openhome-player/OpenHome-48x48.png";
 
-const gchar        *g_appName   = "LitePipeTestApp";
+const gchar        *g_appName   = "OpenHomePlayer";
 
 static void displayNotification(const gchar *summary,
                                 const gchar *body,

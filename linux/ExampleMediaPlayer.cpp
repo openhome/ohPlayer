@@ -21,7 +21,7 @@
 #include "ControlPointProxy.h"
 #include "CustomMessages.h"
 #include "ExampleMediaPlayer.h"
-#include "LitePipeTestApp.h"
+#include "OpenHomePlayer.h"
 #include "MediaPlayerIF.h"
 #include "OptionalFeatures.h"
 #include "RamStore.h"
@@ -362,7 +362,7 @@ void ExampleMediaPlayer::AddConfigApp()
                                           sourcesBufs,
                                           Brn("Softplayer"),
                                           Brn("/usr/share/"
-                                              "litepipe-test-app/res/"),
+                                              "openhome-player/res/"),
                                           kMaxUiTabs,
                                           kUiSendQueueSize);
 

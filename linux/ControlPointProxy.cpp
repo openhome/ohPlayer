@@ -20,7 +20,7 @@
 
 #include "ControlPointProxy.h"
 #include "CustomMessages.h"
-#include "LitePipeTestApp.h"
+#include "OpenHomePlayer.h"
 
 using namespace OpenHome;
 using namespace OpenHome::Av;

@@ -12,7 +12,7 @@
 
 #include "DriverAlsa.h"
 #include "ExampleMediaPlayer.h"
-#include "LitePipeTestApp.h"
+#include "OpenHomePlayer.h"
 #include "MediaPlayerIF.h"
 #include "UpdateCheck.h"
 #include "version.h"
