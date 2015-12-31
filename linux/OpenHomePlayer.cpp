@@ -5,7 +5,7 @@
 #include <libappindicator/app-indicator.h>
 #endif // USE_UNITY
 #include <gio/gappinfo.h>
-#include <libnotify/notify.h>
+//#include <libnotify/notify.h>
 #include <vector>
 
 #include "CustomMessages.h"
@@ -62,6 +62,7 @@ static void displayNotification(const gchar *summary,
                                 const gchar *body,
                                 NotificationClassifiction nClass)
 {
+#ifndef DISABLE_LIBNOTIFY
     NotifyNotification *notification;
     GError             *error = NULL;
     const gchar        *icon;
@@ -89,6 +90,7 @@ static void displayNotification(const gchar *summary,
     }
 
     g_object_unref(G_OBJECT(notification));
+#endif
 }
 
 #ifndef USE_UNITY
@@ -479,7 +481,9 @@ int main(int argc, char **argv)
 #endif
 
     gtk_init(&argc, &argv);
+#ifndef DISABLE_LIBNOTIFY
     notify_init(g_appName);
+#endif
 
 #ifdef USE_UNITY
     AppIndicator *indicator;
@@ -504,7 +508,9 @@ int main(int argc, char **argv)
     delete[] g_updateLocation;
     g_updateLocation = NULL;
 
+#ifndef DISABLE_LIBNOTIFY
     notify_uninit();
+#endif
 
     return 0;
 }

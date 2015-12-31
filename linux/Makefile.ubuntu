@@ -74,7 +74,12 @@ else
     RESTRICTED_CODECS = -lCodecAdts -lCodecAac -lCodecAacBase -lCodecMp3
 endif
 
-LIBS         = $(GTK_LIBS) $(UNITY_LIBS) -lnotify -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lSourceRadio -lShell -lohMediaPlayer -lWebAppFramework -lConfigUi -lohNetGeneratedProxies -lohNetCore $(RESTRICTED_CODECS) -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecFlac -lCodecWav -lohPipeline -lpthread -lssl -lcrypto -ldl
+LIBS         = $(GTK_LIBS) $(UNITY_LIBS) -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lSourceRadio -lShell -lohMediaPlayer -lWebAppFramework -lConfigUi -lohNetGeneratedProxies -lohNetCore $(RESTRICTED_CODECS) -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecFlac -lCodecWav -lohPipeline -lpthread -lssl -lcrypto -ldl
+ifndef DISABLE_LIBNOTIFY
+    LIBS += -lnotify
+else
+    CFLAGS += -DDISABLE_LIBNOTIFY
+endif
 
 INCLUDES     = -I../dependencies/$(TARG_ARCH)/ohMediaPlayer/include -I../dependencies/$(TARG_ARCH)/ohNetmon/include -I../dependencies/$(TARG_ARCH)/openssl/include -I../dependencies/$(TARG_ARCH)/ohNetGenerated-$(TARG_ARCH)-$(BUILD_TYPE)/include/ohnet/OpenHome/Net/Core
 
