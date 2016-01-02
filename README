@@ -1,19 +1,19 @@
-Sample apps for LitePipe (https://github.com/openhome/LitePipe) for Mac, Windows, Linux.
+OpenHome Sample Players (https://github.com/openhome/ohPlayer) for Mac, Windows, Linux and Raspberry Pi.
 
 Repository and source setup
 ---------------------------
-Before building, clone ohdevtools (https://github.com/openhome/ohdevtools.git) into the same parent directory as LitePipeSampleApps.
+Before building, clone ohdevtools (https://github.com/openhome/ohdevtools.git) into the same parent directory as ohPlayer.
 
-OpenHome can fetch pre-built dependencies for ohNet and LitePipe (aka ohMediaPlayer) from the OpenHome build server.
+OpenHome can fetch pre-built dependencies for ohNet and ohPipeline from the OpenHome build server.
 
 To fetch dependencies, run
     'go fetch --all'
 or
     'go fetch --all --debug'
 depending on your build requirements.
-App dependencies will be downloaded to the LitePipeSampleApps/dependencies directory.
+App dependencies will be downloaded to the ohPlayer/dependencies directory.
 
-Building OpenHome MediaPlayer sample apps:
+Building OpenHome Player sample apps:
 ------------------------------------------
 
 Linux (Ubuntu 12.x onward, Raspbian)
@@ -38,7 +38,7 @@ sudo apt-get install ruby-dev
 sudo gem install fpm
 
 # make the project
-cd LitePipeSampleApps/linux
+cd ohPlayer/linux
 
 make ubuntu     // release build
 or
@@ -53,10 +53,10 @@ or
 make raspbian-install   // build and install locally
 
 # generate a debian package for distribution
-./GeneratePkg.pl --platform=raspbian --application=litepipe-test-app --version=0.1.2.3
+./GeneratePkg.pl --platform=raspbian --application=openhome-player --version=0.1.2.3
 
 # generate an installer package
-./GeneratePkg.pl --platform=raspbian --application=litepipe-test-app --version=0.1.2.3 --installer
+./GeneratePkg.pl --platform=raspbian --application=openhome-player --version=0.1.2.3 --installer
 
 Cross-compilation is not yet supported. Test applications must be built on the target platform at present.
 The project will build a GTK menubar application.
@@ -65,9 +65,9 @@ The project will build a GTK menubar application.
 Windows (Visual Studion 2013)
 -----------------------------
 
-Open the LitePipeTestApp solution in Visual Studio 2013 and build release or deug variants
+Open the OpenHomePlayer solution in Visual Studio 2013 and build release or debug variants
 
-  Win32/LitePipeTestApp.sln
+  Win32/OpenHomePlayer.sln
 
 The solution will build a windows tray application.
 
@@ -75,9 +75,9 @@ The installer generation process employs the Inno Setup 5 tool - http://www.jrso
 The actual download was 'isetup-5.5.5.exe'.
 
 All defaults were chosen during application installation including the installation of the optional pre-processor extensions..
-To create the installer, compile the installer script, LitePipeSampleAppInstaller.iss, as follows:
+To create the installer, compile the installer script, OpenHomePlayerInstaller.iss, as follows:
 
-  iscc /dMySrcDir="C:\<src folder>" LitePipeSampleAppInstaller.iss
+  iscc /dMySrcDir="C:\<src folder>" OpenHomePlayer Installer.iss
 
 Where <src folder> identifies the parent folder of the installer (Win32Installer) and application source (Win32) folders.
 
@@ -89,6 +89,6 @@ Mac OSX (Mountain Lion onward)
 
 Open the Sample Xcode project and build release or debug variants.
 
-   osx/sample.xcodeproj
+   osx/OpenHomePlayer.xcodeproj
    
-The project will build a system menu aplication.
+The project will build a system menu application.
