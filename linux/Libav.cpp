@@ -20,7 +20,6 @@
 #include <assert.h>
 #endif // BUFFER_GUARD_CHECK
 
-
 // Uncomment to enable timestamping of log messages
 //#define TIMESTAMP_LOGGING
 
@@ -102,11 +101,12 @@ public:
     CodecLibAV(IMimeTypeList& aMimeTypeList);
 private: // from CodecBase
     ~CodecLibAV();
+    TBool InitAVIOContext();
     TBool Recognise(const EncodedStreamInfo& aStreamInfo);
-    void StreamInitialise();
-    void Process();
+    void  StreamInitialise();
+    void  Process();
     TBool TrySeek(TUint aStreamId, TUint64 aSample);
-    void StreamCompleted();
+    void  StreamCompleted();
 private:
     static const TUint   kInBufBytes      = 4096;
     static const TInt32  kInt24Max        = 8388607L;
@@ -266,38 +266,71 @@ TInt CodecLibAV::avCodecRead(void* ptr, TUint8* buf, TInt buf_size)
     TBool            *streamStart     = classData->streamStart;
     TBool            *streamEnded     = classData->streamEnded;
     TUint64          *byteTotal       = classData->byteTotal;
+
+    TUint             bytesLeft       = (TUint)buf_size;
+    const TUint       bufferLimit     = 32 * 1024; // Use 32K chunks
+    Bws<bufferLimit>  tmpBuffer;
     Bwn               inputBuffer(buf, buf_size);
 
     inputBuffer.SetBytes(0);
 
-    try
+    // Read the required amount of data in chunks.
+    while (bytesLeft > 0)
     {
-        // Read the requested amount of data.
-        controller->Read(inputBuffer, inputBuffer.MaxBytes());
-    }
-    catch(CodecStreamStart&)
-    {
+        TUint leftToRead = (bytesLeft < bufferLimit) ? bytesLeft : bufferLimit;
+
+        // Reset the chunk buffer.
+        tmpBuffer.SetBytes(0);
+
+        try
+        {
+            // Read a chunk of data.
+            controller->Read(tmpBuffer, leftToRead);
+
+            // Append the chunk to the output buffer.
+            if (! inputBuffer.TryAppend(tmpBuffer))
+            {
+                DBUG_F("Info: [CodecLibAV]: avCodecRead - TryAppend Failed\n ");
+                break;
+            }
+
+            bytesLeft -= tmpBuffer.Bytes();
+        }
+        catch(CodecStreamStart&)
+        {
 #ifdef DEBUG
-        DBUG_F("Info: [CodecLibAV]: avCodecRead - CodecStreamStart "
-               "Exception Caught\n");
+            DBUG_F("Info: [CodecLibAV]: avCodecRead - CodecStreamStart "
+                   "Exception Caught\n");
 #endif // DEBUG
-        *streamStart = true;
-    }
-    catch(CodecStreamEnded&)
-    {
+            *streamStart = true;
+            break;
+        }
+        catch(CodecStreamEnded&)
+        {
 #ifdef DEBUG
-        DBUG_F("Info: [CodecLibAV] avCodecRead - CodecStreamEnded "
-               "Exception Caught\n");
+            DBUG_F("Info: [CodecLibAV] avCodecRead - CodecStreamEnded "
+                   "Exception Caught\n");
 #endif // DEBUG
-        *streamEnded = true;
-    }
-    catch(CodecStreamStopped&)
-    {
+            *streamEnded = true;
+            break;
+        }
+        catch(CodecStreamStopped&)
+        {
 #ifdef DEBUG
-        DBUG_F("Info: [CodecLibAV] avCodecRead - CodecStreamStopped "
-               "Exception Caught\n");
+            DBUG_F("Info: [CodecLibAV] avCodecRead - CodecStreamStopped "
+                   "Exception Caught\n");
 #endif // DEBUG
-        *streamEnded = true;
+            *streamEnded = true;
+            break;
+        }
+        catch(CodecRecognitionOutOfData&)
+        {
+#ifdef DEBUG
+            DBUG_F("Info: [CodecLibAV] avCodecRead - CodecRecognitionOutOfData "
+                   "Exception Caught\n");
+#endif // DEBUG
+            break;
+        }
     }
 
     *byteTotal += inputBuffer.Bytes();
@@ -393,72 +426,8 @@ TInt64 CodecLibAV::avCodecSeek(void* ptr, TInt64 offset, TInt whence)
     }
 }
 
-TBool CodecLibAV::Recognise(const EncodedStreamInfo& aStreamInfo)
+TBool CodecLibAV::InitAVIOContext()
 {
-    Bws<16*1024> recogBuf;
-
-    if (aStreamInfo.RawPcm())
-    {
-        return false;
-    }
-
-    // Initialise and fill the recognise buffer.
-    recogBuf.SetBytes(0);
-    recogBuf.FillZ();
-
-#ifdef BUFFER_GUARD_CHECK
-    SetGuardBytes(recogBuf);
-
-    iController->Read(recogBuf, recogBuf.MaxBytes() - AVPROBE_PADDING_SIZE -
-                                kGuardSize);
-#else // BUFFER_GUARD_CHECK
-    iController->Read(recogBuf, recogBuf.MaxBytes() - AVPROBE_PADDING_SIZE);
-#endif // BUFFER_GUARD_CHECK
-
-    // Attempt to detect the stream format.
-    AVProbeData probeData;
-
-    probeData.filename  = "";
-    probeData.buf       = (unsigned char *)recogBuf.Ptr();
-#ifdef BUFFER_GUARD_CHECK
-    probeData.buf_size  = recogBuf.MaxBytes() - kGuardSize;
-#else // BUFFER_GUARD_CHECK
-    probeData.buf_size  = recogBuf.MaxBytes();
-#endif // BUFFER_GUARD_CHECK
-
-    iFormat = av_probe_input_format(&probeData, 1);
-
-#ifdef BUFFER_GUARD_CHECK
-    CheckGuardBytes(recogBuf);
-#endif // BUFFER_GUARD_CHECK
-
-    if (iFormat == NULL)
-    {
-        DBUG_F("[CodecLibAV] Recognise - Probe Failed\n");
-        return false;
-    }
-
-    return true;
-}
-
-void CodecLibAV::StreamInitialise()
-{
-#ifdef DEBUG
-    DBUG_F("[CodecLibAV] StreamInitialise\n");
-#endif
-
-    // Initialise PCM buffer.
-    iOutput.SetBytes(0);
-#ifdef BUFFER_GUARD_CHECK
-    SetGuardBytes(iOutput);
-#endif // BUFFER_GUARD_CHECK
-
-    // Initialise the track offset in jiffies.
-    iTrackOffset = 0;
-
-    iAvPacketCached  = false;
-    iConvertedFormat = AV_SAMPLE_FMT_NONE;
-
     // Initialise Stream State
     iStreamStart  = false;
     iStreamEnded  = false;
@@ -476,8 +445,8 @@ void CodecLibAV::StreamInitialise()
 
     if (avcodecBuf == NULL)
     {
-        DBUG_F("[CodecLibAV] StreamInitialise - Cannot allocate AV buffer\n");
-        goto failure;
+        DBUG_F("[CodecLibAV] InitAVIOContext - Cannot allocate AV buffer\n");
+        return false;
     }
 
     // Data to be passed to the AVCodec callbacks.
@@ -501,10 +470,118 @@ void CodecLibAV::StreamInitialise()
 
     if (iAvioCtx == NULL)
     {
-        DBUG_F("[CodecLibAV] StreamInitialise - Cannot allocate AV IO "
-               "Context\n");
-        goto failure;
+        DBUG_F("[CodecLibAV] InitAVIOContext - Cannot allocate AV IO Context\n");
+
+        av_free(avcodecBuf);
+        return false;
     }
+
+    return true;
+}
+
+TBool CodecLibAV::Recognise(const EncodedStreamInfo& aStreamInfo)
+{
+#ifdef DEBUG
+    DBUG_F("[CodecLibAV] Recognise\n");
+#endif
+
+    if (aStreamInfo.RawPcm())
+    {
+        return false;
+    }
+
+    if (!InitAVIOContext())
+    {
+        return false;
+    }
+
+    // Read as much data as required from the pipeline to ascertain the
+    // format of the stream.
+    av_probe_input_buffer(iAvioCtx,   // AVIOContext
+                          &iFormat,   // AVInputFormat
+                          "",         // Filename
+                          NULL,       // Logctx
+                          0,          // Offset
+                          0);         // Default max probe data
+
+    if (iFormat == NULL)
+    {
+        DBUG_F("[CodecLibAV] Recognise Probe Failed.\n");
+
+        // Free up the iAvioCtx created for the recognition process.
+        if (iAvioCtx != NULL)
+        {
+            if (iAvioCtx->buffer != NULL)
+            {
+                av_free(iAvioCtx->buffer);
+            }
+
+            av_free(iAvioCtx);
+            iAvioCtx = NULL;
+        }
+
+        return false;
+    }
+
+    return true;
+}
+
+void CodecLibAV::StreamInitialise()
+{
+#ifdef DEBUG
+    DBUG_F("[CodecLibAV] StreamInitialise\n");
+#endif
+
+    // Initialise the track offset in jiffies.
+    iTrackOffset = 0;
+
+    iAvPacketCached  = false;
+    iConvertedFormat = AV_SAMPLE_FMT_NONE;
+
+    // The stream position is 'rewound' after Recognise() succeeds.
+    // Libav does not expect/handle this, thus we must read and discard data
+    // until we get back to the expected position.
+    TUint bytesLeft   = (TUint)iByteTotal;
+    TUint bufferLimit = iOutput.MaxBytes();
+
+#ifdef BUFFER_GUARD_CHECK
+    bufferLimit -= (TUint)kGuardSize;
+#endif // BUFFER_GUARD_CHECK
+
+    // Initialise the output buffer for usage as a temp buffer.
+    iOutput.SetBytes(0);
+
+#ifdef BUFFER_GUARD_CHECK
+    SetGuardBytes(iOutput);
+#endif // BUFFER_GUARD_CHECK
+
+    while (bytesLeft > 0)
+    {
+        TUint leftToRead = (bytesLeft < bufferLimit) ? bytesLeft : bufferLimit;
+
+        try
+        {
+            iController->Read(iOutput, leftToRead);
+
+            bytesLeft -= iOutput.Bytes();
+
+#ifdef BUFFER_GUARD_CHECK
+            CheckGuardBytes(iOutput);
+#endif // BUFFER_GUARD_CHECK
+
+            iOutput.SetBytes(0);
+        }
+        catch (...)
+        {
+            DBUG_F("[CodecLibAV] StreamInitialise - Unexpected exception "
+                   "while advancing to offset [%llu]\n", iByteTotal);
+
+            break;
+        }
+    }
+
+    // Initialise the output buffer to hold decoded PCM.
+    iOutput.SetBytes(0);
 
     // Allocate an AC Format context.
     iAvFormatCtx = avformat_alloc_context();
@@ -720,6 +797,8 @@ void CodecLibAV::StreamCompleted()
     DBUG_F("[CodecLibAV] StreamCompleted\n");
 #endif
 
+    iFormat = NULL;
+
     if (iAvResampleCtx != NULL)
     {
         avresample_free(&iAvResampleCtx);
@@ -795,7 +874,7 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
          // reads followed by a seek, which failed.
          //
          // In this event we pretend the seek operation succeeded.
-         // Playback will proceed from teh current position.
+         // Playback will proceed from the current position.
         if (currentPos != iByteTotal)
         {
 #ifdef DEBUG
