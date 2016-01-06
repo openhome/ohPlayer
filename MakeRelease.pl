@@ -344,7 +344,7 @@ sub buildOsxRelease
 
     # Generate the OpenHomePlayer component package.
     #
-    # The package is configured to install to '/Applications/mediaplayer.app'
+    # The package is configured to install to '/Applications/OpenHomePlayer'
     system("pkgbuild --root $scratchDir/OpenHomePlayer.dst/ " .
            "--install-location \"/\" $scratchDir/OpenHomePlayer.pkg");
 
@@ -353,7 +353,7 @@ sub buildOsxRelease
     # Generate the installer package.
     system("productbuild --distribution OpenHomePlayer/Distribution.xml " .
            "--package-path $scratchDir --resources OpenHomePlayer " .
-           "OpenHomePlayer.pkg");
+           "OpenHomePlayer-$version.pkg");
 
     die "ERROR: Installer Package Generation Failed\n" unless ($? == 0);
 }
