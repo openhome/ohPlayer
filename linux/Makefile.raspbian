@@ -41,6 +41,9 @@ BINDIR = $(PREFIX)/bin
 # The directory to install the resource files to.
 RESDIR = $(PREFIX)/share/openhome-player
 
+# The directory to install changelog and license to
+DOCDIR = $(PREFIX)/share/doc/openhome-player
+
 CFLAGS = -c -Wall -std=c++11 $(GTK_CFLAGS) -DTARG_ARCH=$(TARG_ARCH) \
          -fstack-protector -fstack-check
 
@@ -114,12 +117,14 @@ ifdef NVWA_DIR
 endif
 
 install:
-	$(INSTALL) -m 755 -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(RESDIR) $(DESTDIR)$(RESDIR)/res
+	$(INSTALL) -m 755 -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(DOCDIR) $(DESTDIR)$(RESDIR) $(DESTDIR)$(RESDIR)/res
 	$(INSTALL) -m 755 $(TARGET) $(DESTDIR)$(BINDIR)
 	$(INSTALL) -m 644 OpenHome-48x48.png $(DESTDIR)$(RESDIR)
+	$(INSTALL) -m 644 copyright $(DESTDIR)$(DOCDIR)
 	cp -R $(RESOURCEDIR) $(DESTDIR)$(RESDIR)
 
 uninstall:
 	rm $(DESTDIR)$(BINDIR)/$(TARGET)
+	rm -rf $(DESTDIR)$(DOCDIR)
 	rm -rf $(DESTDIR)$(RESDIR)
 

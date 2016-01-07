@@ -252,11 +252,11 @@ foreach (keys %{$pkgHashRef})
     }
 }
 
-$fpmCmd .= ' -m "Openhome Admin <admin@openhome.org>"';
-$fpmCmd .= ' --vendor "Openhome Admin <admin@openhome.org>"';
-$fpmCmd .= ' --url "http://www.openhome.org/"';
-$fpmCmd .= ' --license "Do Not Ship"';
-$fpmCmd .= ' --description "OpenHome Player"';
+$fpmCmd .= ' -m "OpenHome <info@openhomelabs.com>"';
+$fpmCmd .= ' --vendor "OpenHome <info@openhomelabs.com>"';
+$fpmCmd .= ' --url "http://www.openhomelabs.com/"';
+$fpmCmd .= ' --description "OpenHome Media Player"';
+$fpmCmd .= ' --deb-changelog "../changelog"';
 $fpmCmd .= " usr";
 
 system("$fpmCmd");
