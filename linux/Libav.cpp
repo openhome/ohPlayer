@@ -1,3 +1,5 @@
+#ifdef USE_LIBAVCODEC
+
 #include <OpenHome/OhNetTypes.h>
 #include <OpenHome/Buffer.h>
 #include <OpenHome/Media/Codec/CodecController.h>
@@ -45,7 +47,6 @@ extern "C"
 
 #include "OptionalFeatures.h"
 
-#ifdef USE_LIBAVCODEC
 namespace OpenHome {
 namespace Media {
 namespace Codec {
