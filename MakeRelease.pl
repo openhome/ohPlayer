@@ -212,7 +212,9 @@ sub buildLinuxRelease
 # (C:\Program Files (x86)\Inno Setup 5)
 sub buildWin32Release
 {
-    my ($version, $debug) = @_;
+    my ($version, $debug, $nativeCodecs) = @_;
+
+    my $config;
 
     # Check 'msbuild' is available and executable.
     eval {my @dummy = `msbuild 2>nul` or die "$!\n"};
@@ -232,33 +234,32 @@ sub buildWin32Release
             "Please ensure Inno Setup 5 is in the PATH \n";
     }
 
-    # Cleanup any previous build.
+    # Decide which configuration is required.
     if (defined $debug)
     {
-        system("msbuild OpenHomePlayer.sln /target:Clean /p:Platform=Win32 " .
-               "/p:Configuration=Debug");
+        $config = "Debug";
     }
     else
     {
-        system("msbuild OpenHomePlayer.sln /target:Clean /p:Platform=Win32 " .
-               "/p:Configuration=Release");
+        $config = "Release";
     }
+
+    if (defined $nativeCodecs)
+    {
+        $config .= "IMF";
+    }
+
+    # Cleanup any previous build.
+    system("msbuild OpenHomePlayer.sln /target:Clean /p:Platform=Win32 " .
+           "/p:Configuration=$config");
 
     die "ERROR: Cleanup Failed\n" unless ($? == 0);
 
     unlink glob("../Win32Installer/*.exe");
 
     # Execute the build
-    if (defined $debug)
-    {
-        system("msbuild OpenHomePlayer.sln /p:Platform=Win32 " .
-               "/p:Configuration=Debug");
-    }
-    else
-    {
-        system("msbuild OpenHomePlayer.sln /p:Platform=Win32 " .
-               "/p:Configuration=Release");
-    }
+    system("msbuild OpenHomePlayer.sln /p:Platform=Win32 " .
+           "/p:Configuration=$config");
 
     die "ERROR: Build Failed\n" unless ($? == 0);
 
@@ -275,24 +276,17 @@ sub buildWin32Release
 
     my $parentFolder = dirname(cwd());
 
-    if (defined $debug)
-    {
-        system("iscc \/dMySrcDir=\"$parentFolder\" "    .
-               "\/dMyAppVersion=\"$version\" \/dDebug " .
-               "OpenHomePlayerInstaller.iss");
-    }
-    else
-    {
-        system("iscc \/dMySrcDir=\"$parentFolder\" " .
-               "\/dMyAppVersion=\"$version\" OpenHomePlayerInstaller.iss");
-    }
+    system("iscc \/dMySrcDir=\"$parentFolder\" "    .
+           "\/dMyAppVersion=\"$version\" \/dReleaseType=\"$config\" " .
+           "OpenHomePlayerInstaller.iss");
 
     die "ERROR: Package Generation Failed\n" unless ($? == 0);
 
     # Annotate the installer with the version.
     $version =~ s/\./-/g;
     rename("setup.exe", "OpenHomePlayerSetup-$version.exe") or
-        die "ERROR: Cannot rename 'setup.exe' -> 'OpenHomePlayerSetup-$version.exe'\n$!\n";
+        die "ERROR: Cannot rename 'setup.exe' -> " .
+            "'OpenHomePlayerSetup-$version.exe'\n$!\n";
 }
 
 sub buildOsxRelease
@@ -415,10 +409,9 @@ if ((defined $enableQobuz && !(defined $qobuzSecret && defined $qobuzAppId)) ||
     die "$USAGE\n";
 }
 
-if (defined $nativeCodecs &&
-    ($platform != "ubuntu" && $platform != "raspbian"))
+if (defined $nativeCodecs && ($platform eq "osx"))
 {
-    die "Native Codecs curerntly unavailable for this platform\n";
+    die "Native Codecs currently unavailable for this platform\n";
 }
 
 # Move to the directory containing the platform source.
@@ -461,7 +454,7 @@ if ($platform =~ /raspbian|ubuntu/)
 }
 elsif ($platform =~ /Win32/)
 {
-    &buildWin32Release($version, $debug);
+    &buildWin32Release($version, $debug, $nativeCodecs);
 }
 elsif ($platform =~ /osx/)
 {

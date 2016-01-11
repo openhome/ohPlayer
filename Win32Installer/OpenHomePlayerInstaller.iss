@@ -19,11 +19,9 @@
 #error ERROR: The 'MyAppVersion' location must be defined. 
 #endif
 
-; Default to a Release build unless a Debug build is explicittly asked for.
-#ifdef Debug
-#define ReleaseType "Debug"
-#else
-#define ReleaseType "Release"
+; ReleaseType (VS build configuration name) *must* be defined on the 'iscc' command line, via the '/d' option
+#ifndef ReleaseType
+#error ERROR: The 'ReleaseType' must be defined. 
 #endif
 
 [Setup]

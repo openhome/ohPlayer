@@ -628,6 +628,10 @@ TBool CodecIMF::TrySeek(TUint aStreamId, TUint64 aSample)
 #ifdef _DEBUG
     DBUG_F("TrySeek - StreamId [%d] Sample[%llu]\n",
            aStreamId, aSample);
+#else
+    // Keep compiler happy
+    aStreamId = 0;
+    aSample   = 0LLU;
 #endif // _DEBUG
 
     // Ditch any PCM we have buffered.
