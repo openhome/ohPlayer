@@ -288,6 +288,8 @@ STDMETHODIMP OHPlayerByteStream::Read(BYTE  *aBuffer,
                                       ULONG *aBytesRead)
 {
 
+    *aBytesRead = 0;
+
     // If we have a cache and the current stream position resides
     // within it return data from the cache.
     if (iStreamPos < (LONGLONG)iRecogCacheBytes)

@@ -451,7 +451,7 @@ TBool CodecIMF::ConfigureAudioStream(IMFSourceReader *aSourceReader)
     if (iBitRate != 0)
     {
 #ifdef _DEBUG
-        DBUG_F("Encoded Bitrate %lld kbs\n", iBitRate);
+        DBUG_F("Encoded Bitrate %u kbs\n", iBitRate);
 #endif
     }
     else
@@ -487,6 +487,7 @@ failure:
 TBool CodecIMF::Recognise(const EncodedStreamInfo& aStreamInfo)
 {
     HRESULT hr;
+    TBool   retVal = false;
 
 #ifdef _DEBUG
     DBUG_F("Recognise\n");
@@ -494,7 +495,7 @@ TBool CodecIMF::Recognise(const EncodedStreamInfo& aStreamInfo)
 
     if (aStreamInfo.RawPcm())
     {
-        return false;
+        return retVal;
     }
 
     // Initialise the byte stream.
@@ -504,37 +505,41 @@ TBool CodecIMF::Recognise(const EncodedStreamInfo& aStreamInfo)
 
     // Create the SourceReader
 #ifdef _DEBUG
-    DBUG_F("MFCreateSourceReaderFromByteStream Start\n");
+    DBUG_F("Recognise: MFCreateSourceReaderFromByteStream Start\n");
 #endif
 
     hr = MFCreateSourceReaderFromByteStream(iByteStream, NULL, &iSourceReader);
 
 #ifdef _DEBUG
-    DBUG_F("MFCreateSourceReaderFromByteStream End\n");
+    DBUG_F("Recognise: MFCreateSourceReaderFromByteStream End\n");
 #endif
 
     if (FAILED(hr))
     {
-        DBUG_F("MFCreateSourceReaderFromByteStream Failed\n");
+        DBUG_F("Recognise: MFCreateSourceReaderFromByteStream Failed\n");
     }
 
     // Check if the stream format is one we are interested in.
     if (VerifyStreamType(iSourceReader))
     {
-        return TRUE;
+        retVal = true;
     }
     else
     {
-        // Tidy Up
-        SafeRelease(&iByteStream);
-        SafeRelease(&iSourceReader);
-
-        return FALSE;
+        retVal = false;
     }
+
+    // Tear down the SourceReader
+    SafeRelease(&iByteStream);
+    SafeRelease(&iSourceReader);
+
+    return retVal;
 }
 
 void CodecIMF::StreamInitialise()
 {
+    HRESULT hr;
+
 #ifdef _DEBUG
     DBUG_F("StreamInitialise\n");
 #endif
@@ -544,6 +549,28 @@ void CodecIMF::StreamInitialise()
 #ifdef BUFFER_GUARD_CHECK
     SetGuardBytes(iOutput);
 #endif // BUFFER_GUARD_CHECK
+
+    // Initialise the byte stream.
+    iByteStream = new OHPlayerByteStream(iController,
+                                         (BOOL *)&iStreamStart,
+                                         (BOOL *)&iStreamEnded);
+
+    // Create the SourceReader
+#ifdef _DEBUG
+    DBUG_F("StreamInitialise: MFCreateSourceReaderFromByteStream Start\n");
+#endif
+
+    iSourceReader = NULL;
+    hr = MFCreateSourceReaderFromByteStream(iByteStream, NULL, &iSourceReader);
+
+#ifdef _DEBUG
+    DBUG_F("StreamInitialise: MFCreateSourceReaderFromByteStream End\n");
+#endif
+
+    if (FAILED(hr))
+    {
+        DBUG_F("StreamInitialise: MFCreateSourceReaderFromByteStream Failed\n");
+    }
 
     // Identify and open the correct codec for the audio stream.
     if (! ConfigureAudioStream(iSourceReader))
