@@ -16,6 +16,6 @@
 #define CHECK_INTERVAL  6 * 60 * 60 // 6 hours
 
 // Define the location of the release manifest here.
-#define RELEASE_URL "http://www.openhome.org/releases/openhome/application.json"
+#define RELEASE_URL "http://builds.openhome.org/releases/openhome/application.json"
 
 #endif
