@@ -40,11 +40,20 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
 {
     iShell = new Shell(aDvStack.Env(), kShellPort);
     iShellDebug = new ShellCommandDebug(*iShell);
-
+  
+    // clamp the aRoom and aProductName buffers to the maximum allowed values from Product.h
+    TChar iRoom[Product::kMaxRoomBytes+1];
+    strncpy(iRoom, aRoom, Product::kMaxRoomBytes);
+    iRoom[Product::kMaxRoomBytes] = 0;
+    
+    TChar iProductName[Product::kMaxNameBytes+1];
+    strncpy(iProductName, aProductName, Product::kMaxNameBytes);
+    iProductName[Product::kMaxNameBytes] = 0;
+    
     Bws<256> friendlyName;
-    friendlyName.Append(aRoom);
+    friendlyName.Append(iRoom);
     friendlyName.Append(':');
-    friendlyName.Append(aProductName);
+    friendlyName.Append(iProductName);
     
     // create UPnP device
     iDevice = new DvDeviceStandard(aDvStack, aUdn, *this);
@@ -64,7 +73,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
     // FIXME - will have to allow this to be dynamically changed at runtime if
     // someone changes the name of the UPnP AV source.
     // Disable device -> change name -> re-enable device.
-    Bws<256> rendererName(aRoom);
+    Bws<256> rendererName(iRoom);
     rendererName.Append(":");
     rendererName.Append(SourceUpnpAv::kSourceName);
     iDeviceUpnpAv = new DvDeviceStandard(aDvStack, buf);
@@ -84,8 +93,8 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
     iConfigPersistentStore = new ConfigPersistentStore();
 
     // FIXME - available store keys should be listed somewhere
-    iConfigPersistentStore->Write(Brn("Product.Room"), Brn(aRoom));
-    iConfigPersistentStore->Write(Brn("Product.Name"), Brn(aProductName));
+    iConfigPersistentStore->Write(Brn("Product.Room"), Brn(iRoom));
+    iConfigPersistentStore->Write(Brn("Product.Name"), Brn(iProductName));
     
     // Volume Control
     VolumeProfile  volumeProfile;
@@ -108,8 +117,8 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
                                    volumeInit,
                                    volumeProfile,
                                    aUdn,
-                                   Brn(aRoom),
-                                   Brn(aProductName));
+                                   Brn(iRoom),
+                                   Brn(iProductName));
     
     // Set up config app.
     static const TUint addr = 0;    // Bind to all addresses.
