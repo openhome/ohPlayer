@@ -127,7 +127,7 @@
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\dependencies\Windows-x86\ohMediaPlayer\include;..\dependencies\Windows-x86\ohNet-Windows-x86-Debug\include\ohnet;..\dependencies\Windows-x86\ohNetGenerated-Windows-x86-Release\include\ohnet\OpenHome\Net\Core;$(IncludePath)</IncludePath>
+    <IncludePath>..\dependencies\Windows-x86\ohMediaPlayer\include;..\dependencies\Windows-x86\ohNet-Windows-x86-Debug\include\ohnet;..\dependencies\Windows-x86\ohNetGenerated-Windows-x86-Debug\include\ohnet\OpenHome\Net\Core;$(IncludePath)</IncludePath>
     <LibraryPath>..\dependencies\Windows-x86\ohMediaPlayer\lib;..\dependencies\Windows-x86\ohNet-Windows-x86-Debug\lib;..\dependencies\Windows-x86\ohNetGenerated-Windows-x86-Debug\lib;..\dependencies\Windows-x86\openssl\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
