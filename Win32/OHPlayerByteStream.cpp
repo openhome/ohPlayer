@@ -133,7 +133,6 @@ OHPlayerByteStream::OHPlayerByteStream(ICodecController *controller,
     // Use a cache during stream format recognition to minimise seeking about
     // the physical stream.
     iController->Read(iRecogCache, iRecogCache.MaxBytes());
-    iRecogCacheBytes = iRecogCache.Bytes();
 }
 
 OHPlayerByteStream::~OHPlayerByteStream()
@@ -151,35 +150,74 @@ OHPlayerByteStream::~OHPlayerByteStream()
 void OHPlayerByteStream::RecognitionComplete()
 {
 #ifdef _DEBUG
-    DBUG_F("OHPlayerByteStream::RecognitionComplete\n");
+    DBUG_F("RecognitionComplete\n");
 #endif
 
     iIsRecogPhase = FALSE;
 }
 
-// Release the recogniiton cache.
+// Release the recognition cache.
 //
-// Future seeks will be on the physical stream.
-void OHPlayerByteStream::DisableRecogCache()
+// Future operations will be performed on the physical stream.
+void OHPlayerByteStream::DisableRecogCache(BOOL revertStreamPos)
 {
 #ifdef _DEBUG
-    DBUG_F("OHPlayerByteStream::DisableRecogCache\n");
+    DBUG_F("DisableRecogCache\n");
 #endif
 
-    iStreamPos = 0;
-
-    // Disable the cache.
-    if (iRecogCacheBytes > 0)
+    // If required move, from the start of the stream, to the position
+    // at the end of the recognition phase.
+    //
+    // This is done via read and discard.
+    if (revertStreamPos)
     {
-        iRecogCacheBytes = 0;
+        TUint bytesLeft   = (TUint)iStreamPos;
+        TUint bufferLimit = iRecogCache.MaxBytes();
+
+        // Initialise the recognition cache for usage as a temp buffer.
+        iRecogCache.SetBytes(0);
+
+        while (bytesLeft > 0)
+        {
+            TUint leftToRead =
+                (bytesLeft < bufferLimit) ? bytesLeft : bufferLimit;
+
+            try
+            {
+                iController->Read(iRecogCache, leftToRead);
+
+                bytesLeft -= iRecogCache.Bytes();
+
+#ifdef _DEBUG
+                DBUG_F("DisableRecogCache - Discarding [%lu]\n",
+                       iRecogCache.Bytes());
+#endif
+
+                iRecogCache.SetBytes(0);
+            }
+            catch (...)
+            {
+                DBUG_F("DisableRecogCache - Unexpected exception "
+                       "while advancing to offset [%llu]\n", iStreamPos);
+
+                break;
+            }
+        }
     }
+    else
+    {
+        iStreamPos = 0;
+    }
+
+    // Disable the recognition cache
+    iRecogCache.SetBytes(0);
 }
 
 // Not that a stream seek is expected and should not be ignored.
 void OHPlayerByteStream::ExpectExternalSeek()
 {
 #ifdef _DEBUG
-    DBUG_F("OHPlayerByteStream::ExpectExternalSeek\n");
+    DBUG_F("ExpectExternalSeek\n");
 #endif
 
     iSeekExpected = TRUE;
@@ -268,7 +306,6 @@ STDMETHODIMP OHPlayerByteStream::BeginRead(BYTE             *aBuffer,
                              aCallerState,
                             &result);
 
-
     SafeRelease(&requestState);
 
     // Set async operation status to the result of the read.
@@ -292,9 +329,9 @@ STDMETHODIMP OHPlayerByteStream::Read(BYTE  *aBuffer,
 
     // If we have a cache and the current stream position resides
     // within it return data from the cache.
-    if (iStreamPos < (LONGLONG)iRecogCacheBytes)
+    if (iStreamPos < (LONGLONG)iRecogCache.Bytes())
     {
-        ULONG available = (ULONG)(iRecogCacheBytes - iStreamPos);
+        ULONG available = (ULONG)(iRecogCache.Bytes() - iStreamPos);
 
         if (aLength > available)
         {
@@ -311,14 +348,16 @@ STDMETHODIMP OHPlayerByteStream::Read(BYTE  *aBuffer,
     }
     else
     {
-        Bwn inputBuffer(aBuffer, aLength);
-
-        inputBuffer.SetBytes(0);
-
         try
         {
+            Bwn inputBuffer(aBuffer, aLength);
+
+            inputBuffer.SetBytes(0);
+
             // Read the requested amount of data from teh physical stream.
             iController->Read(inputBuffer, inputBuffer.MaxBytes());
+
+            *aBytesRead = (ULONG)inputBuffer.Bytes();
         }
         catch(CodecStreamStart&)
         {
@@ -344,13 +383,11 @@ STDMETHODIMP OHPlayerByteStream::Read(BYTE  *aBuffer,
             *iStreamEnded = TRUE;
             return S_OK;
         }
-
-        *aBytesRead = (ULONG)inputBuffer.Bytes();
     }
 
     iStreamPos += *aBytesRead;
 
-    DBUG_F("Read: Bytes[%lu] Pos[%llu]\n", *aBytesRead, iStreamPos);
+    DBUG_F("Read: Req[%lu] Got[%lu] Pos[%llu]\n", aLength, *aBytesRead, iStreamPos);
 
     return S_OK;
 }
@@ -411,7 +448,7 @@ STDMETHODIMP OHPlayerByteStream::Seek(MFBYTESTREAM_SEEK_ORIGIN aSeekOrigin,
             break;
     }
 
-    if (aSeekOffset >= iRecogCacheBytes)
+    if (aSeekOffset >= iRecogCache.Bytes())
     {
         // A seek on the physical stream is required.
         //
@@ -436,7 +473,7 @@ STDMETHODIMP OHPlayerByteStream::Seek(MFBYTESTREAM_SEEK_ORIGIN aSeekOrigin,
                 // This will not be required in LitePipe as we are automatically
                 // returned to the start of the stream after recognition
                 // is complete.
-                if (iRecogCacheBytes >  0)
+                if (iRecogCache.Bytes() >  0)
                 {
                     iRecogSeekOutwithCache = TRUE;
                 }
@@ -480,7 +517,7 @@ STDMETHODIMP OHPlayerByteStream::Seek(MFBYTESTREAM_SEEK_ORIGIN aSeekOrigin,
             // correct position for the next read.
             *aCurrentPosition = aSeekOffset;
 
-            DBUG_F("Seek: Codec instagated seek skipped\n");
+            DBUG_F("Seek: Codec instigated seek skipped\n");
         }
     }
     else

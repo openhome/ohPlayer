@@ -65,7 +65,10 @@ public:
     STDMETHODIMP Flush();
 
     // Integration Extras
-    void DisableRecogCache();   // Disable the stream format recognition cache.
+
+    // Disable the stream format recognition cache.
+    void DisableRecogCache(BOOL revertStreamPos);
+
     void RecognitionComplete(); // Note the completion of format recognition.
     void ExpectExternalSeek();  // Act on the next seek request.
 
@@ -81,7 +84,6 @@ private:
                                               // sequence.
     BOOL              iIsRecogPhase;          // Recognising stream format.
     Bws<iCacheSize>   iRecogCache;            // Recognition cache.
-    ULONG             iRecogCacheBytes;       // Recognition cache data size.
     BOOL              iRecogSeekOutwithCache; // Seeked out with cache during
                                               // recognition.
     BOOL              iSeekExpected;          // Honour the next seek request.

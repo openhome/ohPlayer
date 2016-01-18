@@ -487,7 +487,6 @@ failure:
 TBool CodecIMF::Recognise(const EncodedStreamInfo& aStreamInfo)
 {
     HRESULT hr;
-    TBool   retVal = false;
 
 #ifdef _DEBUG
     DBUG_F("Recognise\n");
@@ -495,7 +494,7 @@ TBool CodecIMF::Recognise(const EncodedStreamInfo& aStreamInfo)
 
     if (aStreamInfo.RawPcm())
     {
-        return retVal;
+        return false;
     }
 
     // Initialise the byte stream.
@@ -517,60 +516,42 @@ TBool CodecIMF::Recognise(const EncodedStreamInfo& aStreamInfo)
     if (FAILED(hr))
     {
         DBUG_F("Recognise: MFCreateSourceReaderFromByteStream Failed\n");
+        goto failure;
     }
 
     // Check if the stream format is one we are interested in.
     if (VerifyStreamType(iSourceReader))
     {
-        retVal = true;
-    }
-    else
-    {
-        retVal = false;
+        return true;
     }
 
+failure:
     // Tear down the SourceReader
     SafeRelease(&iByteStream);
     SafeRelease(&iSourceReader);
 
-    return retVal;
+    return false;;
 }
 
 void CodecIMF::StreamInitialise()
 {
-    HRESULT hr;
 
 #ifdef _DEBUG
     DBUG_F("StreamInitialise\n");
 #endif
+
+    // Initialise the track offset in jiffies.
+    iTrackOffset = 0;
+
+    // Initialise Stream State
+    iStreamStart  = false;
+    iStreamEnded  = false;
 
     // Initialise PCM buffer.
     iOutput.SetBytes(0);
 #ifdef BUFFER_GUARD_CHECK
     SetGuardBytes(iOutput);
 #endif // BUFFER_GUARD_CHECK
-
-    // Initialise the byte stream.
-    iByteStream = new OHPlayerByteStream(iController,
-                                         (BOOL *)&iStreamStart,
-                                         (BOOL *)&iStreamEnded);
-
-    // Create the SourceReader
-#ifdef _DEBUG
-    DBUG_F("StreamInitialise: MFCreateSourceReaderFromByteStream Start\n");
-#endif
-
-    iSourceReader = NULL;
-    hr = MFCreateSourceReaderFromByteStream(iByteStream, NULL, &iSourceReader);
-
-#ifdef _DEBUG
-    DBUG_F("StreamInitialise: MFCreateSourceReaderFromByteStream End\n");
-#endif
-
-    if (FAILED(hr))
-    {
-        DBUG_F("StreamInitialise: MFCreateSourceReaderFromByteStream Failed\n");
-    }
 
     // Identify and open the correct codec for the audio stream.
     if (! ConfigureAudioStream(iSourceReader))
@@ -579,7 +560,16 @@ void CodecIMF::StreamInitialise()
     }
 
     // Remove the recognition cache and start operating on the actual stream.
-    iByteStream->DisableRecogCache();
+    if (iStreamFormat == kFmtMp3)
+    {
+        // Move the stream postition to that reached in Recognise().
+        iByteStream->DisableRecogCache(true);
+    }
+    else
+    {
+        // Leave the stream position at 0.
+        iByteStream->DisableRecogCache(false);
+    }
 
     // Note that the recognition phase is complete.
     iByteStream->RecognitionComplete();
@@ -679,11 +669,6 @@ void CodecIMF::ProcessPCM(TByte *aBuffer, TInt aLength)
         // Flush the output buffer when full.
         if (outIndex == bufferLimit)
         {
-#ifdef _DEBUG
-            DBUG_F("OutputAudioPcm Bytes[%u] TrackOffset[%llu]\n",
-                   outIndex, iTrackOffset);
-#endif
-
             iTrackOffset +=
                 iController->OutputAudioPcm(iOutput,
                                             iChannels,
@@ -744,11 +729,6 @@ void CodecIMF::ProcessPCM(TByte *aBuffer, TInt aLength)
     // Flush the output if full.
     if (outIndex == bufferLimit)
     {
-#ifdef _DEBUG
-        DBUG_F("OutputAudioPcm 2 Bytes[%d] TrackOffset[%llu]\n",
-               outIndex, iTrackOffset);
-#endif
-
         iTrackOffset +=
             iController->OutputAudioPcm(iOutput,
                                         iChannels,
@@ -786,12 +766,14 @@ void CodecIMF::Process()
         if (iStreamStart)
         {
             //FlushPCM();
+            DBUG_F("SourceReader ReadSample CodecStreamStart\n");
             THROW(CodecStreamStart);
         }
 
         if (iStreamEnded)
         {
             //FlushPCM();
+            DBUG_F("SourceReader ReadSample CodecStreamEnded\n");
             THROW(CodecStreamEnded);
         }
     }
