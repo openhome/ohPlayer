@@ -64,7 +64,7 @@ ReadRequest::ReadRequest(ULONG bytesRead) :
     iBytesRead(bytesRead)
 {
     // Allocate a variable for reference counting on a 32 bit boundary.
-    iRefCount = (ULONG *)_aligned_malloc(sizeof(LONG), 4);
+    iRefCount = (ULONG *)_aligned_malloc(sizeof(ULONG), 4);
 
     *iRefCount = 1UL;
 }
@@ -341,6 +341,7 @@ STDMETHODIMP OHPlayerByteStream::Read(BYTE  *aBuffer,
         memcpy(aBuffer, (char *)(iRecogCache.Ptr() + iStreamPos), aLength);
 
         *aBytesRead = aLength;
+        iStreamPos += *aBytesRead;
 
 #ifdef _DEBUG
         DBUG_F("Read: Cache  [%lu]\n", *aBytesRead);
@@ -354,10 +355,11 @@ STDMETHODIMP OHPlayerByteStream::Read(BYTE  *aBuffer,
 
             inputBuffer.SetBytes(0);
 
-            // Read the requested amount of data from teh physical stream.
+            // Read the requested amount of data from the physical stream.
             iController->Read(inputBuffer, inputBuffer.MaxBytes());
 
             *aBytesRead = (ULONG)inputBuffer.Bytes();
+            iStreamPos += *aBytesRead;
         }
         catch(CodecStreamStart&)
         {
@@ -385,9 +387,8 @@ STDMETHODIMP OHPlayerByteStream::Read(BYTE  *aBuffer,
         }
     }
 
-    iStreamPos += *aBytesRead;
-
-    DBUG_F("Read: Req[%lu] Got[%lu] Pos[%llu]\n", aLength, *aBytesRead, iStreamPos);
+    DBUG_F("Read: Req[%lu] Got[%lu] Pos[%llu]\n",
+           aLength, *aBytesRead, iStreamPos);
 
     return S_OK;
 }

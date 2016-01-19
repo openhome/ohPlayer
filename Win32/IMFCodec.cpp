@@ -758,24 +758,23 @@ void CodecIMF::Process()
                                    NULL,
                                   &sampleBuf);
 
-
     if (FAILED(hr))
     {
-        DBUG_F("SourceReader ReadSample Failed %u\n", flags);
+        DBUG_F("ReadSample Failed\n");
+    }
 
-        if (iStreamStart)
-        {
-            //FlushPCM();
-            DBUG_F("SourceReader ReadSample CodecStreamStart\n");
-            THROW(CodecStreamStart);
-        }
+    if (iStreamStart)
+    {
+        DBUG_F("SourceReader ReadSample CodecStreamStart\n");
+        FlushPCM();
+        THROW(CodecStreamStart);
+    }
 
-        if (iStreamEnded)
-        {
-            //FlushPCM();
-            DBUG_F("SourceReader ReadSample CodecStreamEnded\n");
-            THROW(CodecStreamEnded);
-        }
+    if (iStreamEnded)
+    {
+        DBUG_F("SourceReader ReadSample CodecStreamEnded\n");
+        FlushPCM();
+        THROW(CodecStreamEnded);
     }
 
     if (flags & MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED)
@@ -797,7 +796,7 @@ void CodecIMF::Process()
     if (sampleBuf == NULL)
     {
         DBUG_F("No sample read\n");
-
+        THROW(CodecStreamEnded);
     }
 
     // Get a pointer to the audio data in the sample.
