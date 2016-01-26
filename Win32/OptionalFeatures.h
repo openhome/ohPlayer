@@ -1,3 +1,8 @@
+#define ENABLE_AAC
+#define ENABLE_MP3
+#define ENABLE_TIDAL
+#define ENABLE_QOBUZ
+#define ENABLE_RADIO
 // Optional Features
 
 // Uncomment this line to enable MP3 support
@@ -8,16 +13,16 @@
 
 // Uncomment this line to enable the Radio source
 //#define ENABLE_RADIO
-#define TUNEIN_PARTNER_ID TUNEIN_PARTNER_ID_STRING
+#define TUNEIN_PARTNER_ID "ah2rjr68"
 
 // Uncomment this line to enable Tidal service support
 //#define ENABLE_TIDAL
-// Replace TIDAL_TOKEN_STRING with a valid Tidal token
-#define TIDAL_TOKEN TIDAL_TOKEN_STRING
+// Replace "dvmPAFPZbSv19FUp" with a valid Tidal token
+#define TIDAL_TOKEN "dvmPAFPZbSv19FUp"
 
 // Uncomment this line to enable Qobuz service support
 //#define ENABLE_QOBUZ
-// Replace QOBUZ_APPID_STRING with a valid Qobuz Application ID
-#define QOBUZ_APPID QOBUZ_APPID_STRING
-// Replace QOBUZ_SECRET_STRING with a valid Qobuz secret
-#define QOBUZ_SECRET QOBUZ_SECRET_STRING
+// Replace "854233864" with a valid Qobuz Application ID
+#define QOBUZ_APPID "854233864"
+// Replace "68ee8040d64ec825c5393396ca1cea1e" with a valid Qobuz secret
+#define QOBUZ_SECRET "68ee8040d64ec825c5393396ca1cea1e"

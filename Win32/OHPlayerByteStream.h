@@ -8,12 +8,13 @@ namespace OpenHome {
 namespace Media {
 namespace Codec {
 
-class OHPlayerByteStream : public IMFByteStream
+class OHPlayerByteStream : public IMFByteStream, public IWriter
 {
+// From IMFByteStream
 public:
     OHPlayerByteStream(ICodecController *controller,
-                       BOOL             *streamStart,
-                       BOOL             *streamEnded);
+                       TBool            *streamStart,
+                       TBool            *streamEnded);
     ~OHPlayerByteStream();
 
     // IUnknown Methods.
@@ -64,10 +65,17 @@ public:
 
     STDMETHODIMP Flush();
 
-    // Integration Extras
+// From IWriter
+public:
+    void Write(TByte aValue) override;
+    void Write(const Brx& aBuffer) override;
+    void WriteFlush() override;
+
+// Integration Extras
+public:
 
     // Disable the stream format recognition cache.
-    void DisableRecogCache(BOOL revertStreamPos);
+    void DisableRecogCache(TBool revertStreamPos);
 
     void RecognitionComplete(); // Note the completion of format recognition.
     void ExpectExternalSeek();  // Act on the next seek request.
@@ -80,17 +88,16 @@ private:
     ULONG            *iRefCount;              // Object reference count.
     LONGLONG          iStreamLength;          // Stream length
     LONGLONG          iStreamPos;             // Current stream position.
-    BOOL              iInAsyncRead;           // Currently in begin/end read
+    TBool             iInAsyncRead;           // Currently in begin/end read
                                               // sequence.
-    BOOL              iIsRecogPhase;          // Recognising stream format.
-    Bws<iCacheSize>   iRecogCache;            // Recognition cache.
-    BOOL              iRecogSeekOutwithCache; // Seeked out with cache during
-                                              // recognition.
-    BOOL              iSeekExpected;          // Honour the next seek request.
+    TBool             iIsRecogPhase;          // Recognising stream format.
+    Bws<iCacheSize>   iRecogCache;            // Recognition cache
+    LONGLONG          iRecogCachePos;         // Stream position of recog cache.
+    TBool             iSeekExpected;          // Honour the next seek request.
 
     ICodecController *iController;            // Codec Controller.
-    BOOL             *iStreamStart;
-    BOOL             *iStreamEnded;
+    TBool            *iStreamStart;
+    TBool            *iStreamEnded;
 };
 
 } // namespace Codec
