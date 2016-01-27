@@ -48,9 +48,9 @@ DEBUG=1 make ubuntu   // debug build
 or
 DEBUG=1 make raspbian // debug build
 or
-make ubuntu-install     // build and install locally
+sudo make ubuntu-install     // build and install locally
 or
-make raspbian-install   // build and install locally
+sudo make raspbian-install   // build and install locally
 
 # generate a debian package for distribution
 ./GeneratePkg.pl --platform=raspbian --application=openhome-player --version=0.1.2.3
