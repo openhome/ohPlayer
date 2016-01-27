@@ -23,13 +23,6 @@ Linux (Ubuntu 12.x onward, Raspbian)
 sudo apt-get update
 sudo apt-get install gcc-4.8 g++-4.8 
 
-# set up gcc alternates; we need gcc4.8
-
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.6 20
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
-sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.6 20
-sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
-
 # install audio and UI dependencies
 sudo apt-get install gtk+-3-dev libnotify-dev notify-osd libasound2-dev
 
@@ -48,9 +41,9 @@ DEBUG=1 make ubuntu   // debug build
 or
 DEBUG=1 make raspbian // debug build
 or
-make ubuntu-install     // build and install locally
+sudo make ubuntu-install     // build and install locally
 or
-make raspbian-install   // build and install locally
+sudo make raspbian-install   // build and install locally
 
 # generate a debian package for distribution
 ./GeneratePkg.pl --platform=raspbian --application=openhome-player --version=0.1.2.3
