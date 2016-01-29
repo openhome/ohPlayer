@@ -160,12 +160,12 @@ void ControlPointProxy::CPPlaylist::transportChangedEvent()
 
     if (stateStr == kTransportStatePlaying)
     {
-        iDriver.resume();
+        iDriver.Resume();
     }
     else if (stateStr == kTransportStatePaused ||
              stateStr == kTransportStateStopped)
     {
-        iDriver.pause();
+        iDriver.Pause();
     }
 
     // Log the new state.
@@ -433,11 +433,11 @@ void ControlPointProxy::CPReceiver::transportChangedEvent()
 
     if (stateStr == kTransportStatePlaying)
     {
-        iDriver.resume();
+        iDriver.Resume();
     }
     else if (stateStr == kTransportStateStopped)
     {
-        iDriver.pause();
+        iDriver.Pause();
     }
 
     // Log the new state.
@@ -555,12 +555,12 @@ void ControlPointProxy::CPUpnpAv::pipelineChangedEvent()
 
     if (stateStr == kPipelineStatePlaying)
     {
-        iDriver.resume();
+        iDriver.Resume();
     }
     else if (stateStr == kPipelineStatePaused ||
             (stateStr == kPipelineStateStopped))
     {
-        iDriver.pause();
+        iDriver.Pause();
     }
 
     // Log the new state.

@@ -47,6 +47,9 @@ public:
     TBool setup(TIpAddress subnet);
     void shutdown();
 
+    void NotifySuspended();     // suspend the player (and network activity)
+    void NotifyResumed();       // resume the player (and network activity)
+
     void PlayPipeLine();                     // Pipeline - Play
     void PausePipeLine();                    // Pipeline - Pause
     void StopPipeLine();                     // Pipeline - Stop
@@ -91,4 +94,3 @@ private:
 }  // namespace Example
 }  // namespace Av
 }  // namespace OpenHome
-

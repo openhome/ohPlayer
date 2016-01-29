@@ -91,10 +91,10 @@ public:
     void setVolume(Float32 volume);
 
     // Pause driver output
-    void pause();
+    void Pause();
 
     // Resume driver output
-    void resume();
+    void Resume();
 
     // Fill a host buffer with PCM pipeline data
     //

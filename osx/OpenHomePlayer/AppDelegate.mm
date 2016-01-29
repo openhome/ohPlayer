@@ -22,9 +22,9 @@
 
 using namespace OpenHome::Av::Example;
 
-NSTimer* _updateTimer;
+NSTimer* _updateTimer = nil;
 
-OpenHome::Av::Example::MediaPlayerIF *samplePlayer;
+OpenHome::Av::Example::MediaPlayerIF *samplePlayer = nil;
 
 static const TIpAddress NO_SUBNET = 0xFFFFFFFF;
 std::vector<MediaPlayerIF::SubnetRecord*> *subnetList = nil;
@@ -34,7 +34,7 @@ NSMenuItem *subnetItem =  nil;
 {
     NSProcessInfo *pInfo = [NSProcessInfo processInfo];
     NSOperatingSystemVersion osVer = [pInfo operatingSystemVersion];
-    
+
     if(major)
         *major = osVer.majorVersion;
     if(minor)
@@ -55,7 +55,7 @@ NSMenuItem *subnetItem =  nil;
         char *uri = samplePlayer->checkForUpdate(_major & 0xffff,
                                                  _minor & 0xffff,
                                                  [version UTF8String]);
-        
+
         if(uri !=nil)
         {
             NSString * uriString = [NSString stringWithUTF8String:uri];
@@ -70,17 +70,19 @@ NSMenuItem *subnetItem =  nil;
     // the 'Application is agent' property in info.plist
     // and not having a main window or view controller
     [self setupStatusItem];
-    
+
     // schedule a repeating timer to periodically check for updates
     // to mediaplayer
     samplePlayer = new OpenHome::Av::Example::MediaPlayerIF( NO_SUBNET );
     _updateTimer = [NSTimer scheduledTimerWithTimeInterval:CHECK_INTERVAL target:self selector:@selector(checkUpdates:) userInfo:nil repeats:YES];
-    
+
     // schedule an initial (short) timer to check for updates
     [NSTimer scheduledTimerWithTimeInterval:INITIAL_CHECK_INTERVAL target:self selector:@selector(checkUpdates:) userInfo:nil repeats:NO];
-    
+
     // register self to receive UserNotification actions
     [[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:self];
+    
+    [self fileNotifications];
 }
 
 - (void)updateAvailable:(NSString *)uri
@@ -90,9 +92,9 @@ NSMenuItem *subnetItem =  nil;
     [alert setInformativeText:@"An update is available for the OpenHome Sample Application. Do you want to download and install it?"];
     [alert addButtonWithTitle:@"Yes"];
     [alert addButtonWithTitle:@"No"];
-    
+
     NSInteger answer = [alert runModal];
-    
+
     if (answer == NSAlertFirstButtonReturn) {
         // download the new app
         NSURL *url = [NSURL URLWithString:uri];
@@ -128,7 +130,7 @@ NSMenuItem *subnetItem =  nil;
     NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
     [dict setValue:uri forKey:@"uri"];
     notification.userInfo = dict;
-    
+
     [[NSUserNotificationCenter defaultUserNotificationCenter] deliverNotification:notification ];
 }
 
@@ -136,6 +138,38 @@ NSMenuItem *subnetItem =  nil;
     delete samplePlayer;
 }
 
+- (void) receiveSleepNote: (NSNotification*) note
+{
+    if(samplePlayer)
+    {
+        NSLog(@"ohPlayer Suspend: %@", [note name]);
+        samplePlayer->NotifySuspended();
+    }
+}
+
+- (void) receiveWakeNote: (NSNotification*) note
+{
+    if(samplePlayer)
+    {
+        NSLog(@"ohPlayer Resume: %@", [note name]);
+        samplePlayer->NotifyResumed();
+    }
+}
+
+- (void) fileNotifications
+{
+    //These notifications are filed on NSWorkspace's notification center, not the default
+    // notification center. You will not receive sleep/wake notifications if you file
+    //with the default notification center.
+
+    [[[NSWorkspace sharedWorkspace] notificationCenter] addObserver: self
+            selector: @selector(receiveSleepNote:)
+            name: NSWorkspaceWillSleepNotification object: NULL];
+
+    [[[NSWorkspace sharedWorkspace] notificationCenter] addObserver: self
+            selector: @selector(receiveWakeNote:)
+            name: NSWorkspaceDidWakeNotification object: NULL];
+}
 
 - (void)setupStatusItem
 {
@@ -146,27 +180,27 @@ NSMenuItem *subnetItem =  nil;
     _statusItem.alternateImage = [NSImage imageNamed:@"menu-hilite"];
     [_statusItem.alternateImage setTemplate:true];
     _statusItem.highlightMode = YES;
-    
+
     [self initMenu];
 }
 
 - (void)initMenu
 {
-    // create a menu 
+    // create a menu
     NSMenu *menu = [[NSMenu alloc] init];
     [menu addItemWithTitle:@"Check for updates" action:@selector(checkUpdates:) keyEquivalent:@""];
     subnetItem = [menu addItemWithTitle:@"Subnet" action:@selector(subnet:) keyEquivalent:@""];
-    
+
     [menu addItemWithTitle:@"About" action:@selector(about:) keyEquivalent:@""];
 
     [menu addItem:[NSMenuItem separatorItem]];
     [menu addItemWithTitle:@"Play" action:@selector(lp_play:) keyEquivalent:@""];
     [menu addItemWithTitle:@"Pause" action:@selector(lp_pause:) keyEquivalent:@""];
     [menu addItemWithTitle:@"Stop" action:@selector(lp_stop:) keyEquivalent:@""];
-    
+
     [menu addItem:[NSMenuItem separatorItem]];
     [menu addItemWithTitle:@"Quit OpenHome" action:@selector(terminate:) keyEquivalent:@""];
-    
+
     self.statusItem.menu = menu;
 }
 
@@ -176,33 +210,33 @@ NSMenuItem *subnetItem =  nil;
     {
         // create a submenu for the subnet lists
         NSMenu *submenu = [[NSMenu alloc] init];
-        
+
         // get subnet list
         if(subnetList)
             samplePlayer->FreeSubnets(subnetList);
         subnetList = samplePlayer->GetSubnets();
-        
+
         int index = 0;
         std::vector<MediaPlayerIF::SubnetRecord*>::iterator it;
-        
+
         // Put each subnet in our popup menu.
         for (it=subnetList->begin(); it < subnetList->end(); it++)
         {
             NSString  *str = [NSString stringWithUTF8String: (*it)->menuString->c_str() ];
-            
+
             // add a subnet menu entry for each subnet
             NSMenuItem *item = [submenu addItemWithTitle:str action:@selector(selectNet:) keyEquivalent:@""];
-            
+
             // set the item to represent the current index value
             NSNumber *num = [NSNumber numberWithInt:index];
             [item setRepresentedObject:num];
-            
+
             // If this is the subnet we are currently using disable it's selection.
             if ((*it)->isCurrent)
                 [item setTag:0];
             else
                 [item setTag:1];
-            
+
             // Add the menu item.
             index++;
         }
@@ -215,7 +249,7 @@ NSMenuItem *subnetItem =  nil;
 - (BOOL)validateUserInterfaceItem:(id <NSValidatedUserInterfaceItem>)anItem
 {
     SEL theAction = [anItem action];
-    
+
     // enable our player menu items based on the current mediaplayer state
     // note that we must check with the player as it may have been paused/played
     // by external controlpoints, and the mediaplayer monitors the playback
@@ -237,7 +271,7 @@ NSMenuItem *subnetItem =  nil;
     else if (theAction == @selector(selectNet:)) {
         return( ([anItem tag]==1) ? YES : NO );
     }
-    
+
     // all our other menu items should always be enabled
     return YES;
 }
@@ -250,7 +284,7 @@ NSMenuItem *subnetItem =  nil;
 {
     if(!subnetList)
         return;
-    
+
     // retrieve the desired subnet index in the list
     NSMenuItem *item = (NSMenuItem *)sender;
     NSNumber *num = [item representedObject];
@@ -259,7 +293,7 @@ NSMenuItem *subnetItem =  nil;
     if(index < subnetList->size())
     {
         MediaPlayerIF::SubnetRecord *rec = subnetList->at(index);
-        
+
         if(rec)
         {
             delete samplePlayer;
@@ -313,7 +347,7 @@ NSMenuItem *subnetItem =  nil;
     if (_managedObjectModel) {
         return _managedObjectModel;
     }
-	
+
     NSURL *modelURL = [[NSBundle mainBundle] URLForResource:@"sample" withExtension:@"momd"];
     _managedObjectModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
     return _managedObjectModel;
@@ -324,13 +358,13 @@ NSMenuItem *subnetItem =  nil;
     if (_persistentStoreCoordinator) {
         return _persistentStoreCoordinator;
     }
-    
+
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSURL *applicationDocumentsDirectory = [self applicationDocumentsDirectory];
     BOOL shouldFail = NO;
     NSError *error = nil;
     NSString *failureReason = @"There was an error creating or loading the application's saved data.";
-    
+
     // Make sure the application files directory is there
     NSDictionary *properties = [applicationDocumentsDirectory resourceValuesForKeys:@[NSURLIsDirectoryKey] error:&error];
     if (properties) {
@@ -342,7 +376,7 @@ NSMenuItem *subnetItem =  nil;
         error = nil;
         [fileManager createDirectoryAtPath:[applicationDocumentsDirectory path] withIntermediateDirectories:YES attributes:nil error:&error];
     }
-    
+
     if (!shouldFail && !error) {
         NSPersistentStoreCoordinator *coordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];
         NSURL *url = [applicationDocumentsDirectory URLByAppendingPathComponent:@"OSXCoreDataObjC.storedata"];
@@ -351,7 +385,7 @@ NSMenuItem *subnetItem =  nil;
         }
         _persistentStoreCoordinator = coordinator;
     }
-    
+
     if (shouldFail || error) {
         // Report any error we got.
         NSMutableDictionary *dict = [NSMutableDictionary dictionary];
@@ -371,7 +405,7 @@ NSMenuItem *subnetItem =  nil;
     if (_managedObjectContext) {
         return _managedObjectContext;
     }
-    
+
     NSPersistentStoreCoordinator *coordinator = [self persistentStoreCoordinator];
     if (!coordinator) {
         return nil;
@@ -389,7 +423,7 @@ NSMenuItem *subnetItem =  nil;
     if (![[self managedObjectContext] commitEditing]) {
         NSLog(@"%@:%@ unable to commit editing before saving", [self class], NSStringFromSelector(_cmd));
     }
-    
+
     NSError *error = nil;
     if ([[self managedObjectContext] hasChanges] && ![[self managedObjectContext] save:&error]) {
         [[NSApplication sharedApplication] presentError:error];
@@ -403,24 +437,24 @@ NSMenuItem *subnetItem =  nil;
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender {
     // Save changes in the application's managed object context before the application terminates.
-    
+
     if (!_managedObjectContext) {
         return NSTerminateNow;
     }
-    
+
     if (![[self managedObjectContext] commitEditing]) {
         NSLog(@"%@:%@ unable to commit editing to terminate", [self class], NSStringFromSelector(_cmd));
         return NSTerminateCancel;
     }
-    
+
     if (![[self managedObjectContext] hasChanges]) {
         return NSTerminateNow;
     }
-    
+
     NSError *error = nil;
     if (![[self managedObjectContext] save:&error]) {
 
-        // Customize this code block to include application-specific recovery steps.              
+        // Customize this code block to include application-specific recovery steps.
         BOOL result = [sender presentError:error];
         if (result) {
             return NSTerminateCancel;
@@ -437,12 +471,12 @@ NSMenuItem *subnetItem =  nil;
         [alert addButtonWithTitle:cancelButton];
 
         NSInteger answer = [alert runModal];
-        
+
         if (answer == NSAlertFirstButtonReturn) {
             return NSTerminateCancel;
         }
     }
-    
+
     return NSTerminateNow;
 }
 

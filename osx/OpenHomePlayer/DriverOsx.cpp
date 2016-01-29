@@ -261,7 +261,7 @@ Msg* DriverOsx::ProcessMsg(MsgDrain* aMsg)
     // active audio buffers
     flushQueue();
 
-    // Pause the queue. We assune drain signals a gap in playback.
+    // Pause the queue. We assume drain signals a gap in playback.
     pauseQueue();
 
     aMsg->ReportDrained();
@@ -341,12 +341,12 @@ Msg* DriverOsx::ProcessMsg(MsgQuit* aMsg)
     return NULL;
 }
 
-void DriverOsx::pause()
+void DriverOsx::Pause()
 {
-    // The audio queue is paused on receipt of a MsgDrain.
+    pauseQueue();
 }
 
-void DriverOsx::resume()
+void DriverOsx::Resume()
 {
     resumeQueue();
 }
