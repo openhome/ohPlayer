@@ -31,7 +31,7 @@
 #include <chrono>
 
 #define DBUG_F(...)                                                            \
-    Log::Print("[CodecIMF] [%llu] ",                                                      \
+    Log::Print("[%llu] [CodecIMF] ",                                                      \
         std::chrono::high_resolution_clock::now().time_since_epoch().count()); \
     Log::Print(__VA_ARGS__)
 #else
@@ -90,7 +90,6 @@ private:
     const TChar *iStreamFormat;
     TBool        iStreamStart;
     TBool        iStreamEnded;
-    TUint64      iByteTotal;
 
     OHPlayerByteStream *iByteStream;
     IMFSourceReader    *iSourceReader;
@@ -190,7 +189,6 @@ CodecIMF::CodecIMF(IMimeTypeList& aMimeTypeList)
     , iStreamFormat(NULL)
     , iStreamStart(false)
     , iStreamEnded(false)
-    , iByteTotal(0)
     , iByteStream(NULL)
     , iSourceReader(NULL)
 {
@@ -292,7 +290,7 @@ TBool CodecIMF::VerifyStreamType(IMFSourceReader *aSourceReader)
 {
     HRESULT       hr        = S_OK;
     IMFMediaType *mediaType = NULL;
-    TBool         retVal    = FALSE;
+    TBool         retVal    = false;
 
     hr = aSourceReader->GetNativeMediaType(
                                      (DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM,
@@ -481,12 +479,13 @@ failure:
     SafeRelease(&uncompressedAudioType);
     SafeRelease(&partialType);
 
-    return FALSE;
+    return false;
 }
 
 TBool CodecIMF::Recognise(const EncodedStreamInfo& aStreamInfo)
 {
     HRESULT hr;
+    TBool   retVal = false;
 
 #ifdef _DEBUG
     DBUG_F("Recognise\n");
@@ -494,13 +493,13 @@ TBool CodecIMF::Recognise(const EncodedStreamInfo& aStreamInfo)
 
     if (aStreamInfo.RawPcm())
     {
-        return false;
+        return retVal;
     }
 
     // Initialise the byte stream.
     iByteStream = new OHPlayerByteStream(iController,
-                                         (BOOL *)&iStreamStart,
-                                         (BOOL *)&iStreamEnded);
+                                         (TBool *)&iStreamStart,
+                                         (TBool *)&iStreamEnded);
 
     // Create the SourceReader
 #ifdef _DEBUG
@@ -562,7 +561,7 @@ void CodecIMF::StreamInitialise()
     // Remove the recognition cache and start operating on the actual stream.
     if (iStreamFormat == kFmtMp3)
     {
-        // Move the stream postition to that reached in Recognise().
+        // Move the stream position to that reached in Recognise().
         iByteStream->DisableRecogCache(true);
     }
     else
@@ -758,22 +757,17 @@ void CodecIMF::Process()
                                    NULL,
                                   &sampleBuf);
 
-    if (FAILED(hr))
-    {
-        DBUG_F("ReadSample Failed\n");
-    }
-
     if (iStreamStart)
     {
         DBUG_F("SourceReader ReadSample CodecStreamStart\n");
-        FlushPCM();
+
         THROW(CodecStreamStart);
     }
 
     if (iStreamEnded)
     {
         DBUG_F("SourceReader ReadSample CodecStreamEnded\n");
-        FlushPCM();
+
         THROW(CodecStreamEnded);
     }
 
@@ -790,6 +784,14 @@ void CodecIMF::Process()
         DBUG_F("End of input stream\n");
 
         SafeRelease(&sampleBuf);
+        THROW(CodecStreamEnded);
+    }
+
+    if (FAILED(hr))
+    {
+        DBUG_F("ReadSample Failed\n");
+
+        DBUG_F("SourceReader ReadSample CatchAll\n");
         THROW(CodecStreamEnded);
     }
 
