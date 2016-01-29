@@ -86,8 +86,8 @@ private:
     static const ULONG iCacheSize = 64 * 1024;
 
     ULONG            *iRefCount;              // Object reference count.
-    LONGLONG          iStreamLength;          // Stream length
-    LONGLONG          iStreamPos;             // Current stream position.
+    ULONGLONG         iStreamLength;          // Stream length
+    ULONGLONG         iStreamPos;             // Current stream position.
     TBool             iInAsyncRead;           // Currently in begin/end read
                                               // sequence.
     TBool             iIsRecogPhase;          // Recognising stream format.

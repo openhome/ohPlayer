@@ -18,6 +18,9 @@
 #ifdef TIMESTAMP_LOGGING
 #include <chrono>
 
+// Uncomment to enable verbose read/seek logging.
+//#define _VERBOSE_DEBUG
+
 #define DBUG_F(...)                                                            \
     Log::Print("[%llu] [OHPlayerByteStream] ",                                 \
         std::chrono::high_resolution_clock::now().time_since_epoch().count()); \
@@ -128,7 +131,13 @@ OHPlayerByteStream::OHPlayerByteStream(ICodecController *controller,
     *iRefCount = 1UL;
 
     // Note stream length
-    iStreamLength = controller->StreamLength();
+    iStreamLength = iController->StreamLength();
+
+    if (iStreamLength == 0)
+    {
+        // -1 indicates, to the SourceReader,  a stream of unknown length.
+        iStreamLength = ULONGLONG(-1);
+    }
 
     // Use a cache during stream format recognition to minimise seeking about
     // the physical stream.
@@ -138,13 +147,15 @@ OHPlayerByteStream::OHPlayerByteStream(ICodecController *controller,
         iController->Read(iRecogCache, iRecogCache.MaxBytes());
 
 #ifdef _DEBUG
-        DBUG_F("OHPlayerByteStream: Recognition Cache [%lu]\n",
+        DBUG_F("OHPlayerByteStream: Recognition Cache Filled Bytes [%lu]\n",
                iRecogCache.Bytes());
 #endif
     }
     catch (...)
     {
-        DBUG_F("OHPlayerByteStream: Unexpected recognition cache error\n");
+        DBUG_F("OHPlayerByteStream: No data for recognition cache\n");
+
+        THROW(CodecStreamEnded);
     }
 }
 
@@ -211,7 +222,7 @@ void OHPlayerByteStream::DisableRecogCache(TBool revertStreamPos)
             catch (...)
             {
                 DBUG_F("DisableRecogCache - Unexpected exception "
-                       "while advancing to offset [%llu]\n", iStreamPos);
+                       "while advancing to offset [%lld]\n", iStreamPos);
 
                 break;
             }
@@ -343,43 +354,71 @@ STDMETHODIMP OHPlayerByteStream::Read(BYTE  *aBuffer,
                                       ULONG  aLength,
                                       ULONG *aBytesRead)
 {
-
     *aBytesRead = 0;
 
-    // If we have a cache and the current stream position resides
-    // within it return data from the cache.
     if (iIsRecogPhase)
     {
-        if ((iStreamPos < iRecogCachePos) ||
-            (iStreamPos >= iRecogCachePos + iRecogCache.Bytes()))
+        if ((iStreamPos < (ULONGLONG)iRecogCachePos) ||
+            (iStreamPos >= (ULONGLONG)(iRecogCachePos + iRecogCache.Bytes())))
         {
-            // To fulfill this request we need to reallocate the cache.
-            iRecogCache.SetBytes(0);
-            try
+            if ((iStreamPos < (ULONGLONG)iRecogCachePos) ||
+                 iStreamPos == (ULONGLONG)(iRecogCachePos + iRecogCache.Bytes()))
             {
-                // Perform an out of band read on the stream.
-                iController->Read(*this, iStreamPos, aLength);
+                // For reads that are out with th cache in a  backwards
+                // direction or are consecutive to the last read the
+                // cache is refilled from the required point.
+                //
+                // This is to allow tracks that require more than the initial
+                // cache size to succeed. This will typically occur if there
+                // is sizeable album art included.
+                iRecogCache.SetBytes(0);
 
-                iRecogCachePos = iStreamPos;
+                try
+                {
+                    // Perform an out of band read on the stream.
+                    iController->Read(*this, iStreamPos, aLength);
 
-#ifdef _DEBUG
-                DBUG_F("Read: iRecogCachePos [%lld] Size [%lu]\n",
-                       iRecogCachePos, iRecogCache.Bytes());
+                    iRecogCachePos = iStreamPos;
+
+#ifdef _VERBOSE_DEBUG
+                    DBUG_F("Read: iRecogCachePos [%lld] Size [%lu]\n",
+                           iRecogCachePos, iRecogCache.Bytes());
 #endif
+                }
+                catch (...)
+                {
+                    DBUG_F("Read: Unexpected error refilling recognition  "
+                           "cache\n");
+
+                    return S_OK;
+                }
             }
-            catch (...)
+            else
             {
-                DBUG_F("Read: Unexpected error reallocating recognition  "
-                       "cache\n");
+                // Return 0 bytes for reads from random places.
+                //
+                // This is to avoid attempting to seek and read from
+                // the end of a stream of unknown length (radio stream)
+#ifdef _VERBOSE_DEBUG
+                DBUG_F("Read: iRecogCache: Returning 0 bytes\n");
+#endif
+
+                return S_OK;
             }
         }
 
-        LONGLONG streamPos = iStreamPos;
+        // Return the requested data from the cache.
+        ULONGLONG streamPos = iStreamPos;
 
         ULONG cacheByteOffset = (ULONG)(streamPos - iRecogCachePos);
-        ULONG available       = (ULONG)(iRecogCache.Bytes() - cacheByteOffset);
+        ULONG available       = 0LU;
 
-#ifdef _DEBUG
+        if (iRecogCache.Bytes() >= cacheByteOffset)
+        {
+            available = (ULONG)(iRecogCache.Bytes() - cacheByteOffset);
+        }
+
+#ifdef _VERBOSE_DEBUG
         DBUG_F("Read: Cache Req [%lu] Avail [%lu]\n", aLength, available);
 #endif
 
@@ -388,7 +427,9 @@ STDMETHODIMP OHPlayerByteStream::Read(BYTE  *aBuffer,
             aLength = available;
         }
 
-        memcpy(aBuffer, (char *)(iRecogCache.Ptr() + cacheByteOffset), aLength);
+        memcpy(aBuffer,
+               (char *)(iRecogCache.Ptr() + cacheByteOffset),
+               aLength);
 
         *aBytesRead = aLength;
         iStreamPos += *aBytesRead;
@@ -403,19 +444,31 @@ STDMETHODIMP OHPlayerByteStream::Read(BYTE  *aBuffer,
 
             if (*iStreamEnded || *iStreamStart)
             {
-#ifdef _DEBUG
+#ifdef _VERBOSE_DEBUG
                 DBUG_F("Read: Pre-existing exception [%d] [%d]\n",
                        *iStreamStart, *iStreamEnded);
 #endif
             }
             else
             {
+                if (iStreamPos != iController->StreamPos())
+                {
+                    DBUG_F("Read: ERROR Stream Position Mismatch ByteStream "
+                           "[%llu] PipeLine [%llu]\n",
+                           iStreamPos, iController->StreamPos());
+                }
+
                 // Read the requested amount of data from the physical stream.
                 iController->Read(inputBuffer, inputBuffer.MaxBytes());
             }
 
             *aBytesRead = (ULONG)inputBuffer.Bytes();
             iStreamPos += *aBytesRead;
+
+#ifdef _VERBOSE_DEBUG
+            DBUG_F("Read: Req[%lu] Got[%lu] Pos[%lld]\n",
+                   aLength, *aBytesRead, iStreamPos);
+#endif
         }
         catch(CodecStreamStart&)
         {
@@ -445,11 +498,6 @@ STDMETHODIMP OHPlayerByteStream::Read(BYTE  *aBuffer,
             return S_OK;
         }
     }
-
-#ifdef _DEBUG
-    DBUG_F("Read: Req[%lu] Got[%lu] Pos[%llu]\n",
-           aLength, *aBytesRead, iStreamPos);
-#endif
 
     return S_OK;
 }
@@ -506,10 +554,15 @@ STDMETHODIMP OHPlayerByteStream::Seek(MFBYTESTREAM_SEEK_ORIGIN aSeekOrigin,
     switch (aSeekOrigin)
     {
         case msoBegin:
+#ifdef _VERBOSE_DEBUG
             DBUG_F("Seek Origin: Offset [%lld]\n", aSeekOffset);
+#endif
+
             break;
         case msoCurrent:
+#ifdef _VERBOSE_DEBUG
             DBUG_F("Seek Current: Offset [%lld]\n", aSeekOffset);
+#endif
 
             aSeekOffset += iStreamPos;
             break;
@@ -524,7 +577,7 @@ STDMETHODIMP OHPlayerByteStream::Seek(MFBYTESTREAM_SEEK_ORIGIN aSeekOrigin,
             // During the recognition phase we fake any attempted seeks out with
             // the cache. The resulting 'read' will reallocate the cache with
             // data being returned from the new cache.
-#ifdef _DEBUG
+#ifdef _VERBOSE_DEBUG
             DBUG_F("Seek: Recognition Phase Seek Faked [%lld]\n", aSeekOffset);
 #endif
 
@@ -541,7 +594,7 @@ STDMETHODIMP OHPlayerByteStream::Seek(MFBYTESTREAM_SEEK_ORIGIN aSeekOrigin,
             // correct position for the next read.
             *aCurrentPosition = aSeekOffset;
 
-#ifdef _DEBUG
+#ifdef _VERBOSE_DEBUG
             DBUG_F("Seek: Codec instigated seek skipped [%lld]\n", aSeekOffset);
 #endif
         }
@@ -553,7 +606,7 @@ STDMETHODIMP OHPlayerByteStream::Seek(MFBYTESTREAM_SEEK_ORIGIN aSeekOrigin,
         // Update the position to the required offset.
         *aCurrentPosition = aSeekOffset;
 
-#ifdef _DEBUG
+#ifdef _VERBOSE_DEBUG
         DBUG_F("Seek Success [From Cache] [%lld]\n", aSeekOffset);
 #endif
     }
@@ -567,8 +620,8 @@ STDMETHODIMP OHPlayerByteStream::SetCurrentPosition(QWORD aPosition)
 {
     QWORD dummyPosition;
 
-#ifdef _DEBUG
-    DBUG_F("SetCurrentPosition %llu\n", aPosition);
+#ifdef _VERBOSE_DEBUG
+    DBUG_F("SetCurrentPosition %lld\n", aPosition);
 #endif
 
     // The MSDN documentation states the following:
@@ -601,8 +654,8 @@ STDMETHODIMP OHPlayerByteStream::GetCapabilities(DWORD *aCapabilities)
 
 STDMETHODIMP OHPlayerByteStream::GetCurrentPosition(QWORD *aPosition)
 {
-#ifdef _DEBUG
-    DBUG_F("GetCurrentPosition %llu\n", iStreamPos);
+#ifdef _VERBOSE_DEBUG
+    DBUG_F("GetCurrentPosition %lld\n", iStreamPos);
 #endif
 
 #if 0
@@ -620,9 +673,9 @@ STDMETHODIMP OHPlayerByteStream::GetCurrentPosition(QWORD *aPosition)
 
 STDMETHODIMP OHPlayerByteStream::GetLength(QWORD *aLength)
 {
-    *aLength = (QWORD)iController->StreamLength();
+    *aLength = (QWORD)iStreamLength;
 
-#ifdef _DEBUG
+#ifdef _VERBOSE_DEBUG
     DBUG_F("GetLength [%lld]\n", *aLength);
 #endif
 
@@ -631,9 +684,10 @@ STDMETHODIMP OHPlayerByteStream::GetLength(QWORD *aLength)
 
 STDMETHODIMP OHPlayerByteStream::IsEndOfStream(BOOL *aIsEndOfStream)
 {
-    if (iStreamPos >= iStreamLength)
+    if (iStreamPos >= iStreamLength ||
+        (*iStreamEnded && !iIsRecogPhase))
     {
-#ifdef _DEBUG
+#ifdef _VERBOSE_DEBUG
         DBUG_F("IsEndOfStream [%lld] [%lld] [TRUE]\n",
                iStreamPos, iStreamLength);
 #endif
@@ -642,7 +696,7 @@ STDMETHODIMP OHPlayerByteStream::IsEndOfStream(BOOL *aIsEndOfStream)
     }
     else
     {
-#ifdef _DEBUG
+#ifdef _VERBOSE_DEBUG
         DBUG_F("IsEndOfStream [%lld] [%lld] [false]\n",
                iStreamPos, iStreamLength);
 #endif

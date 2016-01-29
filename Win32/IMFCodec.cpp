@@ -80,7 +80,7 @@ private:
     TUint64                      iTrackOffset;
     Bws<DecodedAudio::kMaxBytes> iOutput;
 
-    TInt64       iStreamLength;
+    TUint64      iStreamLength;
     TInt         iChannels;
     TInt         iSampleRate;
     TInt         iBitDepth;
@@ -409,7 +409,7 @@ TBool CodecIMF::ConfigureAudioStream(IMFSourceReader *aSourceReader)
     else
     {
 #ifdef _DEBUG
-        DBUG_F("Stream Length [%lld]\n", iStreamLength);
+        DBUG_F("Stream Length [%llu]\n", iStreamLength);
 #endif
     }
 
@@ -496,21 +496,27 @@ TBool CodecIMF::Recognise(const EncodedStreamInfo& aStreamInfo)
         return retVal;
     }
 
-    // Initialise the byte stream.
-    iByteStream = new OHPlayerByteStream(iController,
-                                         (TBool *)&iStreamStart,
-                                         (TBool *)&iStreamEnded);
+    // Initialise Stream State
+    iStreamStart  = false;
+    iStreamEnded  = false;
+
+    try
+    {
+        // Initialise the byte stream.
+        iByteStream = new OHPlayerByteStream(iController,
+                                             (TBool *)&iStreamStart,
+                                             (TBool *)&iStreamEnded);
+    }
+    catch (CodecStreamEnded&)
+    {
+        DBUG_F("Recognise: Failed To Create OHPlayerByteStream\n");
+
+        SafeRelease(&iByteStream);
+        return retVal;
+    }
 
     // Create the SourceReader
-#ifdef _DEBUG
-    DBUG_F("Recognise: MFCreateSourceReaderFromByteStream Start\n");
-#endif
-
     hr = MFCreateSourceReaderFromByteStream(iByteStream, NULL, &iSourceReader);
-
-#ifdef _DEBUG
-    DBUG_F("Recognise: MFCreateSourceReaderFromByteStream End\n");
-#endif
 
     if (FAILED(hr))
     {
@@ -626,7 +632,8 @@ TBool CodecIMF::TrySeek(TUint aStreamId, TUint64 aSample)
     // Ditch any PCM we have buffered.
     iOutput.SetBytes(0);
 
-    return true;
+    // Seeking disabled for now,
+    return false;
 }
 
 // Flush any outstanding PCM data
@@ -791,13 +798,14 @@ void CodecIMF::Process()
     {
         DBUG_F("ReadSample Failed\n");
 
-        DBUG_F("SourceReader ReadSample CatchAll\n");
+        SafeRelease(&sampleBuf);
         THROW(CodecStreamEnded);
     }
 
     if (sampleBuf == NULL)
     {
         DBUG_F("No sample read\n");
+
         THROW(CodecStreamEnded);
     }
 
