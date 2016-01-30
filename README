@@ -21,7 +21,7 @@ Linux (Ubuntu 12.x onward, Raspbian)
 
 # install compiler dependencies
 sudo apt-get update
-sudo apt-get install gcc-4.8 g++-4.8 
+sudo apt-get install gcc-4.8 g++-4.8
 
 # set up gcc alternates; we need gcc4.8
 
@@ -51,6 +51,10 @@ or
 make ubuntu-install     // build and install locally
 or
 make raspbian-install   // build and install locally
+
+If you need a headless version (without GUI that is) you can run
+
+make raspbian DISABLE_GTK=y
 
 # generate a debian package for distribution
 ./GeneratePkg.pl --platform=raspbian --application=openhome-player --version=0.1.2.3
@@ -90,5 +94,5 @@ Mac OSX (Mountain Lion onward)
 Open the Sample Xcode project and build release or debug variants.
 
    osx/OpenHomePlayer.xcodeproj
-   
+
 The project will build a system menu application.

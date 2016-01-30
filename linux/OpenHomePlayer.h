@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glib.h>
+
 extern const gchar *g_appName;
 
 gboolean updateUI(gpointer mediaOptions);

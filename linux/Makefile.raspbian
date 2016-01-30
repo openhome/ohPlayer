@@ -16,8 +16,19 @@
 OSPLATFORM=raspbian
 
 # GTK Specifics
+ifndef DISABLE_GTK
 GTK_CFLAGS := $(shell pkg-config --cflags gtk+-3.0)
 GTK_LIBS   := $(shell pkg-config --libs gtk+-3.0)
+
+OPTIONAL_CFLAGS = $(GTK_CFLAGS) -DUSE_GTK
+OPTIONAL_LIBS = $(GTK_LIBS) -lnotify
+else
+GLIB_CFLAGS := $(shell pkg-config --cflags glib-2.0)
+GLIB_LIBS   := $(shell pkg-config --libs glib-2.0)
+
+OPTIONAL_CFLAGS = $(GLIB_CFLAGS)
+OPTIONAL_LIBS = $(GLIB_LIBS)
+endif
 
 HWPLATFORM=$(shell uname -i)
 ifeq ($(HWPLATFORM),i686)
@@ -44,7 +55,7 @@ RESDIR = $(PREFIX)/share/openhome-player
 # The directory to install changelog and license to
 DOCDIR = $(PREFIX)/share/doc/openhome-player
 
-CFLAGS = -c -Wall -std=c++11 $(GTK_CFLAGS) -DTARG_ARCH=$(TARG_ARCH) \
+CFLAGS = -c -Wall -std=c++11 $(OPTIONAL_CFLAGS) -DTARG_ARCH=$(TARG_ARCH) \
          -fstack-protector -fstack-check
 
 # If 'DEBUG=0 is specified on the command line build a debug biuld.
@@ -66,7 +77,7 @@ else
     RESTRICTED_CODECS = -lCodecAdts -lCodecAac -lCodecAacBase -lCodecMp3
 endif
 
-LIBS         = $(GTK_LIBS) -lnotify -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lSourceRadio -lShell -lohMediaPlayer -lWebAppFramework -lConfigUi -lohNetGeneratedProxies -lohNetCore $(RESTRICTED_CODECS) -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecFlac -lCodecWav -lohPipeline -lpthread -lssl -lcrypto -ldl
+LIBS         = $(OPTIONAL_LIBS) -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lSourceRadio -lShell -lohMediaPlayer -lWebAppFramework -lConfigUi -lohNetGeneratedProxies -lohNetCore $(RESTRICTED_CODECS) -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecFlac -lCodecWav -lohPipeline -lpthread -lssl -lcrypto -ldl -lm
 
 INCLUDES     = -I../dependencies/$(TARG_ARCH)/ohMediaPlayer/include -I../dependencies/$(TARG_ARCH)/ohNetmon/include -I../dependencies/$(TARG_ARCH)/openssl/include -I../dependencies/$(TARG_ARCH)/ohNetGenerated-$(TARG_ARCH)-$(BUILD_TYPE)/include/ohnet/OpenHome/Net/Core
 
@@ -99,12 +110,12 @@ default: build $(TARGET)
 all: default
 
 $(OBJ_DIR)/%.o: %.cpp $(HEADERS)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+	$(CXX) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 .PRECIOUS: $(TARGET) $(OBJECTS)
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(OBJECTS) -Wall $(LIBS) -o $@
+	$(CXX) $(OBJECTS) -Wall $(LIBS) -o $@
 
 build:
 	@mkdir -p $(OBJ_DIR)
