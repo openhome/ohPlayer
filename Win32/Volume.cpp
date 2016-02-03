@@ -52,6 +52,10 @@ TUint VolumeProfile::FadeMax() const
 
 void VolumeControl::SetVolume(TUint aVolume)
 {
+    const TUint MILLI_DB_PER_STEP = 1024;
+
+    aVolume /= MILLI_DB_PER_STEP;
+
     // Set the audio session volume.
     AudioDriver::SetVolume(float(aVolume)/100.0f);
 }

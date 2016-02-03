@@ -6,6 +6,8 @@
 #include <OpenHome/Av/Product.h>
 #include <OpenHome/Av/MediaPlayer.h>
 #include <OpenHome/Configuration/ConfigManager.h>
+#include <OpenHome/Web/ConfigUi/FileResourceHandler.h>
+#include <OpenHome/Web/ConfigUi/ConfigUiMediaPlayer.h>
 #include <OpenHome/Web/ConfigUi/ConfigUi.h>
 #include <OpenHome/Av/Utils/IconDriverSongcastSender.h>
 #include <OpenHome/Media/Debug.h>
@@ -180,8 +182,21 @@ void ExampleMediaPlayer::AddConfigApp()
         product.GetSourceDetails(i, systemName, type, name, visible);
         sourcesBufs.push_back(new Brh(systemName));
     }
-    // FIXME - take resource dir as param or copy res dir to build dir
-    iConfigApp = new ConfigAppMediaPlayer(iMediaPlayer->ConfigManager(), sourcesBufs, Brn("SoftPlayer"), Brn(""), kMaxUiTabs, kUiSendQueueSize);
+
+    // Obtaiun the full path to the application resource directory.
+    NSString *nsAppRes      = [[NSBundle mainBundle] resourcePath];
+    NSString *nsFullResPath = [NSString stringWithFormat:@"%@/SoftPlayer/",
+                               nsAppRes];
+    const TChar *resDir     = [nsFullResPath cStringUsingEncoding:NSUTF8StringEncoding];
+
+    iConfigApp = new ConfigAppMediaPlayer(iMediaPlayer->ConfigManager(),
+                                          iFileResourceHandlerFactory,
+                                          sourcesBufs,
+                                          Brn("SoftPlayer"),
+                                          Brn(resDir),
+                                          kMaxUiTabs,
+                                          kUiSendQueueSize);
+
     iAppFramework->Add(iConfigApp, MakeFunctorGeneric(*this, &ExampleMediaPlayer::PresentationUrlChanged));
     for (TUint i=0;i<sourcesBufs.size(); i++) {
         delete sourcesBufs[i];

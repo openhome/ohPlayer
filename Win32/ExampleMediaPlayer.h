@@ -5,6 +5,7 @@
 #include <OpenHome/Media/PipelineManager.h>
 #include <OpenHome/Av/Songcast/OhmTimestamp.h>
 #include <OpenHome/Av/VolumeManager.h>
+#include <OpenHome/Web/ConfigUi/FileResourceHandler.h>
 #include <OpenHome/Web/WebAppFramework.h>
 
 #include <Windows.h>
@@ -38,7 +39,7 @@ class ExampleMediaPlayer : private Net::IResourceManager
 {
     static const Brn kSongcastSenderIconFileName;
     static const TUint kMaxUiTabs       = 4;
-    static const TUint kUiSendQueueSize = 32;
+    static const TUint kUiSendQueueSize = kMaxUiTabs * 200;
     static const TUint kShellPort       = 2323;
 
 public:
@@ -95,6 +96,7 @@ private:
     IOhmTimestampMapper       *iTxTsMapper;
     IOhmTimestampMapper       *iRxTsMapper;
     const Brx                 &iUserAgent;
+    Web::FileResourceHandlerFactory iFileResourceHandlerFactory;
     Web::ConfigAppMediaPlayer *iConfigApp;
     HWND                       iHwnd; // Main window handle
     Bws<Uri::kMaxUriBytes+1>   iPresentationUrl;

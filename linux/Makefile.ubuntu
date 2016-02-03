@@ -140,6 +140,7 @@ install:
 	$(INSTALL) -m 644 OpenHome-Light-48x48.png $(DESTDIR)$(RESDIR)
 	$(INSTALL) -m 644 copyright $(DESTDIR)$(DOCDIR)
 	cp -R $(RESOURCEDIR) $(DESTDIR)$(RESDIR)
+	cp $(RESOURCEDIR)/lang/en-gb/ConfigOptions.txt $(DESTDIR)$(RESDIR)/res/lang
 
 uninstall:
 	rm $(DESTDIR)$(BINDIR)/$(TARGET)

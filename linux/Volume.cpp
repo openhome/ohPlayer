@@ -97,17 +97,20 @@ TBool VolumeControl::IsVolumeSupported()
 
 void VolumeControl::SetVolume(TUint aVolume)
 {
-    const long MAX_LINEAR_DB_SCALE = 24;
-    double     volume              = double(aVolume/100.0f);
-    double     min_norm;
-    long       min, max, value;
-    TInt       err;
+    const long  MAX_LINEAR_DB_SCALE = 24;
+    const TUint MILLI_DB_PER_STEP   = 1024;
+    double      volume;
+    double      min_norm;
+    long        min, max, value;
+    TInt        err;
 
     // Sanity Check
     if (! IsVolumeSupported())
     {
         return;
     }
+
+    volume = double((aVolume / MILLI_DB_PER_STEP)/100.0f);
 
     // Use the dB range to map the volume to a scale more in tune
     // with the human ear, if possible.

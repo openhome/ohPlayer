@@ -55,6 +55,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "{#MySrcDir}\Win32\Win32\{#ReleaseType}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MySrcDir}\dependencies\Windows-x86\ohMediaPlayer\res\*"; DestDir: "{app}\res"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#MySrcDir}\dependencies\Windows-x86\ohMediaPlayer\res\lang\en-gb\ConfigOptions.txt"; DestDir: "{app}\res\lang"; Flags: ignoreversion
 
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 

@@ -336,6 +336,29 @@ sub buildOsxRelease
 
     die "ERROR: Installation Build Failed\n" unless ($? == 0);
 
+    # Copy the latest resources into the pkg
+    my $pkgResDir = "$scratchDir/OpenHomePlayer.dst/Applications/" .
+                    "OpenHomePlayer.app/Contents/Resources/";
+
+    # Clear out any existing, possibly out of date, resources.
+    remove_tree("$pkgResDir/SoftPlayer") or
+        die "ERROR: Cannot remove pkg resource directory. $!\n";
+
+    # Copy over the latest resources from the dependencies
+    system("cp -R ../dependencies/Mac-x64/ohMediaPlayer/res $pkgResDir");
+
+    die "ERROR: Failed to copy current resources into pkg. $!\n"
+        unless ($? == 0);
+
+    # Name the resource folder correctly.
+    move("$pkgResDir/res", "$pkgResDir/SoftPlayer") or
+        die "ERROR: Failed to rename resource fodler $!\n";
+
+    # Duplicate the English language UI strings in the fallback location.
+    copy("$pkgResDir/SoftPlayer/lang/en-gb/ConfigOptions.txt",
+         "$pkgResDir/SoftPlayer/lang") or
+        die "ERROR: Failed to install default string resources. $!\n";
+
     # Generate the OpenHomePlayer component package.
     #
     # The package is configured to install to '/Applications/OpenHomePlayer'

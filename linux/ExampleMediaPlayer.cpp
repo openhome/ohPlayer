@@ -12,6 +12,8 @@
 #include <OpenHome/Av/Debug.h>
 #include <OpenHome/Media/Pipeline/Pipeline.h>
 #include <OpenHome/Private/Printer.h>
+#include <OpenHome/Web/ConfigUi/FileResourceHandler.h>
+#include <OpenHome/Web/ConfigUi/ConfigUiMediaPlayer.h>
 #include <OpenHome/Web/WebAppFramework.h>
 #include <OpenHome/Web/ConfigUi/ConfigUi.h>
 #include <OpenHome/Net/Private/Shell.h>
@@ -135,7 +137,6 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
                                         port,
                                         kMaxUiTabs,
                                         kUiSendQueueSize);
-
 }
 
 ExampleMediaPlayer::~ExampleMediaPlayer()
@@ -359,6 +360,7 @@ void ExampleMediaPlayer::AddConfigApp()
     }
 
     iConfigApp = new ConfigAppMediaPlayer(iMediaPlayer->ConfigManager(),
+                                          iFileResourceHandlerFactory,
                                           sourcesBufs,
                                           Brn("Softplayer"),
                                           Brn("/usr/share/"

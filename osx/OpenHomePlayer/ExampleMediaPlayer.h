@@ -24,6 +24,7 @@
 #include <OpenHome/Av/SourceFactory.h>
 #include <OpenHome/Av/KvpStore.h>
 #include <OpenHome/Av/Raop/Raop.h>
+#include <OpenHome/Web/ConfigUi/FileResourceHandler.h>
 #include <OpenHome/Av/Songcast/OhmTimestamp.h>
 #include <OpenHome/PowerManager.h>
 #include <OpenHome/Web/WebAppFramework.h>
@@ -62,8 +63,8 @@ namespace OpenHome {
             {
             private:
                 static const Brn kSongcastSenderIconFileName;
-                static const TUint kMaxUiTabs = 4;
-                static const TUint kUiSendQueueSize = 32;
+                static const TUint kMaxUiTabs       = 4;
+                static const TUint kUiSendQueueSize = kMaxUiTabs * 200;
                 static const TUint kShellPort       = 2323;
 
             public:
@@ -116,6 +117,7 @@ namespace OpenHome {
                 IOhmTimestamper*        iRxTimestamper;
                 IOhmTimestamper*        iTxTsMapper;
                 IOhmTimestamper*        iRxTsMapper;
+                Web::FileResourceHandlerFactory iFileResourceHandlerFactory;
                 Web::ConfigAppMediaPlayer* iConfigApp;
                 Net::Shell*             iShell;
                 Net::ShellCommandDebug* iShellDebug;

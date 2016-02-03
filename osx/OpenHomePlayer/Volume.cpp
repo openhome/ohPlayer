@@ -57,6 +57,10 @@ void VolumeControl::SetHost(Media::DriverOsx *driver)
 
 void VolumeControl::SetVolume(TUint aVolume)
 {
+    const TUint MILLI_DB_PER_STEP  = 1024;
+
+    aVolume /= MILLI_DB_PER_STEP;
+
     // Set the audio session volume.
     if(aVolume != iVolume)
     {
