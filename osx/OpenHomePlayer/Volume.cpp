@@ -8,6 +8,14 @@ using namespace OpenHome;
 using namespace OpenHome::Av;
 using namespace OpenHome::Media;
 
+// RebootLogger
+
+void RebootLogger::Reboot(const Brx& aReason)
+{
+    Log::Print("\n\n\nRebootLogger::Reboot. Reason:\n%.*s\n\n\n",
+               PBUF(aReason));
+}
+
 TUint VolumeProfile::VolumeMax() const
 {
     return kVolumeMax;

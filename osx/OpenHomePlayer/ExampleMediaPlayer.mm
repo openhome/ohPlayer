@@ -189,13 +189,17 @@ void ExampleMediaPlayer::AddConfigApp()
                                nsAppRes];
     const TChar *resDir     = [nsFullResPath cStringUsingEncoding:NSUTF8StringEncoding];
 
-    iConfigApp = new ConfigAppMediaPlayer(iMediaPlayer->ConfigManager(),
+    iConfigApp = new ConfigAppMediaPlayer(iMediaPlayer->InfoAggregator(),
+                                          iMediaPlayer->Env(),
+                                          iMediaPlayer->Product(),
+                                          iMediaPlayer->ConfigManager(),
                                           iFileResourceHandlerFactory,
                                           sourcesBufs,
                                           Brn("SoftPlayer"),
                                           Brn(resDir),
                                           kMaxUiTabs,
-                                          kUiSendQueueSize);
+                                          kUiSendQueueSize,
+                                          iRebootHandler);
 
     iAppFramework->Add(iConfigApp, MakeFunctorGeneric(*this, &ExampleMediaPlayer::PresentationUrlChanged));
     for (TUint i=0;i<sourcesBufs.size(); i++) {

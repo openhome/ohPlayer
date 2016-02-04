@@ -29,6 +29,7 @@
 #include <OpenHome/PowerManager.h>
 #include <OpenHome/Web/WebAppFramework.h>
 #include <OpenHome/Av/VolumeManager.h>
+#include <OpenHome/Av/RebootHandler.h>
 
 #include "RamStore.h"
 #include "Volume.h"
@@ -106,8 +107,9 @@ namespace OpenHome {
                 Net::DvDevice*          iDeviceUpnpAv;
                 RamStore*               iRamStore;
                 Web::WebAppFramework*   iAppFramework;
-                Media::DriverOsx*              iDriver;
+                Media::DriverOsx*       iDriver;
                 Configuration::ConfigPersistentStore* iConfigPersistentStore;
+                RebootLogger            iRebootHandler;
             private:
                 Semaphore iDisabled;
                 Av::VolumeControl       iVolume;

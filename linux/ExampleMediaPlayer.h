@@ -3,6 +3,7 @@
 #include <OpenHome/Av/MediaPlayer.h>
 #include <OpenHome/Av/Utils/DriverSongcastSender.h>
 #include <OpenHome/Media/PipelineManager.h>
+#include <OpenHome/Av/RebootHandler.h>
 #include <OpenHome/Av/Songcast/OhmTimestamp.h>
 #include <OpenHome/Av/VolumeManager.h>
 #include <OpenHome/Web/ConfigUi/FileResourceHandler.h>
@@ -80,6 +81,7 @@ protected:
     Configuration::ConfigGTKKeyStore *iConfigStore;
     Semaphore                      iSemShutdown;
     Web::WebAppFramework          *iAppFramework;
+    RebootLogger                   iRebootHandler;
 private:
     Semaphore                  iDisabled;
     Av::VolumeControl          iVolume;

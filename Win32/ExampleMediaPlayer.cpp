@@ -355,13 +355,17 @@ void ExampleMediaPlayer::AddConfigApp()
         sourcesBufs.push_back(new Brh(systemName));
     }
 
-    iConfigApp = new ConfigAppMediaPlayer(iMediaPlayer->ConfigManager(),
+    iConfigApp = new ConfigAppMediaPlayer(iMediaPlayer->InfoAggregator(),
+                                          iMediaPlayer->Env(),
+                                          iMediaPlayer->Product(),
+                                          iMediaPlayer->ConfigManager(),
                                           iFileResourceHandlerFactory,
                                           sourcesBufs,
                                           Brn("Softplayer"),
                                           Brn("res/"),
                                           kMaxUiTabs,
-                                          kUiSendQueueSize);
+                                          kUiSendQueueSize,
+                                          iRebootHandler);
 
     iAppFramework->Add(iConfigApp,              // iAppFramework takes ownership
                        MakeFunctorGeneric(*this, &ExampleMediaPlayer::PresentationUrlChanged));

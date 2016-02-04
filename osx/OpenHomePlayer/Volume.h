@@ -1,12 +1,19 @@
 #pragma once
 
 #include <OpenHome/Av/VolumeManager.h>
+#include <OpenHome/Av/RebootHandler.h>
 #include <OpenHome/Media/MuteManager.h>
 
 #include "DriverOsx.h"
 
 namespace OpenHome {
 namespace Av {
+
+class RebootLogger : public IRebootHandler
+{
+public: // from IRebootHandler
+    void Reboot(const Brx& aReason) override;
+};
 
 class VolumeProfile : public IVolumeProfile
 {
@@ -33,17 +40,17 @@ class VolumeControl : public IVolume, public IBalance, public IFade
 {
 public:
     VolumeControl() { iVolume = 0.0; hostDriver = nil; }
-    
+
     /* Set the host driver which will handle audio change requests */
     void SetHost(Media::DriverOsx *driver);
-    
+
 private: // from IVolume
     void SetVolume(TUint aVolume) override;
 private: // from IBalance
     void SetBalance(TInt aBalance) override;
 private: // from IFade
     void SetFade(TInt aFade) override;
-    
+
 private:
     Media::DriverOsx* hostDriver;
     float iVolume;

@@ -1,9 +1,16 @@
 #pragma once
 
+#include <OpenHome/Av/RebootHandler.h>
 #include <OpenHome/Av/VolumeManager.h>
 
 namespace OpenHome {
 namespace Av {
+
+class RebootLogger : public IRebootHandler
+{
+public: // from IRebootHandler
+    void Reboot(const Brx& aReason) override;
+};
 
 class VolumeProfile : public IVolumeProfile
 {
