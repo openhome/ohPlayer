@@ -50,7 +50,7 @@ RESDIR = $(PREFIX)/share/openhome-player
 DOCDIR = $(PREFIX)/share/doc/openhome-player
 
 CFLAGS = -c -Wall -std=c++11 $(GTK_CFLAGS) -DTARG_ARCH=$(TARG_ARCH) \
-         -fstack-protector -fstack-check
+         -DUSE_GTK -fstack-protector -fstack-check
 
 # If 'DEBUG=0 is specified on the command line build a debug biuld.
 ifdef DEBUG
