@@ -3,9 +3,9 @@
 #ifdef USE_GTK
 #include <gtk/gtk.h>
 #include <libnotify/notify.h>
-#else
+#else // USE_GTK
 #include <glib.h>
-#endif
+#endif // USE_GTK
 #ifdef USE_UNITY
 #include <libappindicator/app-indicator.h>
 #endif // USE_UNITY
@@ -19,12 +19,12 @@
 #ifdef DEBUG
 // Mtrace allocation tracing.
 #include <mcheck.h>
-#endif
+#endif // DEBUG
 
 #ifdef USE_NVWA
 // New/Delete tracing.
 #include "debug_new.h"
-#endif
+#endif // USE_NVWA
 
 // Type definitions
 
@@ -47,31 +47,34 @@ static GtkWidget *g_mi_about    = NULL;
 static GtkWidget *g_mi_exit     = NULL;
 static GtkWidget *g_mi_sep      = NULL;
 static GtkWidget *g_mi_sep1     = NULL;
-#else
-static GMainContext *context    = NULL;
-static GMainLoop *loop          = NULL;
-#endif
+
+static guint      g_mediaOptions = 0;        // Available media playback options
+#else // USE_GTK
+static GMainLoop *loop = NULL;
+#endif // USE_GTK
 
 static gboolean  g_updatesAvailable = false; // App updates availability.
 static gchar    *g_updateLocation   = NULL;  // Update location URL.
-static guint     g_mediaOptions     = 0;     // Available media playback options
 static GThread  *g_mplayerThread    = NULL;  // Media Player thread
 static InitArgs  g_mPlayerArgs;              // Media Player arguments.
 
+#ifdef USE_GTK
 #ifdef USE_UNITY
 static const gchar *g_light_icon_path = "/usr/share/openhome-player";
 static const gchar *g_light_icon_name = "OpenHome-Light-48x48";
 #endif // USE_UNITY
+
 static const gchar *g_icon_path =
                         "/usr/share/openhome-player/OpenHome-48x48.png";
+#endif // USE_GTK
 
 const gchar        *g_appName   = "OpenHomePlayer";
 
+#ifdef USE_GTK
 static void displayNotification(const gchar *summary,
                                 const gchar *body,
                                 NotificationClassifiction nClass)
 {
-#ifdef USE_GTK
     NotifyNotification *notification;
     GError             *error = NULL;
     const gchar        *icon;
@@ -99,17 +102,14 @@ static void displayNotification(const gchar *summary,
     }
 
     g_object_unref(G_OBJECT(notification));
-#endif
 }
 
 #ifndef USE_UNITY
-#ifdef USE_GTK
 static void tray_icon_on_click(GtkStatusIcon *status_icon,
                                gpointer       user_data)
 {
     g_debug("Clicked on tray icon\n");
 }
-#endif // USE_GTK
 #endif // USE_UNITY
 
 // Context Menu Handlers.
@@ -130,7 +130,6 @@ static void stopSelectionHandler()
 
 static void aboutSelectionHandler()
 {
-#ifdef USE_GTK
     GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(g_icon_path, NULL);
 
     GtkWidget *dialog = gtk_about_dialog_new();
@@ -150,23 +149,17 @@ static void aboutSelectionHandler()
 
     gtk_dialog_run(GTK_DIALOG (dialog));
     gtk_widget_destroy(dialog);
-#endif
 }
 
 static void exitSelectionHandler()
 {
     ExitMediaPlayer();
 
-#ifdef USE_GTK
     gtk_main_quit();
-#else
-    g_main_loop_quit(loop);
-#endif
 }
 
 static void updateSelectionHandler()
 {
-#ifdef USE_GTK
     // Show update dialogue.
     GtkWidget *dialog;
 
@@ -221,12 +214,8 @@ static void updateSelectionHandler()
             break;
         }
     }
-#endif
 }
 
-#ifndef USE_GTK
-typedef void GtkMenuItem;
-#endif
 static void NetworkSelectionHandler(GtkMenuItem * /*menuitem*/, gpointer args)
 {
     TIpAddress subnet = GPOINTER_TO_UINT(args);
@@ -249,7 +238,6 @@ static void NetworkSelectionHandler(GtkMenuItem * /*menuitem*/, gpointer args)
 // media player.
 static void UpdatePlaybackOptions()
 {
-#ifdef USE_GTK
     if (g_mi_play == NULL || g_mi_pause == NULL || g_mi_stop == NULL)
     {
         return;
@@ -281,12 +269,10 @@ static void UpdatePlaybackOptions()
     {
         gtk_widget_set_sensitive(g_mi_stop,false);
     }
-#endif
 }
 
 // Create a sub menu listing the available network adapters and their
 // associated networks.
-#ifdef USE_GTK
 static void CreateNetworkAdapterSubmenu(GtkWidget *networkMenuItem)
 {
     GtkWidget                  *submenu    = gtk_menu_new();
@@ -325,19 +311,17 @@ static void CreateNetworkAdapterSubmenu(GtkWidget *networkMenuItem)
 
     gtk_menu_item_set_submenu (GTK_MENU_ITEM(networkMenuItem), submenu);
 }
-#endif
 
 #ifdef USE_UNITY
 // Create the context menu
 static GtkMenu* tray_icon_on_menu()
-#elif USE_GTK
+#else // USE_UNITY
 // Display the context menu
 static void tray_icon_on_menu(GtkStatusIcon *status_icon,
                               guint          button,
                               guint          activate_time,
                               gpointer       user_data)
 #endif // USE_UNITY
-#if defined USE_GTK || defined USE_UNITY
 {
     GtkMenu   *menu    = (GtkMenu*)gtk_menu_new();
 
@@ -415,7 +399,6 @@ static void tray_icon_on_menu(GtkStatusIcon *status_icon,
                    activate_time);
 #endif // USE_UNITY
 }
-#endif
 
 #ifdef USE_UNITY
 static void create_tray_icon(AppIndicator **indicator)
@@ -438,7 +421,6 @@ static void create_tray_icon(AppIndicator **indicator)
 #else // USE_UNITY
 static void create_tray_icon()
 {
-#ifdef USE_GTK
     GtkStatusIcon *tray_icon;
 
     tray_icon = gtk_status_icon_new_from_file(g_icon_path);
@@ -453,7 +435,6 @@ static void create_tray_icon()
                      G_CALLBACK(tray_icon_on_menu), NULL);
 
     gtk_status_icon_set_visible(tray_icon, TRUE);
-#endif
 }
 #endif // USE_UNITY
 
@@ -478,12 +459,13 @@ gboolean networkAdaptersAvailable()
     return false;
 }
 #endif // USE_UNITY
+#endif // USE_GDK
 
 gboolean updatesAvailable(gpointer data)
 {
-#ifdef USE_GTK
     g_updatesAvailable = true;
 
+#ifdef USE_GTK
     // Alert the user to availability of an application update.
     displayNotification("Update",
                         "There are updates available for this application",
@@ -494,13 +476,15 @@ gboolean updatesAvailable(gpointer data)
     {
         gtk_widget_set_sensitive(g_mi_update,true);
     }
+#else // USE_GTK
+    g_debug("There are updates available for this application");
+#endif // USE_GTK
 
     // Free up any previously stored location.
     delete[] g_updateLocation;
 
     // Note the location of the update installer.
     g_updateLocation = (char *)data;
-#endif
 
     return false;
 }
@@ -510,19 +494,19 @@ int main(int argc, char **argv)
 #ifdef DEBUG
     // Enable malloc tracing.
     mtrace();
-#endif
+#endif // DEBUG
 
 #ifdef USE_GTK
     gtk_init(&argc, &argv);
     notify_init(g_appName);
-#endif
 
 #ifdef USE_UNITY
     AppIndicator *indicator;
     create_tray_icon(&indicator);
-#else
+#else // USE_UNITY
     create_tray_icon();
-#endif
+#endif // USE_UNITY
+#endif // USE_GTK
 
     // Start MediaPlayer thread.
     g_mPlayerArgs.subnet = InitArgs::NO_SUBNET;
@@ -530,14 +514,12 @@ int main(int argc, char **argv)
     g_mplayerThread = g_thread_new("MediaPlayerIF",
                                    (GThreadFunc)InitAndRunMediaPlayer,
                                    (gpointer)&g_mPlayerArgs);
-
 #ifdef USE_GTK
     gtk_main();
-#else
-    context = g_main_context_new();
-    loop = g_main_loop_new(context, FALSE);
+#else // USE_GTK
+    loop = g_main_loop_new(NULL, FALSE);
     g_main_loop_run(loop);
-#endif
+#endif // USE_GTK
 
     // Wait on the Media Player thread to complete.
     g_thread_join(g_mplayerThread);
@@ -548,7 +530,7 @@ int main(int argc, char **argv)
 
 #ifdef USE_GTK
     notify_uninit();
-#endif
+#endif //USE_GTK
 
     return 0;
 }

@@ -4,9 +4,9 @@
 
 #ifdef USE_GTK
 #include <gtk/gtk.h>
-#else
+#else // USE_GTK
 #include <glib.h>
-#endif
+#endif // USE_GDK
 #include <unistd.h>
 
 #include <OpenHome/Net/Private/DviStack.h>
@@ -56,7 +56,11 @@ static gint tCallback(gpointer data)
 #ifdef USE_GTK
         gdk_threads_add_idle((GSourceFunc)updatesAvailable,
                              (gpointer)urlString);
-#endif
+#else // USE_GTK
+        g_main_context_invoke(NULL,
+                              (GSourceFunc)updatesAvailable,
+                              (gpointer)urlString);
+#endif // USE_GDK
     }
 
     if (period == TenSeconds)

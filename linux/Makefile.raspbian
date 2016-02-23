@@ -5,6 +5,8 @@
 #   USE_LIBAVCODEC=0:
 #            Use the platform libavcodecs for MP3/AAC instead of the embedded,
 #            license restricted variants. 
+#   DISABLE_GTK=0:
+#   	     Build a command line only player that has no system tray presence.
 #   DEBUG=0: Debug build.
 #            Glibc mtrace will be enabled. MALLOC_TRACE must be defined in the
 #            environment to activate.
@@ -27,15 +29,15 @@ GLIB_CFLAGS := $(shell pkg-config --cflags glib-2.0)
 GLIB_LIBS   := $(shell pkg-config --libs glib-2.0)
 
 OPTIONAL_CFLAGS = $(GLIB_CFLAGS)
-OPTIONAL_LIBS = $(GLIB_LIBS)
+OPTIONAL_LIBS   = $(GLIB_LIBS)
 endif
 
 HWPLATFORM=$(shell uname -i)
 ifeq ($(HWPLATFORM),i686)
-    CC          = arm-linux-gnueabihf-g++
+    CXX         = arm-linux-gnueabihf-g++
     TARG_ARCH   = Linux-armhf
 else
-    CC          = g++
+    CXX         = g++
     TARG_ARCH   = Linux-armhf
 endif
 
