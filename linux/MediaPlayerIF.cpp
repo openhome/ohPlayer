@@ -2,7 +2,11 @@
 // Extras to try and fix compiler errors
 // End of Extras
 
+#ifdef USE_GTK
 #include <gtk/gtk.h>
+#else
+#include <glib.h>
+#endif
 #include <unistd.h>
 
 #include <OpenHome/Net/Private/DviStack.h>
@@ -49,8 +53,10 @@ static gint tCallback(gpointer data)
             urlString[urlBuf.Bytes()] = '\0';
         }
 
+#ifdef USE_GTK
         gdk_threads_add_idle((GSourceFunc)updatesAvailable,
                              (gpointer)urlString);
+#endif
     }
 
     if (period == TenSeconds)

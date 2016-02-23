@@ -1,4 +1,6 @@
+#ifdef USE_GTK
 #include <gtk/gtk.h>
+#endif
 
 #include <OpenHome/Av/Source.h>
 #include <OpenHome/Media/Pipeline/Msg.h>
@@ -169,7 +171,9 @@ void ControlPointProxy::CPPlaylist::transportChangedEvent()
     }
 
     // Adjust the UI accordingly.
+#ifdef USE_GTK
     gdk_threads_add_idle((GSourceFunc)updateUI, GINT_TO_POINTER(mediaOptions));
+#endif
 }
 
 void ControlPointProxy::CPPlaylist::setActive(TBool active)
@@ -317,7 +321,9 @@ void ControlPointProxy::CPRadio::transportChangedEvent()
     }
 
     // Adjust the UI accordingly.
+#ifdef USE_GTK
     gdk_threads_add_idle((GSourceFunc)updateUI, GINT_TO_POINTER(mediaOptions));
+#endif
 }
 
 void ControlPointProxy::CPRadio::setActive(TBool active)
@@ -443,7 +449,9 @@ void ControlPointProxy::CPReceiver::transportChangedEvent()
     }
 
     // Adjust the UI accordingly.
+#ifdef USE_GTK
     gdk_threads_add_idle((GSourceFunc)updateUI, GINT_TO_POINTER(mediaOptions));
+#endif
 }
 
 void ControlPointProxy::CPReceiver::setActive(TBool active)
@@ -570,7 +578,9 @@ void ControlPointProxy::CPUpnpAv::pipelineChangedEvent()
     }
 
     // Adjust the UI accordingly.
+#ifdef USE_GTK
     gdk_threads_add_idle((GSourceFunc)updateUI, GINT_TO_POINTER(mediaOptions));
+#endif
 }
 
 void ControlPointProxy::CPUpnpAv::setActive(TBool active)

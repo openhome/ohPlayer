@@ -1,4 +1,4 @@
-#include <gtk/gtk.h>
+#include <glib.h>
 #include <string>
 
 #include <OpenHome/Media/Codec/CodecFactory.h>
