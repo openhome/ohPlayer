@@ -193,6 +193,7 @@ sub buildLinuxRelease
 
     $options .= " DEBUG=0" if (defined $debug);
     $options .= " USE_LIBAVCODEC=0" if (defined $nativeCodecs);
+    $options .= " DISABLE_GTK=0" if (defined $headless);
 
     # Execute the build
     system("make $options $platform");
@@ -381,8 +382,8 @@ sub buildOsxRelease
 
 my $USAGE = <<EndOfText;
 Usage: MakeRelease.pl --platform=<ubuntu|raspbian|Win32|osx> --version=<version>
-                      [--debug] [--use-native-codecs] [--enable-mp3]
-                      [--enable-aac]
+                      [--debug] [--use-native-codecs] [--headless]
+                      [--enable-mp3] [--enable-aac]
                       [--enable-radio --tunein-partner-id=<tunein partner id]
                       [--enable-tidal --tidal-token=<tidal token>]s
                       [--enable-qobuz --qobuz-secret=<qobuz secret>
@@ -393,6 +394,7 @@ GetOptions("platform=s"          => \$platform,
            "version=s"           => \$version,
            "debug"               => \$debug,
            "use-native-codecs"   => \$nativeCodecs,
+           "headless"            => \$headless,
            "enable-mp3"          => \$enableMp3,
            "enable-aac"          => \$enableAac,
            "enable-radio"        => \$enableRadio,
@@ -437,6 +439,11 @@ if (defined $nativeCodecs && ($platform eq "osx"))
     die "Native Codecs currently unavailable for this platform\n";
 }
 
+if (defined $headless && ($platform ne "raspbian"))
+{
+    die "Headless target is currently unavailable for this platform\n";
+}
+
 # Move to the directory containing the platform source.
 my $sourceDir = abs_path(dirname($0));
 
@@ -473,7 +480,7 @@ if ($platform !~ /osx/)
 # Generate the release
 if ($platform =~ /raspbian|ubuntu/)
 {
-    &buildLinuxRelease($platform, $version, $debug, $nativeCodecs);
+    &buildLinuxRelease($platform, $version, $debug, $nativeCodecs, $headless);
 }
 elsif ($platform =~ /Win32/)
 {
