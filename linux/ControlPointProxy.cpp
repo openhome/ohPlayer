@@ -173,6 +173,10 @@ void ControlPointProxy::CPPlaylist::transportChangedEvent()
     // Adjust the UI accordingly.
 #ifdef USE_GTK
     gdk_threads_add_idle((GSourceFunc)updateUI, GINT_TO_POINTER(mediaOptions));
+#else // USE_GTK
+    g_main_context_invoke(NULL,
+                          (GSourceFunc)updateUI,
+                          GINT_TO_POINTER(mediaOptions));
 #endif // USE_GTK
 }
 
@@ -323,6 +327,10 @@ void ControlPointProxy::CPRadio::transportChangedEvent()
     // Adjust the UI accordingly.
 #ifdef USE_GTK
     gdk_threads_add_idle((GSourceFunc)updateUI, GINT_TO_POINTER(mediaOptions));
+#else // USE_GTK
+    g_main_context_invoke(NULL,
+                          (GSourceFunc)updateUI,
+                          GINT_TO_POINTER(mediaOptions));
 #endif // USE_GDK
 }
 
@@ -451,6 +459,10 @@ void ControlPointProxy::CPReceiver::transportChangedEvent()
     // Adjust the UI accordingly.
 #ifdef USE_GTK
     gdk_threads_add_idle((GSourceFunc)updateUI, GINT_TO_POINTER(mediaOptions));
+#else // USE_GTK
+    g_main_context_invoke(NULL,
+                          (GSourceFunc)updateUI,
+                          GINT_TO_POINTER(mediaOptions));
 #endif // USE_GDK
 }
 
@@ -580,6 +592,10 @@ void ControlPointProxy::CPUpnpAv::pipelineChangedEvent()
     // Adjust the UI accordingly.
 #ifdef USE_GTK
     gdk_threads_add_idle((GSourceFunc)updateUI, GINT_TO_POINTER(mediaOptions));
+#else // USE_GTK
+    g_main_context_invoke(NULL,
+                          (GSourceFunc)updateUI,
+                          GINT_TO_POINTER(mediaOptions));
 #endif // USE_GDK
 }
 

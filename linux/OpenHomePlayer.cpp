@@ -47,12 +47,11 @@ static GtkWidget *g_mi_about    = NULL;
 static GtkWidget *g_mi_exit     = NULL;
 static GtkWidget *g_mi_sep      = NULL;
 static GtkWidget *g_mi_sep1     = NULL;
-
-static guint      g_mediaOptions = 0;        // Available media playback options
 #else // USE_GTK
 static GMainLoop *loop = NULL;
 #endif // USE_GTK
 
+static guint     g_mediaOptions     = 0;     // Available media playback options
 static gboolean  g_updatesAvailable = false; // App updates availability.
 static gchar    *g_updateLocation   = NULL;  // Update location URL.
 static GThread  *g_mplayerThread    = NULL;  // Media Player thread
@@ -438,18 +437,6 @@ static void create_tray_icon()
 }
 #endif // USE_UNITY
 
-gboolean updateUI(gpointer mediaOptions)
-{
-    // The audio pipeline state has changed. Update the available
-    // menu options in line with the current state.
-    g_mediaOptions = GPOINTER_TO_UINT(mediaOptions);
-
-    // Update the playback options in the UI
-    UpdatePlaybackOptions();
-
-    return false;
-}
-
 #ifdef USE_UNITY
 gboolean networkAdaptersAvailable()
 {
@@ -459,7 +446,23 @@ gboolean networkAdaptersAvailable()
     return false;
 }
 #endif // USE_UNITY
-#endif // USE_GDK
+#endif // USE_GTK
+
+gboolean updateUI(gpointer mediaOptions)
+{
+    // The audio pipeline state has changed. Update the available
+    // menu options in line with the current state.
+    g_mediaOptions = GPOINTER_TO_UINT(mediaOptions);
+
+#ifdef USE_GTK
+    // Update the playback options in the UI
+    UpdatePlaybackOptions();
+#else // USE_GTK
+    g_debug("The playback options have changed");
+#endif  // USE_GTK
+
+    return false;
+}
 
 gboolean updatesAvailable(gpointer data)
 {
