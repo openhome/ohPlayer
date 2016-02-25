@@ -65,6 +65,12 @@ static gint tCallback(gpointer data)
 
     if (period == TenSeconds)
     {
+        if (g_tID == 0)
+        {
+            // Remove the existing update timer source.
+            g_source_remove(g_tID);
+        }
+
         // Schedule the next timeout for a longer period.
         g_tID = g_timeout_add_seconds(FourHours,
                                       tCallback,
@@ -82,8 +88,9 @@ static gint tCallback(gpointer data)
 void InitAndRunMediaPlayer(gpointer args)
 {
     // Handle supplied arguments.
-    InitArgs   *iArgs   = (InitArgs *)args;
-    TIpAddress  subnet = iArgs->subnet;          // Preferred subnet.
+    InitArgs   *iArgs     = (InitArgs *)args;
+    TBool       restarted = iArgs->restarted;       // MediaPlayer restarted ?
+    TIpAddress  subnet    = iArgs->subnet;          // Preferred subnet.
 
     // Pipeline configuration.
     static const TChar *name  = "SoftPlayer";
@@ -146,7 +153,7 @@ void InitAndRunMediaPlayer(gpointer args)
     }
 
     // Create the timeout for update checking.
-    if (subnet != InitArgs::NO_SUBNET)
+    if (restarted)
     {
         // If we are restarting due to a user instigated subnet change we
         // don't want to recheck for updates so set the initial check to be

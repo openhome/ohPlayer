@@ -226,7 +226,8 @@ static void NetworkSelectionHandler(GtkMenuItem * /*menuitem*/, gpointer args)
     g_thread_join(g_mplayerThread);
 
     /* Re-Register UPnP/OhMedia devices. */
-    g_mPlayerArgs.subnet = subnet;
+    g_mPlayerArgs.restarted = true;
+    g_mPlayerArgs.subnet    = subnet;
 
     g_mplayerThread = g_thread_new("MediaPlayerIF",
                                    (GThreadFunc)InitAndRunMediaPlayer,
@@ -494,6 +495,51 @@ gboolean updatesAvailable(gpointer data)
 
 int main(int argc, char **argv)
 {
+    const gchar* usage = "openhome-player [subnet address]";
+
+    // Verify command line options.
+    if (argc > 2)
+    {
+        fprintf(stderr, "%s\n", usage);
+        exit(1);
+    }
+
+    g_mPlayerArgs.restarted = false;
+    g_mPlayerArgs.subnet    = InitArgs::NO_SUBNET;
+
+    // Validate the format of any supplied subnet.
+    if (argc == 2)
+    {
+        guint byte1, byte2, byte3, byte4 = 0;
+
+        if (sscanf(argv[1], "%u.%u.%u.%u", &byte1, &byte2, &byte3, &byte4) == 4)
+        {
+            if ((byte1 > 0xFF) || (byte2 > 0xFF) ||
+                (byte3 > 0xFF) || (byte4 > 0xFF))
+            {
+                fprintf(stderr, "%s\n", "ERROR: Malformed Subnet Address\n");
+                exit(1);
+            }
+
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+            g_mPlayerArgs.subnet = (TIpAddress)((byte1 & 0xFF) |
+                                                ((byte2 & 0xFF) << 8)|
+                                                ((byte3 & 0xFF) << 16)|
+                                                ((byte4 & 0xFF) << 24));
+#else // __ORDER_LITTLE_ENDIAN__
+            g_mPlayerArgs.subnet = (TIpAddress)((byte4 & 0xFF) |
+                                                ((byte3 & 0xFF) << 8)|
+                                                ((byte2 & 0xFF) << 16)|
+                                                ((byte1 & 0xFF) << 24));
+#endif //__ORDER_LITTLE_ENDIAN__
+        }
+        else
+        {
+            fprintf(stderr, "%s\n", "ERROR: Malformed Subnet Address\n");
+            exit(1);
+        }
+    }
+
 #ifdef DEBUG
     // Enable malloc tracing.
     mtrace();
@@ -512,8 +558,6 @@ int main(int argc, char **argv)
 #endif // USE_GTK
 
     // Start MediaPlayer thread.
-    g_mPlayerArgs.subnet = InitArgs::NO_SUBNET;
-
     g_mplayerThread = g_thread_new("MediaPlayerIF",
                                    (GThreadFunc)InitAndRunMediaPlayer,
                                    (gpointer)&g_mPlayerArgs);
