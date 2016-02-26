@@ -4,6 +4,7 @@
 #include <gtk/gtk.h>
 #include <libnotify/notify.h>
 #else // USE_GTK
+#include <syslog.h>
 #include <glib.h>
 #endif // USE_GTK
 #ifdef USE_UNITY
@@ -481,7 +482,8 @@ gboolean updatesAvailable(gpointer data)
         gtk_widget_set_sensitive(g_mi_update,true);
     }
 #else // USE_GTK
-    g_debug("There are updates available for this application");
+    syslog(LOG_INFO, "There are updates available for this application");
+    syslog(LOG_INFO, "Download and Install %s", (gchar *)data);
 #endif // USE_GTK
 
     // Free up any previously stored location.
@@ -555,6 +557,9 @@ int main(int argc, char **argv)
 #else // USE_UNITY
     create_tray_icon();
 #endif // USE_UNITY
+#else // USE_GTK
+    // For headless builds open syslog for update availability logging
+    openlog(g_appName, LOG_PERROR, LOG_LOCAL0);
 #endif // USE_GTK
 
     // Start MediaPlayer thread.
@@ -577,6 +582,8 @@ int main(int argc, char **argv)
 
 #ifdef USE_GTK
     notify_uninit();
+#else // USE_GTK
+    closelog();
 #endif //USE_GTK
 
     return 0;
