@@ -3,13 +3,11 @@
 #ifdef USE_GTK
 #include <gtk/gtk.h>
 #include <libnotify/notify.h>
+#include <libappindicator/app-indicator.h>
 #else // USE_GTK
 #include <syslog.h>
 #include <glib.h>
 #endif // USE_GTK
-#ifdef USE_UNITY
-#include <libappindicator/app-indicator.h>
-#endif // USE_UNITY
 #include <gio/gio.h>
 #include <vector>
 
@@ -59,9 +57,11 @@ static GThread  *g_mplayerThread    = NULL;  // Media Player thread
 static InitArgs  g_mPlayerArgs;              // Media Player arguments.
 
 #ifdef USE_GTK
-#ifdef USE_UNITY
 static const gchar *g_light_icon_path = "/usr/share/openhome-player";
+#ifdef USE_UNITY
 static const gchar *g_light_icon_name = "OpenHome-Light-48x48";
+#else // USE_UNITY
+static const gchar *g_light_icon_name = "OpenHome-48x48";
 #endif // USE_UNITY
 
 static const gchar *g_icon_path =
@@ -103,14 +103,6 @@ static void displayNotification(const gchar *summary,
 
     g_object_unref(G_OBJECT(notification));
 }
-
-#ifndef USE_UNITY
-static void tray_icon_on_click(GtkStatusIcon *status_icon,
-                               gpointer       user_data)
-{
-    g_debug("Clicked on tray icon\n");
-}
-#endif // USE_UNITY
 
 // Context Menu Handlers.
 static void playSelectionHandler()
@@ -313,16 +305,8 @@ static void CreateNetworkAdapterSubmenu(GtkWidget *networkMenuItem)
     gtk_menu_item_set_submenu (GTK_MENU_ITEM(networkMenuItem), submenu);
 }
 
-#ifdef USE_UNITY
 // Create the context menu
 static GtkMenu* tray_icon_on_menu()
-#else // USE_UNITY
-// Display the context menu
-static void tray_icon_on_menu(GtkStatusIcon *status_icon,
-                              guint          button,
-                              guint          activate_time,
-                              gpointer       user_data)
-#endif // USE_UNITY
 {
     GtkMenu   *menu    = (GtkMenu*)gtk_menu_new();
 
@@ -370,11 +354,6 @@ static void tray_icon_on_menu(GtkStatusIcon *status_icon,
     g_signal_connect(G_OBJECT(g_mi_exit), "activate",
                               G_CALLBACK(exitSelectionHandler), NULL);
 
-#ifndef USE_UNITY
-    // Populate the 'Networks' submenu.
-    CreateNetworkAdapterSubmenu(g_mi_networks);
-#endif // USE_UNITY
-
     // Update the playback options in the UI
     UpdatePlaybackOptions();
 
@@ -388,20 +367,9 @@ static void tray_icon_on_menu(GtkStatusIcon *status_icon,
         gtk_widget_set_sensitive(g_mi_update,false);
     }
 
-#ifdef USE_UNITY
     return menu;
-#else  // USE_UNITY
-    gtk_menu_popup(menu,
-                   NULL,
-                   NULL,
-                   NULL,
-                   NULL,
-                   button,
-                   activate_time);
-#endif // USE_UNITY
 }
 
-#ifdef USE_UNITY
 static void create_tray_icon(AppIndicator **indicator)
 {
     // Create the application indicator
@@ -419,27 +387,7 @@ static void create_tray_icon(AppIndicator **indicator)
     // Attach the menu to the indicator.
     app_indicator_set_menu(*indicator, menu);
 }
-#else // USE_UNITY
-static void create_tray_icon()
-{
-    GtkStatusIcon *tray_icon;
 
-    tray_icon = gtk_status_icon_new_from_file(g_icon_path);
-
-    gtk_status_icon_set_tooltip_text(tray_icon, g_appName);
-
-    g_signal_connect(G_OBJECT(tray_icon), "activate",
-                     G_CALLBACK(tray_icon_on_click), NULL);
-
-    g_signal_connect(G_OBJECT(tray_icon),
-                     "popup-menu",
-                     G_CALLBACK(tray_icon_on_menu), NULL);
-
-    gtk_status_icon_set_visible(tray_icon, TRUE);
-}
-#endif // USE_UNITY
-
-#ifdef USE_UNITY
 gboolean networkAdaptersAvailable()
 {
     // Add the available adapters to the networks submenu.
@@ -447,7 +395,6 @@ gboolean networkAdaptersAvailable()
 
     return false;
 }
-#endif // USE_UNITY
 #endif // USE_GTK
 
 gboolean updateUI(gpointer mediaOptions)
@@ -551,12 +498,8 @@ int main(int argc, char **argv)
     gtk_init(&argc, &argv);
     notify_init(g_appName);
 
-#ifdef USE_UNITY
     AppIndicator *indicator;
     create_tray_icon(&indicator);
-#else // USE_UNITY
-    create_tray_icon();
-#endif // USE_UNITY
 #else // USE_GTK
     // For headless builds open syslog for update availability logging
     openlog(g_appName, LOG_PERROR, LOG_LOCAL0);

@@ -169,11 +169,11 @@ void InitAndRunMediaPlayer(gpointer args)
                                       GINT_TO_POINTER(TenSeconds));
     }
 
-#ifdef USE_UNITY
+#ifdef USE_GTK
     // Add the network submenu to the application indicator context menu
     // now that the information is available.
     gdk_threads_add_idle((GSourceFunc)networkAdaptersAvailable, NULL);
-#endif // USE_UNITY
+#endif // USE_GTK
 
     /* Run the media player. (Blocking) */
     g_emp->RunWithSemaphore(*cpStack);

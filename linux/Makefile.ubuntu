@@ -16,8 +16,8 @@
 OSPLATFORM=ubuntu
 
 # GTK Specifics
-GTK_CFLAGS := $(shell pkg-config --cflags gtk+-3.0)
-GTK_LIBS   := $(shell pkg-config --libs gtk+-3.0)
+PKG_CFLAGS := $(shell pkg-config --cflags gtk+-3.0 appindicator3-0.1)
+PKG_LIBS   := $(shell pkg-config --libs gtk+-3.0 appindicator3-0.1)
 
 # indicate to build that we have selected a valid target
 HWPLATFORM=$(shell uname -i)
@@ -49,7 +49,7 @@ RESDIR = $(PREFIX)/share/openhome-player
 # The directory to install changelog and license to
 DOCDIR = $(PREFIX)/share/doc/openhome-player
 
-CFLAGS = -c -Wall -std=c++11 $(GTK_CFLAGS) -DTARG_ARCH=$(TARG_ARCH) \
+CFLAGS = -c -Wall -std=c++11 $(PKG_CFLAGS) -DTARG_ARCH=$(TARG_ARCH) \
          -DUSE_GTK -fstack-protector -fstack-check
 
 # If 'DEBUG=0 is specified on the command line build a debug biuld.
@@ -62,12 +62,6 @@ else
     OBJ_DIR   = $(OSPLATFORM)/objs
 endif
 
-UNITY_LIBS=
-
-ifeq ($(XDG_CURRENT_DESKTOP),Unity)
-    UNITY_LIBS = -lappindicator3
-endif
-
 RESTRICTED_CODECS=
 
 ifdef USE_LIBAVCODEC
@@ -77,7 +71,7 @@ else
     RESTRICTED_CODECS = -lCodecAdts -lCodecAac -lCodecAacBase -lCodecMp3
 endif
 
-LIBS         = $(GTK_LIBS) $(UNITY_LIBS) -lnotify -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lSourceRadio -lShell -lohMediaPlayer -lWebAppFramework -lConfigUi -lohNetGeneratedProxies -lohNetCore $(RESTRICTED_CODECS) -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecFlac -lCodecWav -lohPipeline -lpthread -lssl -lcrypto -ldl
+LIBS         = $(PKG_LIBS) -lnotify -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lSourceRadio -lShell -lohMediaPlayer -lWebAppFramework -lConfigUi -lohNetGeneratedProxies -lohNetCore $(RESTRICTED_CODECS) -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecFlac -lCodecWav -lohPipeline -lpthread -lssl -lcrypto -ldl
 
 INCLUDES     = -I../dependencies/$(TARG_ARCH)/ohMediaPlayer/include -I../dependencies/$(TARG_ARCH)/ohNetmon/include -I../dependencies/$(TARG_ARCH)/openssl/include -I../dependencies/$(TARG_ARCH)/ohNetGenerated-$(TARG_ARCH)-$(BUILD_TYPE)/include/ohnet/OpenHome/Net/Core
 
@@ -91,7 +85,6 @@ LIBS     += -L../dependencies/$(TARG_ARCH)/ohNetGenerated-$(TARG_ARCH)-$(BUILD_T
 # Build for Unity desktop if required.
 ifeq ($(XDG_CURRENT_DESKTOP),Unity)
     CFLAGS += -DUSE_UNITY
-    INCLUDES += -I/usr/include/libappindicator3-0.1
 endif
 
 OBJECTS  = $(patsubst %.cpp, $(OBJ_DIR)/%.o, $(wildcard *.cpp))

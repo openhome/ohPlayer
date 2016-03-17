@@ -19,11 +19,11 @@ OSPLATFORM=raspbian
 
 # GTK Specifics
 ifndef DISABLE_GTK
-GTK_CFLAGS := $(shell pkg-config --cflags gtk+-3.0)
-GTK_LIBS   := $(shell pkg-config --libs gtk+-3.0)
+PKG_CFLAGS := $(shell pkg-config --cflags gtk+-3.0 appindicator3-0.1)
+PKG_LIBS   := $(shell pkg-config --libs gtk+-3.0 appindicator3-0.1)
 
-OPTIONAL_CFLAGS = $(GTK_CFLAGS) -DUSE_GTK
-OPTIONAL_LIBS = $(GTK_LIBS) -lnotify
+OPTIONAL_CFLAGS = $(PKG_CFLAGS) -DUSE_GTK
+OPTIONAL_LIBS = $(PKG_LIBS) -lnotify
 else
 GLIB_CFLAGS := $(shell pkg-config --cflags glib-2.0)
 GLIB_LIBS   := $(shell pkg-config --libs glib-2.0)

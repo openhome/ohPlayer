@@ -31,11 +31,18 @@ sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.6 20
 sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
 
 # install audio and UI dependencies
-sudo apt-get install gtk+-3-dev libnotify-dev notify-osd libasound2-dev
+sudo apt-get install gtk+-3-dev libnotify-dev notify-osd libasound2-dev libappindicator3-dev
 
-# install package maker
+# install native codec dependencies (if required)
+sudo apt-get install libavcodec-dev libavformat-dev libavresample-dev
+
+# install package maker, original method
 sudo apt-get install ruby-dev
 sudo gem install fpm
+
+# install package maker, latest method if original fails
+sudo apt-get install ruby-dev jruby
+sudo gem2.1 install fpm
 
 # make the project
 cd ohPlayer/linux
