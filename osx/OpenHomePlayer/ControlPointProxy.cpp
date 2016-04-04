@@ -309,11 +309,11 @@ void ControlPointProxy::CPRadio::transportChangedEvent()
 
     if (stateStr == kTransportStatePlaying)
     {
-        iDriver.resume();
+        iDriver.Resume();
     }
     else if (stateStr == kTransportStateStopped)
     {
-        iDriver.pause();
+        iDriver.Pause();
     }
 
     // Log the new state.

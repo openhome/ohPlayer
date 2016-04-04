@@ -292,9 +292,10 @@ sub buildWin32Release
 
 sub buildOsxRelease
 {
-    my ($version, $debug) = @_;
-    my $plistBuddy        = "/usr/libexec/PlistBuddy";
-    my $plistFile         = "Info.plist";
+    my ($version, $debug, $nativeCodecs) = @_;
+    my $plistBuddy                       = "/usr/libexec/PlistBuddy";
+    my $plistFile                        = "Info.plist";
+    my $target                           = "OpenHomePlayer";
 
     # Check the PlistBuddy utility is present and correct.
     eval {my @dummy = `$plistBuddy 2>&1` or die "$!\n"};
@@ -323,23 +324,31 @@ sub buildOsxRelease
     # Move to folder containing the xcode project.
     chdir "..";
 
+    # Select the native codec target if required.
+    if (defined $nativeCodecs)
+    {
+        $target = "OpenHomePlayerAFSCodec";
+    }
+
     # Build and install the application to our temporary folder.
     if (defined $debug)
     {
-        system("xcodebuild -project OpenHomePlayer.xcodeproj -configuration " .
-               "Debug clean install DSTROOT=$scratchDir/OpenHomePlayer.dst");
+        system("xcodebuild -project OpenHomePlayer.xcodeproj -target $target " .
+               "-configuration Debug clean install "                           .
+               "DSTROOT=$scratchDir/OpenHomePlayer.dst");
     }
     else
     {
-        system("xcodebuild -project OpenHomePlayer.xcodeproj -configuration " .
-               "Release clean install DSTROOT=$scratchDir/OpenHomePlayer.dst");
+        system("xcodebuild -project OpenHomePlayer.xcodeproj -target $target " .
+               "-configuration Release clean install "                         .
+               "DSTROOT=$scratchDir/OpenHomePlayer.dst");
     }
 
     die "ERROR: Installation Build Failed\n" unless ($? == 0);
 
     # Copy the latest resources into the pkg
     my $pkgResDir = "$scratchDir/OpenHomePlayer.dst/Applications/" .
-                    "OpenHomePlayer.app/Contents/Resources/";
+                    "$target.app/Contents/Resources/";
 
     # Clear out any existing, possibly out of date, resources.
     remove_tree("$pkgResDir/SoftPlayer") or
@@ -434,11 +443,6 @@ if ((defined $enableQobuz && !(defined $qobuzSecret && defined $qobuzAppId)) ||
     die "$USAGE\n";
 }
 
-if (defined $nativeCodecs && ($platform eq "osx"))
-{
-    die "Native Codecs currently unavailable for this platform\n";
-}
-
 if (defined $headless && ($platform ne "raspbian"))
 {
     die "Headless target is currently unavailable for this platform\n";
@@ -488,7 +492,7 @@ elsif ($platform =~ /Win32/)
 }
 elsif ($platform =~ /osx/)
 {
-    &buildOsxRelease($version, $debug);
+    &buildOsxRelease($version, $debug, $nativeCodecs);
 }
 
 1;

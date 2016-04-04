@@ -292,8 +292,10 @@ void ExampleMediaPlayer::HaltPipeline()
 void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 {
     // Add containers
+#ifndef USE_AFSCODEC
     iMediaPlayer->Add(Codec::ContainerFactory::NewId3v2());
     iMediaPlayer->Add(Codec::ContainerFactory::NewMpeg4(iMediaPlayer->MimeTypes()));
+#endif // USE_AFSCODEC
     iMediaPlayer->Add(Codec::ContainerFactory::NewMpegTs(iMediaPlayer->MimeTypes()));
 
     // Add codecs
@@ -307,20 +309,27 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
     iMediaPlayer->Add(Codec::CodecFactory::NewAiff(iMediaPlayer->MimeTypes()));
     Log::Print("Codec\tAifc\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewAifc(iMediaPlayer->MimeTypes()));
+#ifdef USE_AFSCODEC
+#if defined (ENABLE_AAC) || defined (ENABLE_MP3)
+    // Use distributable MP3/AAC Codec, based on an Audio File Stream
+    iMediaPlayer->Add(Codec::CodecFactory::NewMp3(iMediaPlayer->MimeTypes()));
+#endif // ENABLE_AAC || ENABLE_MP3
+#else // USE_AFSCODEC
 #ifdef ENABLE_AAC
     // AAC is disabled by default as it requires a patent license
     Log::Print("Codec\tAac\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewAac(iMediaPlayer->MimeTypes()));
-#endif  /* ENABLE_AAC */
-    Log::Print("Codec\tAlac\n");
-    iMediaPlayer->Add(Codec::CodecFactory::NewAdts(iMediaPlayer->MimeTypes()));
-    iMediaPlayer->Add(Codec::CodecFactory::NewAlac(iMediaPlayer->MimeTypes()));
     Log::Print("Codec\tAdts\n");
+    iMediaPlayer->Add(Codec::CodecFactory::NewAdts(iMediaPlayer->MimeTypes()));
+#endif  /* ENABLE_AAC */
 #ifdef ENABLE_MP3
     // MP3 is disabled by default as it requires patent and copyright licenses
     Log::Print("Codec:\tMP3\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewMp3(iMediaPlayer->MimeTypes()));
 #endif  /* ENABLE_MP3 */
+#endif // USE_AFSCODEC
+    Log::Print("Codec\tAlac\n");
+    iMediaPlayer->Add(Codec::CodecFactory::NewAlac(iMediaPlayer->MimeTypes()));
     Log::Print("Codec\tPcm\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewPcm());
     Log::Print("Codec\tVorbis\n");
