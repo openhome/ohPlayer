@@ -82,7 +82,7 @@ private: // Utility functions
     // Wait for a free AudioQueue buffer to become available.
     void     WaitForFreeBuffer();
     // Initialise/Reset the object data.
-    void     InitialiseData(TBool retainFormatData);
+    void     InitialiseData();
     // Obtain the audio stream format details.
     void     GetInputFormat(AudioFileStreamID inAudioFileStream);
     // Calculate the buffer size required to hold 'inSeconds' of audio data.
@@ -127,6 +127,9 @@ private: // Stream format data
     TUint64 iTotalSamples;
     TUint64 iTrackLengthJiffies;
     TUint64 iTrackOffset;
+    TInt64  iDataOffset;
+    TUint64 iPktCnt;
+    TBool   iDiscontinuous;
 
     TUint32 iChannels;
     Float64 iSampleRate;
@@ -157,8 +160,8 @@ CodecAFS::CodecAFS(IMimeTypeList& aMimeTypeList)
     , kFmtAac("Aac")
     , iBitDepth(24)      // Everything is decoded to 24 bit PCM
 {
-    // Initialise all object data.
-    InitialiseData(false);
+    // Initialise the object data.
+    InitialiseData();
 
 #ifdef ENABLE_MP3
     aMimeTypeList.Add("audio/mpeg");
@@ -258,7 +261,7 @@ TBool CodecAFS::DecodeAudioData()
 }
 
 // Initialise/Reset the object data.
-void CodecAFS::InitialiseData(TBool retainFormatData)
+void CodecAFS::InitialiseData()
 {
     iAudioFileStream   = NULL;
     iAsbd              = {0};
@@ -288,16 +291,16 @@ void CodecAFS::InitialiseData(TBool retainFormatData)
     iTotalSamples       = 0;
     iTrackLengthJiffies = 0;
     iTrackOffset        = 0;
+    iDataOffset         = 0;
+    iPktCnt             = 0;
+    iDiscontinuous      = false;
 
-    if (! retainFormatData)
-    {
-        iChannels           = 0;
-        iSampleRate         = 0.0f;
-        iBitRate            = 0;
-        iDuration           = 0.0f;
+    iChannels           = 0;
+    iSampleRate         = 0.0f;
+    iBitRate            = 0;
+    iDuration           = 0.0f;
 
-        iStreamFormat = NULL;
-    }
+    iStreamFormat = NULL;
 }
 
 // Obtain the audio stream format.
@@ -330,14 +333,13 @@ void CodecAFS::GetInputFormat(AudioFileStreamID inAudioFileStream)
     // estimate this for Playlist source (using the same algorithm used in
     // AudioFile Services.
     OSStatus err;
-    UInt64   pktCnt       = 0;
-    TUint32  propertySize = sizeof(pktCnt);
+    TUint32  propertySize = sizeof(iPktCnt);
 
     err = AudioFileStreamGetProperty(
                                   inAudioFileStream,
                                   kAudioFileStreamProperty_AudioDataPacketCount,
                                  &propertySize,
-                                 &pktCnt);
+                                 &iPktCnt);
 
     if (err != noErr)
     {
@@ -345,11 +347,11 @@ void CodecAFS::GetInputFormat(AudioFileStreamID inAudioFileStream)
     }
     else
     {
-        DBUG_F("Info: GetInputFormat: Pkt Cnt [%llu]\n", (TUint64)pktCnt);
+        DBUG_F("Info: GetInputFormat: Pkt Cnt [%llu]\n", iPktCnt);
     }
 
     iDuration  = (iAsbd.mFramesPerPacket != 0) ?
-                              (pktCnt * iAsbd.mFramesPerPacket) /
+                              (iPktCnt * iAsbd.mFramesPerPacket) /
                               iAsbd.mSampleRate : 0.0;
 
     DBUG_F("Info: GetInputFormat: Duration [%g]\n", iDuration);
@@ -364,14 +366,13 @@ void CodecAFS::GetInputFormat(AudioFileStreamID inAudioFileStream)
 
     if (err != noErr)
     {
-        // Estimate bit rate as "duration seconds / (audio bytes * 8)"
+        // Estimate bit rate as "(audio bytes * 8) / seconds"
         if (iDuration > 0)
         {
-            iBitRate = (TInt)(iController->StreamLength() / 1000 * 8 /
-                              iDuration);
+            iBitRate = (TInt)(iController->StreamLength() * 8 / iDuration);
 
-            DBUG_F("Info: GetInputFormat: Encoded Bitrate (Estimated) %d kbs\n",
-                   iBitRate);
+            DBUG_F("Info: GetInputFormat: Encoded Bitrate (Estimated) "
+                   "[%d] kbs\n", iBitRate/1000);
         }
         else
         {
@@ -380,7 +381,10 @@ void CodecAFS::GetInputFormat(AudioFileStreamID inAudioFileStream)
     }
     else
     {
-        DBUG_F("Info: GetInputFormat: Bit Rate [%u]\n", (TUint)iBitRate);
+        iBitRate *= 1000;
+
+        DBUG_F("Info: GetInputFormat: Bit Rate [%u] kbs\n",
+               (TUint)iBitRate/1000);
     }
 }
 
@@ -451,12 +455,11 @@ void CodecAFS::AudioQueueOutputCallback(void                *inClientData,
 }
 
 // Called when AudioQueue is started/stopped
-void CodecAFS::AudioQueueIsRunningCallback(void                 *inClientData,
-                                           AudioQueueRef         inAQ,
-                                           AudioQueuePropertyID  inID)
+void CodecAFS::AudioQueueIsRunningCallback(
+                                        void                 * /*inClientData*/,
+                                        AudioQueueRef         inAQ,
+                                        AudioQueuePropertyID  inID)
 {
-    CodecAFS *myData = static_cast<CodecAFS *>(inClientData);
-
     TUint32 running;
     TUint32 size = sizeof(running);
 
@@ -839,6 +842,27 @@ void CodecAFS::AFSPropertyListenerProc(
 
     switch (inPropertyID)
     {
+        case kAudioFileStreamProperty_DataOffset:
+        {
+            OSStatus err;
+            TUint32  dataOffsetSize = sizeof(myData->iDataOffset);
+
+            err = AudioFileStreamGetProperty(
+                                         inAudioFileStream,
+                                         kAudioFileStreamProperty_DataOffset,
+                                         &dataOffsetSize,
+                                         &myData->iDataOffset);
+
+            if (err)
+            {
+                DBUG_F("ERROR: AFSPropertyListenerProc: Cannot read the "
+                       "kAudioFileStreamProperty_DataOffset property\n");
+
+                myData->iErrorStatus = true;
+            }
+
+            break;
+        }
         // The file stream parser is now ready to produce audio packets.
         // We now know as much as we can about the stream format.
         case kAudioFileStreamProperty_ReadyToProducePackets :
@@ -1034,15 +1058,15 @@ TBool CodecAFS::Recognise(const EncodedStreamInfo& aStreamInfo)
         retVal = true;
     }
 
-    // Reset the object, maintaining the stream format information.
-    InitialiseData(true);
+    // Reset the object data
+    InitialiseData();
 
     return retVal;
 }
 
 void CodecAFS::StreamInitialise()
 {
-    const TUint       bufferLimit = 32 * 1024; // Use 32K chunks
+    const TUint       bufferLimit = 4 * 1024; // Use 4K chunks
     Bws<bufferLimit>  tmpBuffer;
 
     // Re-Create an audio file stream parser
@@ -1057,6 +1081,41 @@ void CodecAFS::StreamInitialise()
         DBUG_F("ERROR: StreamInitialise: AudioFileStreamOpen Failed [%d]\n",
                err);
         goto failure;
+    }
+
+    // This codec has now been selected to process the stream.
+    // Allow audio data to be decoded and passed on.
+    iProcessing = true;
+
+    // Redo stream recognition so that we are in the correct state
+    // in the event a seek is required imeediately upon return.
+    while (! iRecogComplete)
+    {
+        try
+        {
+            iController->Read(tmpBuffer, bufferLimit);
+        }
+        catch (...)
+        {
+            DBUG_F("ERROR: StreamInitialise: Read Exception\n");
+            throw;
+        }
+
+        // Pass the data to the file stream parser to extract the stream
+        // format
+        err = AudioFileStreamParseBytes(iAudioFileStream,
+                                        tmpBuffer.Bytes(),
+                                        tmpBuffer.Ptr(),
+                                        0);
+
+        if (err != noErr)
+        {
+            DBUG_F("ERROR: StreamInitialise: AudioFileStreamParseBytes "
+                   "Failed [%d]\n", err);
+            goto failure;;
+        }
+
+        tmpBuffer.SetBytes(0);
     }
 
     if (iDuration > 0)
@@ -1093,31 +1152,37 @@ void CodecAFS::StreamCompleted()
 {
     OSStatus err;
 
-    err = AudioQueueStop(iAudioQueue, true);
-
-    if (err != noErr)
+    if (iAudioQueueStarted)
     {
-        DBUG_F("ERROR: StreamCompleted:  AudioQueueStop [%d]\n", err);
+        err = AudioQueueStop(iAudioQueue, true);
+
+        if (err != noErr)
+        {
+            DBUG_F("ERROR: StreamCompleted:  AudioQueueStop [%d]\n", err);
+        }
+
+        err = AudioQueueDispose(iAudioQueue, true);
+
+        if (err != noErr)
+        {
+            DBUG_F("ERROR: StreamCompleted: AudioQueueDispose [%d]\n", err);
+        }
     }
 
-    err = AudioQueueDispose(iAudioQueue, true);
-
-    if (err != noErr)
+    if (iAudioFileStream != NULL)
     {
-        DBUG_F("ERROR: StreamCompleted: AudioQueueDispose [%d]\n", err);
-    }
+        err = AudioFileStreamClose(iAudioFileStream);
 
-    err = AudioFileStreamClose(iAudioFileStream);
-
-    if (err != noErr)
-    {
-        DBUG_F("ERROR: StreamCompleted:  AudioFileStreamClose [%d]\n", err);
+        if (err != noErr)
+        {
+            DBUG_F("ERROR: StreamCompleted:  AudioFileStreamClose [%d]\n", err);
+        }
     }
 
     delete[] iPacketDescs;
 
-    // Reset all object data.
-    InitialiseData(false);
+    // Reset the object data.
+    InitialiseData();
 }
 
 TBool CodecAFS::TrySeek(TUint aStreamId, TUint64 aSample)
@@ -1125,20 +1190,74 @@ TBool CodecAFS::TrySeek(TUint aStreamId, TUint64 aSample)
 #ifdef DEBUG
     DBUG_F("TrySeek - StreamId [%d] Sample[%llu]\n",
            aStreamId, aSample);
-#else
-    // Keep compiler happy
-    aStreamId = 0;
-    aSample   = 0LLU;
 #endif // DEBUG
 
-    // Seeking disabled for now,
-    return false;
+    OSStatus                 err;
+    AudioFileStreamSeekFlags ioFlags;
+    TInt64                   byteOffset;
+    TInt64                   pktOffset;
+
+    if (iAudioQueueStarted)
+    {
+        err = AudioQueueStop(iAudioQueue, true);
+
+        if (err != noErr)
+        {
+            DBUG_F("ERROR: TrySeek: AudioQueueStop failed [%d]\n", err);
+            return false;
+        }
+    }
+
+    // Calculate the packet to seek to.
+    pktOffset = aSample /iAsbd.mFramesPerPacket;
+
+    err = AudioFileStreamSeek(iAudioFileStream,
+                              pktOffset,
+                             &byteOffset,
+                             &ioFlags);
+
+    if (err != noErr)
+    {
+        DBUG_F("ERROR: TrySeek: AudioFileStreamSeek failed [%d]\n", err);
+        return false;
+    }
+
+    iTimeStamp.mSampleTime = byteOffset / iPcmFormat.mBytesPerFrame;
+
+    err = AudioQueueStart(iAudioQueue, NULL);
+
+    if (err != noErr)
+    {
+        DBUG_F("ERROR: TrySeek: AudioQueueStart failed [%d]\n", err);
+        return false;
+    }
+
+    iDiscontinuous  = true;          // Note an audio discontinuity is expected.
+    byteOffset     += iDataOffset;   // Calculate the absolute stream offset.
+
+    // Attempt the stream seek.
+    if (! iController->TrySeekTo(aStreamId, byteOffset))
+    {
+        return false;
+    }
+
+    iTrackOffset =
+        (aSample * Jiffies::kPerSecond) / iSampleRate;
+
+    iController->OutputDecodedStream(iBitRate,
+                                     iBitDepth,
+                                     iSampleRate,
+                                     iChannels,
+                                     Brn(iStreamFormat),
+                                     iTrackLengthJiffies,
+                                     aSample,
+                                     false);
+
+    return true;
 }
 
 void CodecAFS::Process()
 {
-    iProcessing = true;
-
     try
     {
         Bws<32*1024> inputBuffer;
@@ -1151,10 +1270,14 @@ void CodecAFS::Process()
         // audio packets.
         //
         // From there it will be decoded via an audio queue offline render.
-        err = AudioFileStreamParseBytes(iAudioFileStream,
-                                        inputBuffer.Bytes(),
-                                        inputBuffer.Ptr(),
-                                        0);
+        err = AudioFileStreamParseBytes(
+                               iAudioFileStream,
+                               inputBuffer.Bytes(),
+                               inputBuffer.Ptr(),
+                               (iDiscontinuous) ?
+                                  kAudioFileStreamParseFlag_Discontinuity : 0);
+
+        iDiscontinuous = false;
 
         if (err != noErr)
         {
