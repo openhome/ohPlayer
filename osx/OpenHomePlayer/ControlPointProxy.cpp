@@ -156,16 +156,14 @@ void ControlPointProxy::CPPlaylist::transportChangedEvent()
     }
 
     // Keep the native audio state synced with the transport state.
+    //
+    // We rely on the Driver receiving a MsgDrain message to indicate the
+    // correct point to Pause the AudioQueue.
     string stateStr(state.CString());
 
     if (stateStr == kTransportStatePlaying)
     {
         iDriver.Resume();
-    }
-    else if (stateStr == kTransportStatePaused ||
-             stateStr == kTransportStateStopped)
-    {
-        iDriver.Pause();
     }
 
     // Log the new state.
@@ -305,15 +303,14 @@ void ControlPointProxy::CPRadio::transportChangedEvent()
     }
 
     // Keep the native audio state synced with the transport state.
+    //
+    // We rely on the Driver receiving a MsgDrain message to indicate the
+    // correct point to Pause the AudioQueue.
     string stateStr(state.CString());
 
     if (stateStr == kTransportStatePlaying)
     {
         iDriver.Resume();
-    }
-    else if (stateStr == kTransportStateStopped)
-    {
-        iDriver.Pause();
     }
 
     // Log the new state.
@@ -429,15 +426,14 @@ void ControlPointProxy::CPReceiver::transportChangedEvent()
     }
 
     // Keep the native audio state synced with the transport state.
+    //
+    // We rely on the Driver receiving a MsgDrain message to indicate the
+    // correct point to Pause the AudioQueue.
     string stateStr(state.CString());
 
     if (stateStr == kTransportStatePlaying)
     {
         iDriver.Resume();
-    }
-    else if (stateStr == kTransportStateStopped)
-    {
-        iDriver.Pause();
     }
 
     // Log the new state.
@@ -551,16 +547,14 @@ void ControlPointProxy::CPUpnpAv::pipelineChangedEvent()
     }
 
     // Keep the native audio state synced with the transport state.
+    //
+    // We rely on the Driver receiving a MsgDrain message to indicate the
+    // correct point to Pause the AudioQueue.
     string stateStr(state.Extract());
 
     if (stateStr == kPipelineStatePlaying)
     {
         iDriver.Resume();
-    }
-    else if (stateStr == kPipelineStatePaused ||
-            (stateStr == kPipelineStateStopped))
-    {
-        iDriver.Pause();
     }
 
     // Log the new state.

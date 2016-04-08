@@ -850,8 +850,8 @@ void CodecAFS::AFSPropertyListenerProc(
             err = AudioFileStreamGetProperty(
                                          inAudioFileStream,
                                          kAudioFileStreamProperty_DataOffset,
-                                         &dataOffsetSize,
-                                         &myData->iDataOffset);
+                                        &dataOffsetSize,
+                                        &myData->iDataOffset);
 
             if (err)
             {
@@ -878,8 +878,8 @@ void CodecAFS::AFSPropertyListenerProc(
             err = AudioFileStreamGetProperty(
                                          inAudioFileStream,
                                          kAudioFileStreamProperty_DataFormat,
-                                         &asbdSize,
-                                         &myData->iAsbd);
+                                        &asbdSize,
+                                        &myData->iAsbd);
 
             if (err)
             {
@@ -900,6 +900,32 @@ void CodecAFS::AFSPropertyListenerProc(
             {
                 return;
             }
+
+            if (myData->iDuration > 0)
+            {
+                myData->iTotalSamples       =
+                    myData->iDuration * static_cast<TUint>(myData->iSampleRate);
+                myData->iTrackLengthJiffies =
+                    myData->iDuration * Jiffies::kPerSecond;
+            }
+            else
+            {
+                // Handle the case where a stream does not have a duration.
+                // eg. A radio stream.
+                myData->iTotalSamples       = 0;
+                myData->iTrackLengthJiffies = 0;
+            }
+
+            // Setup the decoded PCM format specifics.
+            myData->iController->OutputDecodedStream(
+                                       myData->iBitRate,
+                                       myData->iBitDepth,
+                                       static_cast<TUint>(myData->iSampleRate),
+                                       myData->iChannels,
+                                       Brn(myData->iStreamFormat),
+                                       myData->iTrackLengthJiffies,
+                                       0,
+                                       false);
 
             // Create the audio queue, setting up the required PCM format.
             if (! myData->CreateAudioQueue(inAudioFileStream))
@@ -1117,29 +1143,6 @@ void CodecAFS::StreamInitialise()
 
         tmpBuffer.SetBytes(0);
     }
-
-    if (iDuration > 0)
-    {
-        iTotalSamples       = iDuration * static_cast<TUint>(iSampleRate);
-        iTrackLengthJiffies = iDuration * Jiffies::kPerSecond;
-    }
-    else
-    {
-        // Handle the case where a stream does not have a duration.
-        // eg. A radio stream.
-        iTotalSamples       = 0;
-        iTrackLengthJiffies = 0;
-    }
-
-    // Setup the decoded PCM format specifics.
-    iController->OutputDecodedStream(iBitRate,
-                                     iBitDepth,
-                                     static_cast<TUint>(iSampleRate),
-                                     iChannels,
-                                     Brn(iStreamFormat),
-                                     iTrackLengthJiffies,
-                                     0,
-                                     false);
 
     return;
 

@@ -391,10 +391,10 @@ sub buildOsxRelease
 
 my $USAGE = <<EndOfText;
 Usage: MakeRelease.pl --platform=<ubuntu|raspbian|Win32|osx> --version=<version>
-                      [--debug] [--use-native-codecs] [--headless]
-                      [--enable-mp3] [--enable-aac]
+                      [--debug] [--headless]
+                      [[--enable-mp3] [--enable-aac] [--use-native-codecs]]
                       [--enable-radio --tunein-partner-id=<tunein partner id]
-                      [--enable-tidal --tidal-token=<tidal token>]s
+                      [--enable-tidal --tidal-token=<tidal token>]
                       [--enable-qobuz --qobuz-secret=<qobuz secret>
                        --qobuz-app-id=<qobuz app id>]
 EndOfText
@@ -423,6 +423,11 @@ if (! defined $platform || ! defined $version)
 if ($platform !~ /ubuntu|raspbian|Win32|osx/)
 {
     die "Invalid Platform: $platform\n";
+}
+
+if (defined $nativeCodecs && (! defined $enableMp3 && ! defined $enableAac))
+{
+    die "Native codecs require eith Mp3 or Aac to be enabeled\n";
 }
 
 if ((defined $enableRadio && ! defined $tuneInPartnedId) ||
