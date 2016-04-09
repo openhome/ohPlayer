@@ -31,7 +31,7 @@ $(OBJ_DIR)/%.o: %.cpp $(HEADERS)
 .PRECIOUS: $(TARGET) $(OBJECTS)
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(OBJECTS) -Wall $(LIBS) -o $@
+	$(CC) $(OBJECTS) -Wall -Wno-deprecated $(LIBS) -o $@
 
 build: $(TARGET)
     # GTK Specifics
@@ -53,7 +53,7 @@ build: $(TARGET)
     # The directory to install the resource files to.
     RESDIR = $(PREFIX)/share/openhome-player
 
-    CFLAGS = -c -Wall -std=c++11 $(GTK_CFLAGS)
+    CFLAGS = -c -Wall -std=c++11 $(GTK_CFLAGS) -Wno-deprecated
 
     ifeq ($(OSPLATFORM),ubuntu)
         # indicate to build that we have selected a valid target
