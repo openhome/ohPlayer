@@ -1,6 +1,7 @@
 #pragma once
 
 #include <OpenHome/Av/MediaPlayer.h>
+#include <OpenHome/Av/FriendlyNameAdapter.h>
 #include <OpenHome/Av/Utils/DriverSongcastSender.h>
 #include <OpenHome/Media/PipelineManager.h>
 #include <OpenHome/Av/RebootHandler.h>
@@ -72,18 +73,20 @@ private:
     TBool TryDisable(Net::DvDevice& aDevice);
     void  Disabled();
 protected:
-    MediaPlayer                   *iMediaPlayer;
+    MediaPlayer                      *iMediaPlayer;
 #ifdef DEBUG
-    Media::IPipelineObserver      *iPipelineStateLogger;
+    Media::IPipelineObserver         *iPipelineStateLogger;
 #endif // DEBUG
-    Media::PipelineInitParams     *iInitParams;
-    Net::DvDeviceStandard         *iDevice;
-    Net::DvDevice                 *iDeviceUpnpAv;
-    RamStore                      *iRamStore;
+    Media::PipelineInitParams        *iInitParams;
+    Net::DvDeviceStandard            *iDevice;
+    Net::DvDevice                    *iDeviceUpnpAv;
+    Av::FriendlyNameAttributeUpdater *iFnUpdaterStandard;
+    Av::FriendlyNameAttributeUpdater *iFnUpdaterUpnpAv;
+    RamStore                         *iRamStore;
     Configuration::ConfigGTKKeyStore *iConfigStore;
-    Semaphore                      iSemShutdown;
-    Web::WebAppFramework          *iAppFramework;
-    RebootLogger                   iRebootHandler;
+    Semaphore                         iSemShutdown;
+    Web::WebAppFramework             *iAppFramework;
+    RebootLogger                      iRebootHandler;
 private:
     Semaphore                  iDisabled;
     Av::VolumeControl          iVolume;
