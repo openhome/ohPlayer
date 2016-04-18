@@ -144,6 +144,11 @@ TUint AudioDriver::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/,
     return 0;
 }
 
+TUint AudioDriver::PipelineAnimatorBufferJiffies()
+{
+    return 0;
+}
+
 TBool AudioDriver::CheckMixFormat(TUint aSampleRate,
                                   TUint aNumChannels,
                                   TUint aBitDepth)
@@ -550,6 +555,7 @@ Msg* AudioDriver::ProcessMsg(MsgHalt* aMsg)
 {
     Log::Print("Pipeline Halt Msg\n");
 
+    aMsg->ReportHalted();
     aMsg->RemoveRef();
     return NULL;
 }

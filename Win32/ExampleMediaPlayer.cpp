@@ -57,17 +57,16 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
     iShell = new Shell(aDvStack.Env(), kShellPort);
     iShellDebug = new ShellCommandDebug(*iShell);
 
-    Bws<256> friendlyName;
-    friendlyName.Append(aRoom);
-    friendlyName.Append(':');
-    friendlyName.Append(aProductName);
+    // Do NOT set UPnP friendly name attributes at this stage.
+    // (Wait until MediaPlayer is created so that friendly name can be
+    // observed.)
 
     // create UPnP device
+    // Friendly name not set here
     iDevice = new DvDeviceStandard(aDvStack, aUdn, *this);
     iDevice->SetAttribute("Upnp.Domain", "av.openhome.org");
     iDevice->SetAttribute("Upnp.Type", "Source");
     iDevice->SetAttribute("Upnp.Version", "1");
-    iDevice->SetAttribute("Upnp.FriendlyName", friendlyName.PtrZ());
     iDevice->SetAttribute("Upnp.Manufacturer", "OpenHome");
     iDevice->SetAttribute("Upnp.ModelName", "ExampleMediaPlayer");
 
@@ -77,15 +76,11 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
 
     // The renderer name should be <room name>:<UPnP AV source name> to allow
     // our control point to match the renderer device to the upnp av source.
-    Bws<256> rendererName(aRoom);
-    rendererName.Append(":");
-    rendererName.Append(SourceUpnpAv::kSourceName);
     iDeviceUpnpAv = new DvDeviceStandard(aDvStack, buf);
+    // Friendly name not set here
     iDeviceUpnpAv->SetAttribute("Upnp.Domain", "upnp.org");
     iDeviceUpnpAv->SetAttribute("Upnp.Type", "MediaRenderer");
     iDeviceUpnpAv->SetAttribute("Upnp.Version", "1");
-    friendlyName.Append(":MediaRenderer");
-    iDeviceUpnpAv->SetAttribute("Upnp.FriendlyName", rendererName.PtrZ());
     iDeviceUpnpAv->SetAttribute("Upnp.Manufacturer", "OpenHome");
     iDeviceUpnpAv->SetAttribute("Upnp.ModelName", "ExampleMediaPlayer");
 
@@ -106,7 +101,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
     // Set pipeline thread priority just below the pipeline animator.
     iInitParams = PipelineInitParams::New();
     iInitParams->SetThreadPriorityMax(kPriorityHighest);
-    iInitParams->SetStarvationMonitorMaxSize(Jiffies::kPerMs * 100);
+    iInitParams->SetStarvationRamperSize(Jiffies::kPerMs * 100);
 
     // create MediaPlayer
     iMediaPlayer = new MediaPlayer(aDvStack, *iDevice, *iShell, *iRamStore,
@@ -118,6 +113,15 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
     iPipelineStateLogger = new LoggingPipelineObserver();
     iMediaPlayer->Pipeline().AddObserver(*iPipelineStateLogger);
 #endif // _DEBUG
+
+    iFnUpdaterStandard = new
+        Av::FriendlyNameAttributeUpdater(iMediaPlayer->FriendlyNameObservable(),
+                                        *iDevice);
+
+    iFnUpdaterUpnpAv = new
+        Av::FriendlyNameAttributeUpdater(iMediaPlayer->FriendlyNameObservable(),
+                                        *iDeviceUpnpAv,
+                                         Brn(":MediaRenderer"));
 
     // Set up config app.
     static const TUint addr = 0;    // Bind to all addresses.
@@ -135,6 +139,8 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
 {
     ASSERT(!iDevice->Enabled());
     delete iAppFramework;
+    delete iFnUpdaterStandard;
+    delete iFnUpdaterUpnpAv;
     delete iCpProxy;
 #ifdef _DEBUG
     delete iPipelineStateLogger;

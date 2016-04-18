@@ -46,6 +46,7 @@ private: // from IMsgProcessor
     Msg* ProcessMsg(MsgQuit* aMsg) override;
 private: // from IPipelineDriver
     TUint PipelineDriverDelayJiffies(TUint aSampleRateFrom, TUint aSampleRateTo) override;
+    TUint PipelineAnimatorBufferJiffies();
 private:
     IPipeline     &iPipeline;
     TUint          iSampleRate;
