@@ -786,6 +786,10 @@ TUint DriverAlsa::Pimpl::DriverDelayJiffies(TUint aSampleRateFrom, TUint aSample
     return dp * Jiffies::JiffiesPerSample(aSampleRateFrom);
 }
 
+TUint DriverAlsa::PipelineAnimatorBufferJiffies()
+{
+    return 0;
+}
 
 // DriverAlsa
 
@@ -846,6 +850,8 @@ TUint DriverAlsa::PipelineDriverDelayJiffies(TUint aSampleRateFrom,
 
 Msg* DriverAlsa::ProcessMsg(MsgHalt* aMsg)
 {
+    aMsg->ReportHalted();
+
     return aMsg;
 }
 
