@@ -1,6 +1,7 @@
 #pragma once
 
 #include <OpenHome/Av/MediaPlayer.h>
+#include <OpenHome/Av/FriendlyNameAdapter.h>
 #include <OpenHome/Av/Utils/DriverSongcastSender.h>
 #include <OpenHome/Media/PipelineManager.h>
 #include <OpenHome/Av/RebootHandler.h>
@@ -65,9 +66,11 @@ public:
     void                    SetSongcastTimestampMappers(
                                               IOhmTimestampMapper& aTxTsMapper,
                                               IOhmTimestampMapper& aRxTsMapper);
-    Media::PipelineManager &Pipeline();
-    Net::DvDeviceStandard  *Device();
-    Net::DvDevice          *UpnpAvDevice();
+    Media::PipelineManager           &Pipeline();
+    Net::DvDeviceStandard            *Device();
+    Net::DvDevice                    *UpnpAvDevice();
+    Av::FriendlyNameAttributeUpdater *iFnUpdaterStandard;
+    Av::FriendlyNameAttributeUpdater *iFnUpdaterUpnpAv;
 private: // from Net::IResourceManager
     void WriteResource(const Brx& aUriTail, TIpAddress aInterface,
                        std::vector<char*>& aLanguageList,
