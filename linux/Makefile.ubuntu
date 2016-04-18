@@ -49,7 +49,7 @@ RESDIR = $(PREFIX)/share/openhome-player
 # The directory to install changelog and license to
 DOCDIR = $(PREFIX)/share/doc/openhome-player
 
-CFLAGS = -c -Wall -std=c++11 $(PKG_CFLAGS) -DTARG_ARCH=$(TARG_ARCH) \
+CFLAGS = -c -Wall -std=c++0x $(PKG_CFLAGS) -DTARG_ARCH=$(TARG_ARCH) \
          -DUSE_GTK -fstack-protector -fstack-check
 
 # If 'DEBUG=0 is specified on the command line build a debug biuld.
