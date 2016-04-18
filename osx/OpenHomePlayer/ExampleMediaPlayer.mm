@@ -52,38 +52,27 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
     strncpy(iProductName, aProductName, Product::kMaxNameBytes);
     iProductName[Product::kMaxNameBytes] = 0;
     
-    Bws<256> friendlyName;
-    friendlyName.Append(iRoom);
-    friendlyName.Append(':');
-    friendlyName.Append(iProductName);
-    
+    // Do NOT set UPnP friendly name attributes at this stage.
+    // (Wait until MediaPlayer is created so that friendly name can be
+    // observed.)
+
     // create UPnP device
+    // Friendly name not set here
     iDevice = new DvDeviceStandard(aDvStack, aUdn, *this);
     iDevice->SetAttribute("Upnp.Domain", "av.openhome.org");
     iDevice->SetAttribute("Upnp.Type", "Source");
     iDevice->SetAttribute("Upnp.Version", "1");
-    iDevice->SetAttribute("Upnp.FriendlyName", friendlyName.PtrZ());
     iDevice->SetAttribute("Upnp.Manufacturer", "OpenHome");
     iDevice->SetAttribute("Upnp.ModelName", "ExampleMediaPlayer");
 
     // create separate UPnP device for standard MediaRenderer
     Bws<256> buf(aUdn);
     buf.Append("-MediaRenderer");
-    // The renderer name should be <room name>:<UPnP AV source name> to allow
-    // our control point to match the renderer device to the upnp av source.
-    //
-    // FIXME - will have to allow this to be dynamically changed at runtime if
-    // someone changes the name of the UPnP AV source.
-    // Disable device -> change name -> re-enable device.
-    Bws<256> rendererName(iRoom);
-    rendererName.Append(":");
-    rendererName.Append(SourceUpnpAv::kSourceName);
     iDeviceUpnpAv = new DvDeviceStandard(aDvStack, buf);
+    // Friendly name not set here
     iDeviceUpnpAv->SetAttribute("Upnp.Domain", "upnp.org");
     iDeviceUpnpAv->SetAttribute("Upnp.Type", "MediaRenderer");
     iDeviceUpnpAv->SetAttribute("Upnp.Version", "1");
-    friendlyName.Append(":MediaRenderer");
-    iDeviceUpnpAv->SetAttribute("Upnp.FriendlyName", rendererName.PtrZ());
     iDeviceUpnpAv->SetAttribute("Upnp.Manufacturer", "OpenHome");
     iDeviceUpnpAv->SetAttribute("Upnp.ModelName", "ExampleMediaPlayer");
 
@@ -107,7 +96,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
     
     PipelineInitParams* pipelineParams = PipelineInitParams::New();
     pipelineParams->SetThreadPriorityMax(kPrioritySystemHighest-1);
-    pipelineParams->SetStarvationMonitorMaxSize(100 * Jiffies::kPerMs);
+    pipelineParams->SetStarvationRamperSize(100 * Jiffies::kPerMs);
     
     // create MediaPlayer
     iMediaPlayer = new MediaPlayer( aDvStack,
@@ -122,6 +111,14 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
                                    Brn(iRoom),
                                    Brn(iProductName));
     
+    iFnUpdaterStandard = new
+        Av::FriendlyNameAttributeUpdater(iMediaPlayer->FriendlyNameObservable(),
+                                        *iDevice);
+
+    iFnUpdaterUpnpAv = new
+        Av::FriendlyNameAttributeUpdater(iMediaPlayer->FriendlyNameObservable(),
+                                        *iDeviceUpnpAv,
+                                         Brn(":MediaRenderer"));
     // Set up config app.
     static const TUint addr = 0;    // Bind to all addresses.
     static const TUint port = 0;    // Bind to whatever free port the OS allocates to the framework server.
@@ -132,6 +129,8 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
 {
     ASSERT(!iDevice->Enabled());
     delete iAppFramework;
+    delete iFnUpdaterStandard;
+    delete iFnUpdaterUpnpAv;
     Pipeline().Quit();
     delete iCpProxy;
     delete iMediaPlayer;
