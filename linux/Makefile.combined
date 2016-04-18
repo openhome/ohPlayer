@@ -53,7 +53,7 @@ build: $(TARGET)
     # The directory to install the resource files to.
     RESDIR = $(PREFIX)/share/openhome-player
 
-    CFLAGS = -c -Wall -std=c++11 $(GTK_CFLAGS)
+    CFLAGS = -c -Wall -std=c++0x $(GTK_CFLAGS)
 
     ifeq ($(OSPLATFORM),ubuntu)
         # indicate to build that we have selected a valid target
