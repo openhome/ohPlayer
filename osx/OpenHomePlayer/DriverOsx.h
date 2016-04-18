@@ -121,6 +121,7 @@ private: // from IMsgProcessor
 
 private: // from IPipelineAnimator
     TUint PipelineDriverDelayJiffies(TUint aSampleRateFrom, TUint aSampleRateTo) override;
+    TUint PipelineAnimatorBufferJiffies() override;
 
     // Start playing the Host Audio
     void startQueue();

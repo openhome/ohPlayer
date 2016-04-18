@@ -12,6 +12,7 @@
 #include <OpenHome/Av/MediaPlayer.h>
 #include <OpenHome/Net/Core/DvDevice.h>
 #include <OpenHome/Av/Utils/DriverSongcastSender.h>
+#include <OpenHome/Av/FriendlyNameAdapter.h>
 #include <OpenHome/Media/PipelineManager.h>
 #include <OpenHome/Media/UriProviderSingleTrack.h>
 #include <OpenHome/Private/Printer.h>
@@ -105,6 +106,8 @@ namespace OpenHome {
                 MediaPlayer*            iMediaPlayer;
                 Net::DvDeviceStandard*  iDevice;
                 Net::DvDevice*          iDeviceUpnpAv;
+                Av::FriendlyNameAttributeUpdater* iFnUpdaterStandard;
+                Av::FriendlyNameAttributeUpdater* iFnUpdaterUpnpAv;
                 RamStore*               iRamStore;
                 Web::WebAppFramework*   iAppFramework;
                 Media::DriverOsx*       iDriver;

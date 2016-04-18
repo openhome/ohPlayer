@@ -261,9 +261,6 @@ Msg* DriverOsx::ProcessMsg(MsgDrain* aMsg)
     // active audio buffers
     flushQueue();
 
-    // Pause the queue. We assume drain signals a gap in playback.
-    pauseQueue();
-
     aMsg->ReportDrained();
     aMsg->RemoveRef();
 
@@ -273,6 +270,7 @@ Msg* DriverOsx::ProcessMsg(MsgDrain* aMsg)
 Msg* DriverOsx::ProcessMsg(MsgHalt* aMsg)
 {
     DBG(("MsgHalt\n"));
+    aMsg->ReportHalted();
     aMsg->RemoveRef();
     return NULL;
 }
@@ -356,6 +354,10 @@ TUint DriverOsx::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/, TUint /*a
     return 0;
 }
 
+TUint DriverOsx::PipelineAnimatorBufferJiffies()
+{
+    return 0;
+}
 
 void DriverOsx::fillBuffer(AudioQueueBufferRef inBuffer)
 {
