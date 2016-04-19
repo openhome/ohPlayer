@@ -92,10 +92,39 @@ void ProcessorPcmBufWASAPI::ProcessFragment24(const Brx& aData,
     delete[] nData;
 }
 
-void ProcessorPcmBufWASAPI::ProcessFragment32(const Brx& /*aData*/,
+void ProcessorPcmBufWASAPI::ProcessFragment32(const Brx& aData,
                                               TUint      /*aNumChannels*/)
 {
     ASSERTS();
+    TByte *nData;
+    TUint  bytes;
+
+    bytes = aData.Bytes();
+
+    nData = new TByte[bytes];
+    ASSERT(nData != NULL);
+
+    TByte *ptr  = (TByte *)(aData.Ptr() + 0);
+    TByte *ptr1 = (TByte *)nData;
+    TByte *endp = ptr1 + bytes;
+
+    ASSERT(bytes % 4 == 0);
+
+    // Little endian byte order required by native audio.
+    while (ptr1 < endp)
+    {
+        *ptr1++ = *(ptr+3);
+        *ptr1++ = *(ptr+2);
+        *ptr1++ = *(ptr+1);
+        *ptr1++ = *(ptr+0);
+
+        ptr += 4;
+    }
+
+    Brn fragment(nData, bytes);
+    ProcessFragment(fragment);
+
+    delete[] nData;
 }
 
 void ProcessorPcmBufWASAPI::ProcessSample8(const TByte* aSample,
@@ -149,8 +178,21 @@ void ProcessorPcmBufWASAPI::ProcessSample24(const TByte* aSample,
     }
 }
 
-void ProcessorPcmBufWASAPI::ProcessSample32(const TByte* /*aSample*/,
-                                            TUint        /*aNumChannels*/)
+void ProcessorPcmBufWASAPI::ProcessSample32(const TByte* aSample,
+                                            TUint        aNumChannels)
 {
-    ASSERTS();
+    TByte sample[8]  = { 0 };
+    TUint sampleSize = 4;
+
+    for (TUint i=0; i<aNumChannels; i++) {
+        sample[0] = *(aSample + 3);
+        sample[1] = *(aSample + 2);
+        sample[2] = *(aSample + 1);
+        sample[3] = *aSample;
+
+        aSample += 4;
+
+        Brn sampleBuf(sample, sampleSize);
+        ProcessFragment(sampleBuf);
+    }
 }
