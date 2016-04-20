@@ -9,6 +9,7 @@ class ProcessorPcmBufWASAPI : public ProcessorPcmBufTest
 {
 public:
     ProcessorPcmBufWASAPI();
+    void SetBitDepth(TUint bitDepth);
 private: // from IPcmProcessor
     void ProcessFragment8(const Brx& aData, TUint aNumChannels);
     void ProcessFragment16(const Brx& aData, TUint aNumChannels);
@@ -18,6 +19,8 @@ private: // from IPcmProcessor
     void ProcessSample16(const TByte* aSample, TUint aNumChannels);
     void ProcessSample24(const TByte* aSample, TUint aNumChannels);
     void ProcessSample32(const TByte* aSample, TUint aNumChannels);
+private:
+    TUint iBitDepth;
 };
 
 } // namespace Media
