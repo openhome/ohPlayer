@@ -263,7 +263,49 @@ void PcmProcessorLe::ProcessFragment24(const Brx& aData, TUint aNumChannels)
 
 void PcmProcessorLe::ProcessFragment32(const Brx& aData, TUint aNumChannels)
 {
-    ASSERTS();
+    TByte *nData;
+    TUint  bytes;
+
+    // 32 bit audio is not supported on the platform so it is converted
+    // to signed 16 bit audio for playback.
+    //
+    // Accordingly one half of the input data is discarded.
+    bytes = aData.Bytes() / 2;
+
+    // If we are manually converting mono to stereo the data will double.
+    if (iDuplicateChannel)
+    {
+        bytes *= 2;
+    }
+
+    nData = new TByte[bytes];
+    ASSERT(nData != NULL);
+
+    TByte *ptr  = (TByte *)(aData.Ptr() + 0);
+    TByte *ptr1 = (TByte *)nData;
+    TByte *endp = ptr1 + bytes;
+
+    ASSERT(bytes % 2 == 0);
+
+    while (ptr1 < endp)
+    {
+        // Store the data in little endian format.
+        *ptr1++ = *(ptr+1);
+        *ptr1++ = *(ptr+0);
+
+        if (iDuplicateChannel)
+        {
+            *ptr1++ = *(ptr+1);
+            *ptr1++ = *(ptr+0);
+        }
+
+        ptr += 4;
+    }
+
+    Brn fragment(nData, bytes);
+    Flush();
+    iSink.Write(fragment);
+    delete[] nData;
 }
 
 void PcmProcessorLe::ProcessSample8(const TByte* aSample, TUint aNumChannels)
@@ -332,7 +374,24 @@ void PcmProcessorLe::ProcessSample24(const TByte* aSample, TUint aNumChannels)
 
 void PcmProcessorLe::ProcessSample32(const TByte* aSample, TUint aNumChannels)
 {
-    ASSERTS();
+    TUint byteIndex = 0;
+    TByte subsample[2];   // Store for S16 sample data.
+
+    for (TUint i = 0; i < aNumChannels; ++i)
+    {
+        // Store the S16 data in little endian format.
+        subsample[0] = aSample[byteIndex+1];
+        subsample[1] = aSample[byteIndex+0];
+
+        Append(subsample, 2);
+
+        if (iDuplicateChannel)
+        {
+            Append(subsample, 2);
+        }
+
+        byteIndex += 4;
+    }
 }
 
 // PcmProcessorLe32
@@ -344,6 +403,8 @@ public:
 public: // IPcmProcessor
     void ProcessFragment24(const Brx& aData, TUint aNumChannels);
     void ProcessSample24(const TByte* aSample, TUint aNumChannels);
+    void ProcessFragment32(const Brx& aData, TUint aNumChannels);
+    void ProcessSample32(const TByte* aSample, TUint aNumChannels);
 };
 
 PcmProcessorLe32::PcmProcessorLe32(IDataSink& aSink, Bwx& aBuffer)
@@ -375,7 +436,7 @@ void PcmProcessorLe32::ProcessFragment24(const Brx& aData, TUint aNumChannels)
     TByte *ptr1 = (TByte *)nData;
     TByte *endp = ptr1 + bytes;
 
-    ASSERT(bytes % 2 == 0);
+    ASSERT(bytes % 4 == 0);
 
     while (ptr1 < endp)
     {
@@ -394,6 +455,53 @@ void PcmProcessorLe32::ProcessFragment24(const Brx& aData, TUint aNumChannels)
         }
 
         ptr += 3;
+    }
+
+    Brn fragment(nData, bytes);
+    Flush();
+    iSink.Write(fragment);
+    delete[] nData;
+}
+
+void PcmProcessorLe32::ProcessFragment32(const Brx& aData, TUint aNumChannels)
+{
+    TByte *nData;
+    TUint  bytes;
+
+    bytes = aData.Bytes();
+
+    // If we are manually converting mono to stereo the data will double.
+    if (iDuplicateChannel)
+    {
+        bytes *= 2;
+    }
+
+    nData = new TByte[bytes];
+    ASSERT(nData != NULL);
+
+    TByte *ptr  = (TByte *)(aData.Ptr() + 0);
+    TByte *ptr1 = (TByte *)nData;
+    TByte *endp = ptr1 + bytes;
+
+    ASSERT(bytes % 4 == 0);
+
+    while (ptr1 < endp)
+    {
+        // Store the data in little endian format.
+        *ptr1++ = *(ptr+3);
+        *ptr1++ = *(ptr+2);
+        *ptr1++ = *(ptr+1);
+        *ptr1++ = *(ptr+0);
+
+        if (iDuplicateChannel)
+        {
+            *ptr1++ = *(ptr+3);
+            *ptr1++ = *(ptr+2);
+            *ptr1++ = *(ptr+1);
+            *ptr1++ = *(ptr+0);
+        }
+
+        ptr += 4;
     }
 
     Brn fragment(nData, bytes);
@@ -426,40 +534,71 @@ void PcmProcessorLe32::ProcessSample24(const TByte* aSample, TUint aNumChannels)
     }
 }
 
+void PcmProcessorLe32::ProcessSample32(const TByte* aSample, TUint aNumChannels)
+{
+    TUint byteIndex = 0;
+    TByte subsample[4];   // Store for S32 sample data.
+
+    for (TUint i = 0; i < aNumChannels; ++i)
+    {
+        // Store the S32 data in little endian format.
+        subsample[0] = aSample[byteIndex+3];
+        subsample[1] = aSample[byteIndex+2];
+        subsample[2] = aSample[byteIndex+1];
+        subsample[3] = aSample[byteIndex+0];
+
+        Append(subsample, 4);
+
+        if (iDuplicateChannel)
+        {
+            Append(subsample, 4);
+        }
+
+        byteIndex += 4;
+    }
+}
+
 typedef std::pair<snd_pcm_format_t, TUint> OutputFormat;
 
 class Profile
 {
 public:
-    Profile(IPcmProcessor* aPcmProcessor, OutputFormat aFormat24,
-            OutputFormat aFormat16, OutputFormat aFormat8);
+    Profile(IPcmProcessor* aPcmProcessor, OutputFormat aFormat32,
+                                          OutputFormat aFormat24,
+                                          OutputFormat aFormat16,
+                                          OutputFormat aFormat8);
 public:
     OutputFormat   GetFormat(TUint aBitDepth) const;
     IPcmProcessor& GetPcmProcessor() const;
 private:
     std::unique_ptr<IPcmProcessor> iPcmProcessor;
-    OutputFormat                   iOutputDesc[3];
+    OutputFormat                   iOutputDesc[4];
 };
 
-Profile::Profile(IPcmProcessor* aPcmProcessor, OutputFormat aFormat24,
-                 OutputFormat aFormat16, OutputFormat aFormat8)
+Profile::Profile(IPcmProcessor* aPcmProcessor, OutputFormat aFormat32,
+                                               OutputFormat aFormat24,
+                                               OutputFormat aFormat16,
+                                               OutputFormat aFormat8)
 : iPcmProcessor(aPcmProcessor)
 {
-    iOutputDesc[0] = aFormat24;
-    iOutputDesc[1] = aFormat16;
-    iOutputDesc[2] = aFormat8;
+    iOutputDesc[0] = aFormat32;
+    iOutputDesc[1] = aFormat24;
+    iOutputDesc[2] = aFormat16;
+    iOutputDesc[3] = aFormat8;
 }
 
 OutputFormat Profile::GetFormat(TUint aBitDepth) const
 {
     switch (aBitDepth)
     {
-        case 24:
+        case 32:
             return iOutputDesc[0];
-        case 16:
+        case 24:
             return iOutputDesc[1];
-        case 8:
+        case 16:
             return iOutputDesc[2];
+        case 8:
+            return iOutputDesc[3];
         default:
             ASSERTS();
             return iOutputDesc[0];
@@ -521,12 +660,14 @@ DriverAlsa::Pimpl::Pimpl(const TChar* aAlsaDevice, TUint aBufferUs)
 
     // PcmProcessorLe with S32 support
     iProfiles.emplace_back(new PcmProcessorLe32(*this, iSampleBuffer),
+            OutputFormat(SND_PCM_FORMAT_S32_LE, 4),  // S32 -> S32
             OutputFormat(SND_PCM_FORMAT_S32_LE, 4),  // S24 -> S32
             OutputFormat(SND_PCM_FORMAT_S16_LE, 2),  // S16
             OutputFormat(SND_PCM_FORMAT_S16_LE, 2)); // U8 -> S16
 
     // PcmProcessorLe without S32 support
     iProfiles.emplace_back(new PcmProcessorLe(*this, iSampleBuffer),
+            OutputFormat(SND_PCM_FORMAT_S16_LE, 2),  // S32 -> S16
             OutputFormat(SND_PCM_FORMAT_S16_LE, 2),  // S24 -> S16
             OutputFormat(SND_PCM_FORMAT_S16_LE, 2),  // S16
             OutputFormat(SND_PCM_FORMAT_S16_LE, 2)); // U8 -> S16
