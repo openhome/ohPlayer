@@ -468,6 +468,7 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
     // Get the message data. This converts the pipeline data into a format
     // suitable for the native audio system.
     ProcessorPcmBufWASAPI pcmProcessor;
+    pcmProcessor.SetBitDepth(iBitDepth);
 
     aMsg->Read(pcmProcessor);
 

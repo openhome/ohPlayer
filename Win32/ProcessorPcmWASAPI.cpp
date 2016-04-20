@@ -13,8 +13,13 @@ using namespace OpenHome::Media;
 // Takes PCM data from the pipeline and formats it for the WASAPI
 // audio subsystem.
 
-ProcessorPcmBufWASAPI::ProcessorPcmBufWASAPI()
+ProcessorPcmBufWASAPI::ProcessorPcmBufWASAPI() : iBitDepth(0)
 {
+}
+
+void ProcessorPcmBufWASAPI::SetBitDepth(TUint bitDepth)
+{
+    iBitDepth = bitDepth;
 }
 
 void ProcessorPcmBufWASAPI::ProcessFragment8(const Brx& aData,
@@ -111,17 +116,44 @@ void ProcessorPcmBufWASAPI::ProcessFragment32(const Brx& aData,
     ASSERT(bytes % 4 == 0);
 
     // Little endian byte order required by native audio.
+    TUint outBytes = 0;
+
     while (ptr1 < endp)
     {
-        *ptr1++ = *(ptr+3);
-        *ptr1++ = *(ptr+2);
-        *ptr1++ = *(ptr+1);
-        *ptr1++ = *(ptr+0);
+        // The pipeline may generate 32 bit PCM.
+        // This must be converted to the same format as the audio stream.
+        switch (iBitDepth)
+        {
+            case 32:
+            {
+                *ptr1++ = *(ptr+3);
+                outBytes++;
+                // fallthrough
+            }
+            case 24:
+            {
+                *ptr1++ = *(ptr+2);
+                outBytes++;
+                // fallthrough
+            }
+            case 16:
+            {
+                *ptr1++ = *(ptr+1);
+                outBytes++;
+                // fallthrough
+            }
+            case 8:
+            {
+                *ptr1++ = *(ptr+0);
+                outBytes++;
+                break;
+            }
+        }
 
         ptr += 4;
     }
 
-    Brn fragment(nData, bytes);
+    Brn fragment(nData, outBytes);
     ProcessFragment(fragment);
 
     delete[] nData;
@@ -182,17 +214,44 @@ void ProcessorPcmBufWASAPI::ProcessSample32(const TByte* aSample,
                                             TUint        aNumChannels)
 {
     TByte sample[8]  = { 0 };
-    TUint sampleSize = 4;
 
     for (TUint i=0; i<aNumChannels; i++) {
-        sample[0] = *(aSample + 3);
-        sample[1] = *(aSample + 2);
-        sample[2] = *(aSample + 1);
-        sample[3] = *aSample;
+        TUint outBytes = 0;
+        TUint index    = 0;
+
+        // The pipeline may generate 32 bit PCM.
+        // This must be converted to the same format as the audio stream.
+        switch (iBitDepth)
+        {
+            case 32:
+            {
+                sample[index++] = *(aSample + 3);
+                outBytes++;
+                // fallthrough
+            }
+            case 24:
+            {
+                sample[index++] = *(aSample + 2);
+                outBytes++;
+                // fallthrough
+            }
+            case 16:
+            {
+                sample[index++] = *(aSample + 1);
+                outBytes++;
+                // fallthrough
+            }
+            case 8:
+            {
+                sample[index++] = *(aSample + 0);
+                outBytes++;
+                break;
+            }
+        }
 
         aSample += 4;
 
-        Brn sampleBuf(sample, sampleSize);
+        Brn sampleBuf(sample, outBytes);
         ProcessFragment(sampleBuf);
     }
 }
