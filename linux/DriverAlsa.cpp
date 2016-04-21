@@ -55,24 +55,32 @@ public: // IPcmProcessor
     virtual void Flush();
 public:
     void SetDuplicateChannel(TBool duplicateChannel);
+    void SetBitDepth(TUint bitDepth);
 protected:
     void Append(const TByte* aData, TUint aBytes);
 protected:
     IDataSink& iSink;
     Bwx&       iBuffer;
     TBool      iDuplicateChannel;
+    TUint      iBitDepth;
 };
 
 PcmProcessorBase::PcmProcessorBase(IDataSink& aDataSink, Bwx& aBuffer)
 : iSink(aDataSink)
 , iBuffer(aBuffer)
 , iDuplicateChannel(false)
+, iBitDepth(0)
 {
 }
 
 void PcmProcessorBase::SetDuplicateChannel(TBool duplicateChannel)
 {
     iDuplicateChannel = duplicateChannel;
+}
+
+void PcmProcessorBase::SetBitDepth(TUint bitDepth)
+{
+    iBitDepth = bitDepth;
 }
 
 void PcmProcessorBase::Append(const TByte* aData, TUint aBytes)
@@ -476,6 +484,22 @@ void PcmProcessorLe32::ProcessFragment32(const Brx& aData, TUint aNumChannels)
         bytes *= 2;
     }
 
+    // The pipeline may generate 32 bit PCM.
+    // This must be converted to the same format as the audio stream.
+    //
+    // This processor outputs 24 bit and 32 bit PCM as 32 bit.
+    if (iBitDepth < 24)
+    {
+        // 8 and 16 bit PCM is output as 16 bit.
+        bytes = bytes / 2;
+
+        ASSERT(bytes % 2 == 0);
+    }
+    else
+    {
+        ASSERT(bytes % 4 == 0);
+    }
+
     nData = new TByte[bytes];
     ASSERT(nData != NULL);
 
@@ -483,20 +507,24 @@ void PcmProcessorLe32::ProcessFragment32(const Brx& aData, TUint aNumChannels)
     TByte *ptr1 = (TByte *)nData;
     TByte *endp = ptr1 + bytes;
 
-    ASSERT(bytes % 4 == 0);
-
     while (ptr1 < endp)
     {
         // Store the data in little endian format.
-        *ptr1++ = *(ptr+3);
-        *ptr1++ = *(ptr+2);
+        if (iBitDepth >= 24)
+        {
+            *ptr1++ = *(ptr+3);
+            *ptr1++ = *(ptr+2);
+        }
         *ptr1++ = *(ptr+1);
         *ptr1++ = *(ptr+0);
 
         if (iDuplicateChannel)
         {
-            *ptr1++ = *(ptr+3);
-            *ptr1++ = *(ptr+2);
+            if (iBitDepth >= 24)
+            {
+                *ptr1++ = *(ptr+3);
+                *ptr1++ = *(ptr+2);
+            }
             *ptr1++ = *(ptr+1);
             *ptr1++ = *(ptr+0);
         }
@@ -541,17 +569,29 @@ void PcmProcessorLe32::ProcessSample32(const TByte* aSample, TUint aNumChannels)
 
     for (TUint i = 0; i < aNumChannels; ++i)
     {
-        // Store the S32 data in little endian format.
-        subsample[0] = aSample[byteIndex+3];
-        subsample[1] = aSample[byteIndex+2];
-        subsample[2] = aSample[byteIndex+1];
-        subsample[3] = aSample[byteIndex+0];
+        TUint sampleIndex = 0;
 
-        Append(subsample, 4);
+        // Store the S32 data in little endian format.
+
+        // The pipeline may generate 32 bit PCM.
+        // This must be converted to the same format as the audio stream.
+        //
+        // This processor outputs 24 bit and 32 bit PCM as 32 bit.
+        // 8/16 bit is output as 16 bit.
+        if (iBitDepth >= 24)
+        {
+            subsample[sampleIndex++] = aSample[byteIndex+3];
+            subsample[sampleIndex++] = aSample[byteIndex+2];
+        }
+
+        subsample[sampleIndex++] = aSample[byteIndex+1];
+        subsample[sampleIndex++] = aSample[byteIndex+0];
+
+        Append(subsample, sampleIndex);
 
         if (iDuplicateChannel)
         {
-            Append(subsample, 4);
+            Append(subsample, sampleIndex);
         }
 
         byteIndex += 4;
@@ -835,6 +875,7 @@ void DriverAlsa::Pimpl::ProcessDecodedStream(MsgDecodedStream* aMsg)
             PcmProcessorBase& pcmP =
                 (PcmProcessorBase&)iProfiles[i].GetPcmProcessor();
             pcmP.SetDuplicateChannel(iDuplicateChannel);
+            pcmP.SetBitDepth(decodedStreamInfo.BitDepth());
 
             iSampleBytes =
                 decodedStreamInfo.NumChannels() *
