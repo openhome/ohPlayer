@@ -349,7 +349,7 @@ void DriverOsx::Resume()
     resumeQueue();
 }
 
-TUint DriverOsx::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/, TUint /*aSampleRateTo*/)
+TUint DriverOsx::PipelineAnimatorDelayJiffies(TUint /*aSampleRate*/, TUint /*aBitDepth*/, TUint /*aNumChannels*/)
 {
     return 0;
 }
