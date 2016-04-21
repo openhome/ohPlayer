@@ -328,7 +328,7 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 #endif  /* ENABLE_MP3 */
 #endif // USE_AFSCODEC
     Log::Print("Codec\tAlac\n");
-    iMediaPlayer->Add(Codec::CodecFactory::NewAlac(iMediaPlayer->MimeTypes()));
+    iMediaPlayer->Add(Codec::CodecFactory::NewAlacApple(iMediaPlayer->MimeTypes()));
     Log::Print("Codec\tPcm\n");
     iMediaPlayer->Add(Codec::CodecFactory::NewPcm());
     Log::Print("Codec\tVorbis\n");
@@ -354,8 +354,7 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
                                                  iTxTimestamper,
                                                  NULL,
                                                  iRxTimestamper,
-                                                 NULL,
-                                                 kSongcastSenderIconFileName));
+                                                 NULL));
 
 #ifdef ENABLE_TIDAL
     // You must define your Tidal token
