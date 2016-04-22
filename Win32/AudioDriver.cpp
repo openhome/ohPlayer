@@ -113,34 +113,10 @@ Msg* AudioDriver::ProcessMsg(MsgDrain* aMsg)
     return NULL;
 }
 
-TUint AudioDriver::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/,
-                                              TUint aSampleRateTo)
+TUint AudioDriver::PipelineAnimatorDelayJiffies(TUint /*aSampleRate*/,
+                                                TUint /*aBitDepth*/,
+                                                TUint /*aNumChannels*/)
 {
-    switch (aSampleRateTo)
-    {
-        // 48 KHz family rates
-        case 192000:
-        case 96000:
-        case 64000:
-        case 48000:
-        case 32000:
-        case 16000:
-        case 8000:
-        // 44.1 KHz family rates
-        case 176400:
-        case 88200:
-        case 44100:
-        case 22050:
-        case 11025:
-            break;
-
-        default:
-            Log::Print("Warning sample rate not supported [%u]\n",
-                       aSampleRateTo);
-
-            THROW(SampleRateUnsupported);
-    }
-
     return 0;
 }
 
