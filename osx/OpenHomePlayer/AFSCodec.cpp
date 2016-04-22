@@ -239,7 +239,7 @@ TBool CodecAFS::DecodeAudioData()
                                                 iChannels,
                                                 static_cast<TUint>(iSampleRate),
                                                 iBitDepth,
-                                                EMediaDataEndianBig,
+                                                AudioDataEndian::Big,
                                                 iTrackOffset);
 
             }

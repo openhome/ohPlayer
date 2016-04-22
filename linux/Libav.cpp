@@ -998,7 +998,7 @@ void CodecLibAV::processPCM(TUint8 **pcmData, AVSampleFormat fmt,
                                     iAvCodecContext->channels,
                                     iAvCodecContext->sample_rate,
                                     iOutputBitDepth,
-                                    EMediaDataEndianBig,
+                                    AudioDataEndian::Big,
                                     iTrackOffset);
 
                 iOutput.SetBytes(0);
@@ -1239,7 +1239,7 @@ void CodecLibAV::Process()
                                 iAvCodecContext->channels,
                                 iAvCodecContext->sample_rate,
                                 iOutputBitDepth,
-                                EMediaDataEndianBig,
+                                AudioDataEndian::Big,
                                 iTrackOffset);
 
             iOutput.SetBytes(0);

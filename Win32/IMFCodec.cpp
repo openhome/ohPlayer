@@ -644,7 +644,7 @@ void CodecIMF::FlushPCM()
                                     iChannels,
                                     iSampleRate,
                                     iBitDepth,
-                                    EMediaDataEndianBig,
+                                    AudioDataEndian::Big,
                                     iTrackOffset);
 
     iOutput.SetBytes(0);
@@ -680,7 +680,7 @@ void CodecIMF::ProcessPCM(TByte *aBuffer, TInt aLength)
                                             iChannels,
                                             iSampleRate,
                                             iBitDepth,
-                                            EMediaDataEndianBig,
+                                            AudioDataEndian::Big,
                                             iTrackOffset);
 
             iOutput.SetBytes(0);
@@ -740,7 +740,7 @@ void CodecIMF::ProcessPCM(TByte *aBuffer, TInt aLength)
                                         iChannels,
                                         iSampleRate,
                                         iBitDepth,
-                                        EMediaDataEndianBig,
+                                        AudioDataEndian::Big,
                                         iTrackOffset);
 
         iOutput.SetBytes(0);
