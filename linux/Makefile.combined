@@ -82,7 +82,7 @@ build: $(TARGET)
         OBJ_DIR   = objs
     endif
 
-    LIBS         = $(GTK_LIBS) -lnotify -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lohMediaPlayer -lWebAppFramework -lConfigUi -lShell -lohNetCore  -lCodecAdts -lCodecAac -lCodecAacBase -lCodecAifc -lCodecAlac -lCodecAlacBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecFlac -lCodecWav -lohPipeline -lpthread -lssl -lcrypto -ldl
+    LIBS         = $(GTK_LIBS) -lnotify -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lohMediaPlayer -lWebAppFramework -lConfigUi -lShell -lohNetCore  -lCodecAdts -lCodecAac -lCodecAacBase -lCodecAifc -lCodecAlacApple -lCodecAlacAppleBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecFlac -lCodecWav -lohPipeline -lpthread -lssl -lcrypto -ldl
     INCLUDES     = -I../dependencies/$(TARG_ARCH)/ohMediaPlayer/include -I../dependencies/$(TARG_ARCH)/ohNetmon/include -I../dependencies/$(TARG_ARCH)/openssl/include -I../dependencies/$(TARG_ARCH)/ohNetGenerated-$(TARG_ARCH)-Release/include/ohnet/OpenHome/Net/Core
 
     # If 'DEBUG=0 is specified on the command line build a debug biuld.

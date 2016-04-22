@@ -665,7 +665,7 @@ public:
     void ProcessPlayable(MsgPlayable* aMsg);
     void ProcessDrain();
     void LogPCMState();
-    TUint DriverDelayJiffies(TUint aSampleRateFrom, TUint aSampleRateTo);
+    TUint DriverDelayJiffies(TUint aSampleRate);
 public:
     virtual void Write(const Brx& aData);
 private:
@@ -927,33 +927,12 @@ TBool DriverAlsa::Pimpl::TryProfile(Profile& aProfile, TUint aBitDepth,
     return err == 0;
 }
 
-TUint DriverAlsa::Pimpl::DriverDelayJiffies(TUint aSampleRateFrom, TUint aSampleRateTo)
+TUint DriverAlsa::Pimpl::DriverDelayJiffies(TUint aSampleRate)
 {
     snd_pcm_sframes_t dp;
     int ret;
 
-    switch (aSampleRateTo) {
-    // 48 KHz family rates
-    case 192000:
-    case 96000:
-    case 64000:
-    case 48000:
-    case 32000:
-    case 16000:
-    case 8000:
-    // 44.1 KHz family rates
-    case 176400:
-    case 88200:
-    case 44100:
-    case 22050:
-    case 11025:
-        break;
-
-    default:
-        ASSERTS();
-    }
-
-    if (!aSampleRateFrom) {
+    if (!aSampleRate) {
         return 0;
     }
 
@@ -965,7 +944,7 @@ TUint DriverAlsa::Pimpl::DriverDelayJiffies(TUint aSampleRateFrom, TUint aSample
     }
 
     Log::Print("DriverAlsa: snd_pcm_delay() : %u\n", dp);
-    return dp * Jiffies::JiffiesPerSample(aSampleRateFrom);
+    return dp * Jiffies::PerSample(aSampleRate);
 }
 
 TUint DriverAlsa::PipelineAnimatorBufferJiffies()
@@ -1024,10 +1003,11 @@ void DriverAlsa::AudioThread()
     catch (ThreadKill&) {}
 }
 
-TUint DriverAlsa::PipelineDriverDelayJiffies(TUint aSampleRateFrom,
-                                             TUint aSampleRateTo)
+TUint DriverAlsa::PipelineAnimatorDelayJiffies(TUint aSampleRate,
+                                               TUint /*aBitDepth*/,
+                                               TUint /*aNumChannels*/)
 {
-    return iPimpl->DriverDelayJiffies(aSampleRateFrom, aSampleRateTo);
+    return iPimpl->DriverDelayJiffies(aSampleRate);
 }
 
 Msg* DriverAlsa::ProcessMsg(MsgHalt* aMsg)
