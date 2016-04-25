@@ -21,42 +21,12 @@
 		C643FCA71C9C1D07000E8C72 /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB40D9231A9B23A20043722C /* AppDelegate.mm */; };
 		C643FCA81C9C1D07000E8C72 /* ConfigRamStore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB796A5B1AD2C14800684025 /* ConfigRamStore.cpp */; };
 		C643FCA91C9C1D07000E8C72 /* MediaPlayerIF.mm in Sources */ = {isa = PBXBuildFile; fileRef = EBA0E8EE1AC5D8AF00903A7F /* MediaPlayerIF.mm */; };
-		C643FCAB1C9C1D07000E8C72 /* libShell.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A241B31B64300205BAC /* libShell.a */; };
-		C643FCAD1C9C1D07000E8C72 /* libTestFramework.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A251B31B64300205BAC /* libTestFramework.a */; };
-		C643FCAE1C9C1D07000E8C72 /* libCodecAlacApple.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A351B31B68600205BAC /* libCodecAlacApple.a */; };
-		C643FCAF1C9C1D07000E8C72 /* libSourceRaop.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A361B31B68600205BAC /* libSourceRaop.a */; };
-		C643FCB31C9C1D07000E8C72 /* libSourcePlaylist.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A3A1B31B68600205BAC /* libSourcePlaylist.a */; };
-		C643FCB41C9C1D07000E8C72 /* libSourceSongcast.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A3B1B31B68600205BAC /* libSourceSongcast.a */; };
-		C643FCB51C9C1D07000E8C72 /* libSourceRadio.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A3C1B31B68600205BAC /* libSourceRadio.a */; };
-		C643FCB61C9C1D07000E8C72 /* libSourceUpnpAv.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A3D1B31B68600205BAC /* libSourceUpnpAv.a */; };
-		C643FCB71C9C1D07000E8C72 /* libCodecAlacAppleBase.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A3E1B31B68600205BAC /* libCodecAlacAppleBase.a */; };
-		C643FCB81C9C1D07000E8C72 /* libohMediaPlayer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A3F1B31B68600205BAC /* libohMediaPlayer.a */; };
-		C643FCB91C9C1D07000E8C72 /* libohPipeline.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A401B31B68600205BAC /* libohPipeline.a */; };
-		C643FCBA1C9C1D07000E8C72 /* libCodecFlac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A411B31B68600205BAC /* libCodecFlac.a */; };
-		C643FCBB1C9C1D07000E8C72 /* libCodecVorbis.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A421B31B68600205BAC /* libCodecVorbis.a */; };
-		C643FCBC1C9C1D07000E8C72 /* libCodecAifc.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A431B31B68600205BAC /* libCodecAifc.a */; };
-		C643FCBD1C9C1D07000E8C72 /* libCodecAiff.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A441B31B68600205BAC /* libCodecAiff.a */; };
-		C643FCBE1C9C1D07000E8C72 /* libCodecAiffBase.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A451B31B68600205BAC /* libCodecAiffBase.a */; };
-		C643FCBF1C9C1D07000E8C72 /* libCodecPcm.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A461B31B68600205BAC /* libCodecPcm.a */; };
-		C643FCC01C9C1D07000E8C72 /* libCodecWav.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A471B31B68600205BAC /* libCodecWav.a */; };
-		C643FCC11C9C1D07000E8C72 /* libConfigUi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A481B31B68600205BAC /* libConfigUi.a */; };
-		C643FCC21C9C1D07000E8C72 /* libohNetGeneratedDevices.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A631B32A24400205BAC /* libohNetGeneratedDevices.a */; };
-		C643FCC31C9C1D07000E8C72 /* liblibOgg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A491B31B68600205BAC /* liblibOgg.a */; };
-		C643FCC41C9C1D07000E8C72 /* libWebAppFramework.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A4A1B31B68600205BAC /* libWebAppFramework.a */; };
-		C643FCC51C9C1D07000E8C72 /* libcrypto.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A2F1B31B65800205BAC /* libcrypto.a */; };
-		C643FCC61C9C1D07000E8C72 /* libssl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A301B31B65800205BAC /* libssl.a */; };
-		C643FCC71C9C1D07000E8C72 /* libohNetDevices.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A211B31B64300205BAC /* libohNetDevices.a */; };
-		C643FCC81C9C1D07000E8C72 /* libohNetProxies.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A221B31B64300205BAC /* libohNetProxies.a */; };
-		C643FCC91C9C1D07000E8C72 /* libohNetGeneratedProxies.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A641B32A24400205BAC /* libohNetGeneratedProxies.a */; };
-		C643FCCA1C9C1D07000E8C72 /* ohNetTestsCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A231B31B64300205BAC /* ohNetTestsCore.a */; };
-		C643FCCB1C9C1D07000E8C72 /* libohNetCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A271B31B64300205BAC /* libohNetCore.a */; };
 		C643FCCC1C9C1D07000E8C72 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EB796A691AD5BA1C00684025 /* AudioToolbox.framework */; };
 		C643FCCD1C9C1D07000E8C72 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EB796A591AD2B2C700684025 /* SystemConfiguration.framework */; };
 		C643FCCF1C9C1D07000E8C72 /* SoftPlayer in Resources */ = {isa = PBXBuildFile; fileRef = EB553D0A1B52D75300B0D17D /* SoftPlayer */; };
 		C643FCD01C9C1D07000E8C72 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EB40D92D1A9B23A20043722C /* Images.xcassets */; };
 		C643FCD11C9C1D07000E8C72 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EB40D92F1A9B23A20043722C /* Main.storyboard */; };
 		C643FCD81C9C1F7F000E8C72 /* AFSCodec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C643FCD71C9C1F7F000E8C72 /* AFSCodec.cpp */; };
-		C6C8801A1BDE405D00987717 /* libShell.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A241B31B64300205BAC /* libShell.a */; };
 		EB3670581ADEA86B00AC684B /* PcmHandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB3670571ADEA86B00AC684B /* PcmHandler.cpp */; };
 		EB40D9241A9B23A20043722C /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB40D9231A9B23A20043722C /* AppDelegate.mm */; };
 		EB40D9261A9B23A20043722C /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = EB40D9251A9B23A20043722C /* main.m */; };
@@ -66,37 +36,6 @@
 		EB463CB21ACAD87D002AF5B2 /* RamStore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB463CB01ACAD87D002AF5B2 /* RamStore.cpp */; };
 		EB463CB51ACAE083002AF5B2 /* DriverOsx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB463CB31ACAE083002AF5B2 /* DriverOsx.cpp */; };
 		EB553D0B1B52D75300B0D17D /* SoftPlayer in Resources */ = {isa = PBXBuildFile; fileRef = EB553D0A1B52D75300B0D17D /* SoftPlayer */; };
-		EB650A281B31B64300205BAC /* libohNetDevices.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A211B31B64300205BAC /* libohNetDevices.a */; };
-		EB650A291B31B64300205BAC /* libohNetProxies.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A221B31B64300205BAC /* libohNetProxies.a */; };
-		EB650A2A1B31B64300205BAC /* ohNetTestsCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A231B31B64300205BAC /* ohNetTestsCore.a */; };
-		EB650A2E1B31B64300205BAC /* libohNetCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A271B31B64300205BAC /* libohNetCore.a */; };
-		EB650A311B31B65800205BAC /* libcrypto.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A2F1B31B65800205BAC /* libcrypto.a */; };
-		EB650A321B31B65800205BAC /* libssl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A301B31B65800205BAC /* libssl.a */; };
-		EB650A4B1B31B68600205BAC /* libCodecAlacApple.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A351B31B68600205BAC /* libCodecAlacApple.a */; };
-		EB650A4C1B31B68600205BAC /* libSourceRaop.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A361B31B68600205BAC /* libSourceRaop.a */; };
-		EB650A4D1B31B68600205BAC /* libCodecAac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A371B31B68600205BAC /* libCodecAac.a */; };
-		EB650A4E1B31B68600205BAC /* libCodecAacBase.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A381B31B68600205BAC /* libCodecAacBase.a */; };
-		EB650A4F1B31B68600205BAC /* libCodecAdts.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A391B31B68600205BAC /* libCodecAdts.a */; };
-		EB650A501B31B68600205BAC /* libSourcePlaylist.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A3A1B31B68600205BAC /* libSourcePlaylist.a */; };
-		EB650A511B31B68600205BAC /* libSourceSongcast.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A3B1B31B68600205BAC /* libSourceSongcast.a */; };
-		EB650A521B31B68600205BAC /* libSourceRadio.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A3C1B31B68600205BAC /* libSourceRadio.a */; };
-		EB650A531B31B68600205BAC /* libSourceUpnpAv.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A3D1B31B68600205BAC /* libSourceUpnpAv.a */; };
-		EB650A541B31B68600205BAC /* libCodecAlacAppleBase.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A3E1B31B68600205BAC /* libCodecAlacAppleBase.a */; };
-		EB650A551B31B68600205BAC /* libohMediaPlayer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A3F1B31B68600205BAC /* libohMediaPlayer.a */; };
-		EB650A561B31B68600205BAC /* libohPipeline.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A401B31B68600205BAC /* libohPipeline.a */; };
-		EB650A571B31B68600205BAC /* libCodecFlac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A411B31B68600205BAC /* libCodecFlac.a */; };
-		EB650A581B31B68600205BAC /* libCodecVorbis.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A421B31B68600205BAC /* libCodecVorbis.a */; };
-		EB650A591B31B68600205BAC /* libCodecAifc.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A431B31B68600205BAC /* libCodecAifc.a */; };
-		EB650A5A1B31B68600205BAC /* libCodecAiff.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A441B31B68600205BAC /* libCodecAiff.a */; };
-		EB650A5B1B31B68600205BAC /* libCodecAiffBase.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A451B31B68600205BAC /* libCodecAiffBase.a */; };
-		EB650A5C1B31B68600205BAC /* libCodecPcm.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A461B31B68600205BAC /* libCodecPcm.a */; };
-		EB650A5D1B31B68600205BAC /* libCodecWav.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A471B31B68600205BAC /* libCodecWav.a */; };
-		EB650A5E1B31B68600205BAC /* libConfigUi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A481B31B68600205BAC /* libConfigUi.a */; };
-		EB650A5F1B31B68600205BAC /* liblibOgg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A491B31B68600205BAC /* liblibOgg.a */; };
-		EB650A601B31B68600205BAC /* libWebAppFramework.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A4A1B31B68600205BAC /* libWebAppFramework.a */; };
-		EB650A611B31B7BC00205BAC /* libTestFramework.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A251B31B64300205BAC /* libTestFramework.a */; };
-		EB650A651B32A24400205BAC /* libohNetGeneratedDevices.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A631B32A24400205BAC /* libohNetGeneratedDevices.a */; };
-		EB650A661B32A24400205BAC /* libohNetGeneratedProxies.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EB650A641B32A24400205BAC /* libohNetGeneratedProxies.a */; };
 		EB796A521AD2A7A200684025 /* ExampleMediaPlayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB796A511AD2A7A200684025 /* ExampleMediaPlayer.mm */; };
 		EB796A5A1AD2B2C700684025 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EB796A591AD2B2C700684025 /* SystemConfiguration.framework */; };
 		EB796A5D1AD2C14800684025 /* ConfigRamStore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EB796A5B1AD2C14800684025 /* ConfigRamStore.cpp */; };
@@ -107,7 +46,6 @@
 		EBA0E8EF1AC5D8AF00903A7F /* MediaPlayerIF.mm in Sources */ = {isa = PBXBuildFile; fileRef = EBA0E8EE1AC5D8AF00903A7F /* MediaPlayerIF.mm */; };
 		EBCA55B01B44398B00CE28B4 /* ControlPointProxy.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EBCA55AE1B44398B00CE28B4 /* ControlPointProxy.cpp */; };
 		EBD2C6781B30101900B39E08 /* Volume.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EBD2C6761B30101900B39E08 /* Volume.cpp */; };
-		F023B1BD1B550F6200689777 /* libCodecMp3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F023B1BC1B550F6200689777 /* libCodecMp3.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -130,39 +68,6 @@
 		EB463CB31ACAE083002AF5B2 /* DriverOsx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DriverOsx.cpp; sourceTree = "<group>"; };
 		EB463CB41ACAE083002AF5B2 /* DriverOsx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DriverOsx.h; sourceTree = "<group>"; };
 		EB553D0A1B52D75300B0D17D /* SoftPlayer */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SoftPlayer; path = OpenHomePlayer/SoftPlayer; sourceTree = "<group>"; };
-		EB650A211B31B64300205BAC /* libohNetDevices.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libohNetDevices.a; path = "../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib/libohNetDevices.a"; sourceTree = "<group>"; };
-		EB650A221B31B64300205BAC /* libohNetProxies.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libohNetProxies.a; path = "../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib/libohNetProxies.a"; sourceTree = "<group>"; };
-		EB650A231B31B64300205BAC /* ohNetTestsCore.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = ohNetTestsCore.a; path = "../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib/ohNetTestsCore.a"; sourceTree = "<group>"; };
-		EB650A241B31B64300205BAC /* libShell.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libShell.a; path = "../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib/libShell.a"; sourceTree = "<group>"; };
-		EB650A251B31B64300205BAC /* libTestFramework.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libTestFramework.a; path = "../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib/libTestFramework.a"; sourceTree = "<group>"; };
-		EB650A261B31B64300205BAC /* libohNet.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libohNet.dylib; path = "../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib/libohNet.dylib"; sourceTree = "<group>"; };
-		EB650A271B31B64300205BAC /* libohNetCore.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libohNetCore.a; path = "../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib/libohNetCore.a"; sourceTree = "<group>"; };
-		EB650A2F1B31B65800205BAC /* libcrypto.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libcrypto.a; path = "../dependencies/Mac-x64/openssl/lib/libcrypto.a"; sourceTree = "<group>"; };
-		EB650A301B31B65800205BAC /* libssl.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libssl.a; path = "../dependencies/Mac-x64/openssl/lib/libssl.a"; sourceTree = "<group>"; };
-		EB650A351B31B68600205BAC /* libCodecAlacApple.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCodecAlacApple.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libCodecAlacApple.a"; sourceTree = "<group>"; };
-		EB650A361B31B68600205BAC /* libSourceRaop.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libSourceRaop.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libSourceRaop.a"; sourceTree = "<group>"; };
-		EB650A371B31B68600205BAC /* libCodecAac.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCodecAac.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libCodecAac.a"; sourceTree = "<group>"; };
-		EB650A381B31B68600205BAC /* libCodecAacBase.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCodecAacBase.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libCodecAacBase.a"; sourceTree = "<group>"; };
-		EB650A391B31B68600205BAC /* libCodecAdts.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCodecAdts.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libCodecAdts.a"; sourceTree = "<group>"; };
-		EB650A3A1B31B68600205BAC /* libSourcePlaylist.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libSourcePlaylist.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libSourcePlaylist.a"; sourceTree = "<group>"; };
-		EB650A3B1B31B68600205BAC /* libSourceSongcast.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libSourceSongcast.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libSourceSongcast.a"; sourceTree = "<group>"; };
-		EB650A3C1B31B68600205BAC /* libSourceRadio.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libSourceRadio.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libSourceRadio.a"; sourceTree = "<group>"; };
-		EB650A3D1B31B68600205BAC /* libSourceUpnpAv.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libSourceUpnpAv.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libSourceUpnpAv.a"; sourceTree = "<group>"; };
-		EB650A3E1B31B68600205BAC /* libCodecAlacAppleBase.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCodecAlacAppleBase.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libCodecAlacAppleBase.a"; sourceTree = "<group>"; };
-		EB650A3F1B31B68600205BAC /* libohMediaPlayer.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libohMediaPlayer.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libohMediaPlayer.a"; sourceTree = "<group>"; };
-		EB650A401B31B68600205BAC /* libohPipeline.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libohPipeline.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libohPipeline.a"; sourceTree = "<group>"; };
-		EB650A411B31B68600205BAC /* libCodecFlac.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCodecFlac.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libCodecFlac.a"; sourceTree = "<group>"; };
-		EB650A421B31B68600205BAC /* libCodecVorbis.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCodecVorbis.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libCodecVorbis.a"; sourceTree = "<group>"; };
-		EB650A431B31B68600205BAC /* libCodecAifc.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCodecAifc.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libCodecAifc.a"; sourceTree = "<group>"; };
-		EB650A441B31B68600205BAC /* libCodecAiff.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCodecAiff.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libCodecAiff.a"; sourceTree = "<group>"; };
-		EB650A451B31B68600205BAC /* libCodecAiffBase.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCodecAiffBase.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libCodecAiffBase.a"; sourceTree = "<group>"; };
-		EB650A461B31B68600205BAC /* libCodecPcm.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCodecPcm.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libCodecPcm.a"; sourceTree = "<group>"; };
-		EB650A471B31B68600205BAC /* libCodecWav.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCodecWav.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libCodecWav.a"; sourceTree = "<group>"; };
-		EB650A481B31B68600205BAC /* libConfigUi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libConfigUi.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libConfigUi.a"; sourceTree = "<group>"; };
-		EB650A491B31B68600205BAC /* liblibOgg.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = liblibOgg.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/liblibOgg.a"; sourceTree = "<group>"; };
-		EB650A4A1B31B68600205BAC /* libWebAppFramework.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libWebAppFramework.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libWebAppFramework.a"; sourceTree = "<group>"; };
-		EB650A631B32A24400205BAC /* libohNetGeneratedDevices.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libohNetGeneratedDevices.a; path = "../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Release/lib/libohNetGeneratedDevices.a"; sourceTree = "<group>"; };
-		EB650A641B32A24400205BAC /* libohNetGeneratedProxies.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libohNetGeneratedProxies.a; path = "../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Release/lib/libohNetGeneratedProxies.a"; sourceTree = "<group>"; };
 		EB796A511AD2A7A200684025 /* ExampleMediaPlayer.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ExampleMediaPlayer.mm; sourceTree = "<group>"; };
 		EB796A591AD2B2C700684025 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		EB796A5B1AD2C14800684025 /* ConfigRamStore.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ConfigRamStore.cpp; sourceTree = "<group>"; };
@@ -182,7 +87,6 @@
 		EBCA55AF1B44398B00CE28B4 /* ControlPointProxy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ControlPointProxy.h; sourceTree = "<group>"; };
 		EBD2C6761B30101900B39E08 /* Volume.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Volume.cpp; sourceTree = "<group>"; };
 		EBD2C6771B30101900B39E08 /* Volume.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Volume.h; sourceTree = "<group>"; };
-		F023B1BC1B550F6200689777 /* libCodecMp3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCodecMp3.a; path = "../dependencies/Mac-x64/ohMediaPlayer/lib/libCodecMp3.a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -190,35 +94,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C643FCAB1C9C1D07000E8C72 /* libShell.a in Frameworks */,
-				C643FCAD1C9C1D07000E8C72 /* libTestFramework.a in Frameworks */,
-				C643FCAE1C9C1D07000E8C72 /* libCodecAlacApple.a in Frameworks */,
-				C643FCAF1C9C1D07000E8C72 /* libSourceRaop.a in Frameworks */,
-				C643FCB31C9C1D07000E8C72 /* libSourcePlaylist.a in Frameworks */,
-				C643FCB41C9C1D07000E8C72 /* libSourceSongcast.a in Frameworks */,
-				C643FCB51C9C1D07000E8C72 /* libSourceRadio.a in Frameworks */,
-				C643FCB61C9C1D07000E8C72 /* libSourceUpnpAv.a in Frameworks */,
-				C643FCB71C9C1D07000E8C72 /* libCodecAlacAppleBase.a in Frameworks */,
-				C643FCB81C9C1D07000E8C72 /* libohMediaPlayer.a in Frameworks */,
-				C643FCB91C9C1D07000E8C72 /* libohPipeline.a in Frameworks */,
-				C643FCBA1C9C1D07000E8C72 /* libCodecFlac.a in Frameworks */,
-				C643FCBB1C9C1D07000E8C72 /* libCodecVorbis.a in Frameworks */,
-				C643FCBC1C9C1D07000E8C72 /* libCodecAifc.a in Frameworks */,
-				C643FCBD1C9C1D07000E8C72 /* libCodecAiff.a in Frameworks */,
-				C643FCBE1C9C1D07000E8C72 /* libCodecAiffBase.a in Frameworks */,
-				C643FCBF1C9C1D07000E8C72 /* libCodecPcm.a in Frameworks */,
-				C643FCC01C9C1D07000E8C72 /* libCodecWav.a in Frameworks */,
-				C643FCC11C9C1D07000E8C72 /* libConfigUi.a in Frameworks */,
-				C643FCC21C9C1D07000E8C72 /* libohNetGeneratedDevices.a in Frameworks */,
-				C643FCC31C9C1D07000E8C72 /* liblibOgg.a in Frameworks */,
-				C643FCC41C9C1D07000E8C72 /* libWebAppFramework.a in Frameworks */,
-				C643FCC51C9C1D07000E8C72 /* libcrypto.a in Frameworks */,
-				C643FCC61C9C1D07000E8C72 /* libssl.a in Frameworks */,
-				C643FCC71C9C1D07000E8C72 /* libohNetDevices.a in Frameworks */,
-				C643FCC81C9C1D07000E8C72 /* libohNetProxies.a in Frameworks */,
-				C643FCC91C9C1D07000E8C72 /* libohNetGeneratedProxies.a in Frameworks */,
-				C643FCCA1C9C1D07000E8C72 /* ohNetTestsCore.a in Frameworks */,
-				C643FCCB1C9C1D07000E8C72 /* libohNetCore.a in Frameworks */,
 				C643FCCC1C9C1D07000E8C72 /* AudioToolbox.framework in Frameworks */,
 				C643FCCD1C9C1D07000E8C72 /* SystemConfiguration.framework in Frameworks */,
 			);
@@ -228,39 +103,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C6C8801A1BDE405D00987717 /* libShell.a in Frameworks */,
-				F023B1BD1B550F6200689777 /* libCodecMp3.a in Frameworks */,
-				EB650A611B31B7BC00205BAC /* libTestFramework.a in Frameworks */,
-				EB650A4B1B31B68600205BAC /* libCodecAlacApple.a in Frameworks */,
-				EB650A4C1B31B68600205BAC /* libSourceRaop.a in Frameworks */,
-				EB650A4D1B31B68600205BAC /* libCodecAac.a in Frameworks */,
-				EB650A4E1B31B68600205BAC /* libCodecAacBase.a in Frameworks */,
-				EB650A4F1B31B68600205BAC /* libCodecAdts.a in Frameworks */,
-				EB650A501B31B68600205BAC /* libSourcePlaylist.a in Frameworks */,
-				EB650A511B31B68600205BAC /* libSourceSongcast.a in Frameworks */,
-				EB650A521B31B68600205BAC /* libSourceRadio.a in Frameworks */,
-				EB650A531B31B68600205BAC /* libSourceUpnpAv.a in Frameworks */,
-				EB650A541B31B68600205BAC /* libCodecAlacAppleBase.a in Frameworks */,
-				EB650A551B31B68600205BAC /* libohMediaPlayer.a in Frameworks */,
-				EB650A561B31B68600205BAC /* libohPipeline.a in Frameworks */,
-				EB650A571B31B68600205BAC /* libCodecFlac.a in Frameworks */,
-				EB650A581B31B68600205BAC /* libCodecVorbis.a in Frameworks */,
-				EB650A591B31B68600205BAC /* libCodecAifc.a in Frameworks */,
-				EB650A5A1B31B68600205BAC /* libCodecAiff.a in Frameworks */,
-				EB650A5B1B31B68600205BAC /* libCodecAiffBase.a in Frameworks */,
-				EB650A5C1B31B68600205BAC /* libCodecPcm.a in Frameworks */,
-				EB650A5D1B31B68600205BAC /* libCodecWav.a in Frameworks */,
-				EB650A5E1B31B68600205BAC /* libConfigUi.a in Frameworks */,
-				EB650A651B32A24400205BAC /* libohNetGeneratedDevices.a in Frameworks */,
-				EB650A5F1B31B68600205BAC /* liblibOgg.a in Frameworks */,
-				EB650A601B31B68600205BAC /* libWebAppFramework.a in Frameworks */,
-				EB650A311B31B65800205BAC /* libcrypto.a in Frameworks */,
-				EB650A321B31B65800205BAC /* libssl.a in Frameworks */,
-				EB650A281B31B64300205BAC /* libohNetDevices.a in Frameworks */,
-				EB650A291B31B64300205BAC /* libohNetProxies.a in Frameworks */,
-				EB650A661B32A24400205BAC /* libohNetGeneratedProxies.a in Frameworks */,
-				EB650A2A1B31B64300205BAC /* ohNetTestsCore.a in Frameworks */,
-				EB650A2E1B31B64300205BAC /* libohNetCore.a in Frameworks */,
 				EB796A6A1AD5BA1C00684025 /* AudioToolbox.framework in Frameworks */,
 				EB796A5A1AD2B2C700684025 /* SystemConfiguration.framework in Frameworks */,
 			);
@@ -273,7 +115,6 @@
 			isa = PBXGroup;
 			children = (
 				EB553D0A1B52D75300B0D17D /* SoftPlayer */,
-				EB650A621B32A09500205BAC /* ohNetLibs */,
 				EB796A691AD5BA1C00684025 /* AudioToolbox.framework */,
 				EB796A591AD2B2C700684025 /* SystemConfiguration.framework */,
 				EB40D91F1A9B23A20043722C /* OpenHomePlayer */,
@@ -352,47 +193,6 @@
 				EB40D93B1A9B23A20043722C /* Info.plist */,
 			);
 			name = "Supporting Files";
-			sourceTree = "<group>";
-		};
-		EB650A621B32A09500205BAC /* ohNetLibs */ = {
-			isa = PBXGroup;
-			children = (
-				F023B1BC1B550F6200689777 /* libCodecMp3.a */,
-				EB650A631B32A24400205BAC /* libohNetGeneratedDevices.a */,
-				EB650A641B32A24400205BAC /* libohNetGeneratedProxies.a */,
-				EB650A351B31B68600205BAC /* libCodecAlacApple.a */,
-				EB650A361B31B68600205BAC /* libSourceRaop.a */,
-				EB650A371B31B68600205BAC /* libCodecAac.a */,
-				EB650A381B31B68600205BAC /* libCodecAacBase.a */,
-				EB650A391B31B68600205BAC /* libCodecAdts.a */,
-				EB650A3A1B31B68600205BAC /* libSourcePlaylist.a */,
-				EB650A3B1B31B68600205BAC /* libSourceSongcast.a */,
-				EB650A3C1B31B68600205BAC /* libSourceRadio.a */,
-				EB650A3D1B31B68600205BAC /* libSourceUpnpAv.a */,
-				EB650A3E1B31B68600205BAC /* libCodecAlacAppleBase.a */,
-				EB650A3F1B31B68600205BAC /* libohMediaPlayer.a */,
-				EB650A401B31B68600205BAC /* libohPipeline.a */,
-				EB650A411B31B68600205BAC /* libCodecFlac.a */,
-				EB650A421B31B68600205BAC /* libCodecVorbis.a */,
-				EB650A431B31B68600205BAC /* libCodecAifc.a */,
-				EB650A441B31B68600205BAC /* libCodecAiff.a */,
-				EB650A451B31B68600205BAC /* libCodecAiffBase.a */,
-				EB650A461B31B68600205BAC /* libCodecPcm.a */,
-				EB650A471B31B68600205BAC /* libCodecWav.a */,
-				EB650A481B31B68600205BAC /* libConfigUi.a */,
-				EB650A491B31B68600205BAC /* liblibOgg.a */,
-				EB650A4A1B31B68600205BAC /* libWebAppFramework.a */,
-				EB650A2F1B31B65800205BAC /* libcrypto.a */,
-				EB650A301B31B65800205BAC /* libssl.a */,
-				EB650A211B31B64300205BAC /* libohNetDevices.a */,
-				EB650A221B31B64300205BAC /* libohNetProxies.a */,
-				EB650A231B31B64300205BAC /* ohNetTestsCore.a */,
-				EB650A241B31B64300205BAC /* libShell.a */,
-				EB650A251B31B64300205BAC /* libTestFramework.a */,
-				EB650A261B31B64300205BAC /* libohNet.dylib */,
-				EB650A271B31B64300205BAC /* libohNetCore.a */,
-			);
-			name = ohNetLibs;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -576,9 +376,44 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/lib",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib",
-					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/lib",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Debug/lib",
-					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/lib",
+					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/lib",
+				);
+				"OTHER_LDFLAGS[arch=*]" = (
+					"-lCodecAac",
+					"-lCodecAacBase",
+					"-lCodecAdts",
+					"-lCodecAifc",
+					"-lCodecAiff",
+					"-lCodecAiffBase",
+					"-lCodecAlacApple",
+					"-lCodecAlacAppleBase",
+					"-lCodecFlac",
+					"-lCodecMp3",
+					"-lCodecPcm",
+					"-lCodecVorbis",
+					"-lCodecWav",
+					"-lConfigUi",
+					"-lConfigUiTestUtils",
+					"-llibOgg",
+					"-lohMediaPlayer",
+					"-lohMediaPlayerTestUtils",
+					"-lohPipeline",
+					"-lSourcePlaylist",
+					"-lSourceRadio",
+					"-lSourceRaop",
+					"-lSourceSongcast",
+					"-lSourceUpnpAv",
+					"-lWebAppFramework",
+					"-lohNetCore",
+					"-lohNetDevices",
+					"-lohNetProxies",
+					"-lShell",
+					"-lTestFramework",
+					"-lohNetGeneratedDevices",
+					"-lohNetGeneratedProxies",
+					"-lcrypto",
+					"-lssl",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -613,9 +448,44 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/lib",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Release/lib",
-					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/lib",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Release/lib",
-					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/lib",
+					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/lib",
+				);
+				"OTHER_LDFLAGS[arch=*]" = (
+					"-lCodecAac",
+					"-lCodecAacBase",
+					"-lCodecAdts",
+					"-lCodecAifc",
+					"-lCodecAiff",
+					"-lCodecAiffBase",
+					"-lCodecAlacApple",
+					"-lCodecAlacAppleBase",
+					"-lCodecFlac",
+					"-lCodecMp3",
+					"-lCodecPcm",
+					"-lCodecVorbis",
+					"-lCodecWav",
+					"-lConfigUi",
+					"-lConfigUiTestUtils",
+					"-llibOgg",
+					"-lohMediaPlayer",
+					"-lohMediaPlayerTestUtils",
+					"-lohPipeline",
+					"-lSourcePlaylist",
+					"-lSourceRadio",
+					"-lSourceRaop",
+					"-lSourceSongcast",
+					"-lSourceUpnpAv",
+					"-lWebAppFramework",
+					"-lohNetCore",
+					"-lohNetDevices",
+					"-lohNetProxies",
+					"-lShell",
+					"-lTestFramework",
+					"-lohNetGeneratedDevices",
+					"-lohNetGeneratedProxies",
+					"-lcrypto",
+					"-lssl",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -741,9 +611,44 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/lib",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Debug/lib",
-					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/lib",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Debug/lib",
-					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/lib",
+					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/lib",
+				);
+				"OTHER_LDFLAGS[arch=*]" = (
+					"-lCodecAac",
+					"-lCodecAacBase",
+					"-lCodecAdts",
+					"-lCodecAifc",
+					"-lCodecAiff",
+					"-lCodecAiffBase",
+					"-lCodecAlacApple",
+					"-lCodecAlacAppleBase",
+					"-lCodecFlac",
+					"-lCodecMp3",
+					"-lCodecPcm",
+					"-lCodecVorbis",
+					"-lCodecWav",
+					"-lConfigUi",
+					"-lConfigUiTestUtils",
+					"-llibOgg",
+					"-lohMediaPlayer",
+					"-lohMediaPlayerTestUtils",
+					"-lohPipeline",
+					"-lSourcePlaylist",
+					"-lSourceRadio",
+					"-lSourceRaop",
+					"-lSourceSongcast",
+					"-lSourceUpnpAv",
+					"-lWebAppFramework",
+					"-lohNetCore",
+					"-lohNetDevices",
+					"-lohNetProxies",
+					"-lShell",
+					"-lTestFramework",
+					"-lohNetGeneratedDevices",
+					"-lohNetGeneratedProxies",
+					"-lcrypto",
+					"-lssl",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -770,9 +675,44 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/lib",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNet-Mac-x64-Release/lib",
-					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/lib",
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohNetGenerated-Mac-x64-Release/lib",
-					"$(PROJECT_DIR)/../dependencies/Mac-x64/ohMediaPlayer/lib",
+					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/lib",
+				);
+				"OTHER_LDFLAGS[arch=*]" = (
+					"-lCodecAac",
+					"-lCodecAacBase",
+					"-lCodecAdts",
+					"-lCodecAifc",
+					"-lCodecAiff",
+					"-lCodecAiffBase",
+					"-lCodecAlacApple",
+					"-lCodecAlacAppleBase",
+					"-lCodecFlac",
+					"-lCodecMp3",
+					"-lCodecPcm",
+					"-lCodecVorbis",
+					"-lCodecWav",
+					"-lConfigUi",
+					"-lConfigUiTestUtils",
+					"-llibOgg",
+					"-lohMediaPlayer",
+					"-lohMediaPlayerTestUtils",
+					"-lohPipeline",
+					"-lSourcePlaylist",
+					"-lSourceRadio",
+					"-lSourceRaop",
+					"-lSourceSongcast",
+					"-lSourceUpnpAv",
+					"-lWebAppFramework",
+					"-lohNetCore",
+					"-lohNetDevices",
+					"-lohNetProxies",
+					"-lShell",
+					"-lTestFramework",
+					"-lohNetGeneratedDevices",
+					"-lohNetGeneratedProxies",
+					"-lcrypto",
+					"-lssl",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
