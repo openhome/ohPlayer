@@ -56,6 +56,11 @@ TUint VolumeProfile::FadeMax() const
     return kFadeMax;
 }
 
+TBool VolumeProfile::AlwaysOn() const
+{
+    return kAlwaysOn;
+}
+
 void VolumeControl::SetHost(Media::DriverOsx *driver)
 {
     // Set the audio driver for use in volume calls.

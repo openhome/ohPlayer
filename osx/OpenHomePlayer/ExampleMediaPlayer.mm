@@ -97,7 +97,6 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
     // create MediaPlayer
     iMediaPlayer = new MediaPlayer( aDvStack,
                                    *iDevice,
-                                   *iShell,
                                    *iRamStore,
                                    *iConfigPersistentStore,
                                    pipelineParams,
@@ -346,32 +345,36 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
     iMediaPlayer->Add(SourceFactory::NewUpnpAv(*iMediaPlayer,
                                                *iDeviceUpnpAv));
     
-    iMediaPlayer->Add(SourceFactory::NewReceiver(*iMediaPlayer,
-                                                 iTxTimestamper,
-                                                 NULL,
-                                                 iRxTimestamper,
-                                                 NULL));
+    iMediaPlayer->Add(SourceFactory::NewReceiver(
+                                  *iMediaPlayer,
+                                   Optional<IPullableClock>(),
+                                   Optional<IOhmTimestamper>(iTxTimestamper),
+                                   Optional<IOhmTimestamper>(iRxTimestamper)));
 
 #ifdef ENABLE_TIDAL
     // You must define your Tidal token
-    iMediaPlayer->Add(ProtocolFactory::NewTidal( aEnv,
-                                                 Brn(TIDAL_TOKEN),
-                                                 iMediaPlayer->CredentialsManager(),
-                                                 iMediaPlayer->ConfigInitialiser()));
+    iMediaPlayer->Add(ProtocolFactory::NewTidal(
+                                             aEnv,
+                                             Brn(TIDAL_TOKEN),
+                                             iMediaPlayer->CredentialsManager(),
+                                             iMediaPlayer->ConfigInitialiser()));
 #endif  /* ENABLE_TIDAL */
     
 #ifdef ENABLE_QOBUZ
     // You must define your QOBUZ appId and secret key
-    iMediaPlayer->Add(ProtocolFactory::NewQobuz( aEnv,
-                                                 Brn(QOBUZ_APPID),
-                                                 Brn(QOBUZ_SECRET),
-                                                 iMediaPlayer->CredentialsManager(),
-                                                 iMediaPlayer->ConfigInitialiser()));
+    iMediaPlayer->Add(ProtocolFactory::NewQobuz(
+                                             aEnv,
+                                             Brn(QOBUZ_APPID),
+                                             Brn(QOBUZ_SECRET),
+                                             iMediaPlayer->CredentialsManager(),
+                                             iMediaPlayer->ConfigInitialiser()));
 #endif  /* ENABLE_QOBUZ */
     
 #ifdef ENABLE_RADIO
     // Radio is disabled by default as many stations depend on AAC
-    iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer, Brn(TUNEIN_PARTNER_ID)));
+    iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer,
+                                               Optional<IPullableClock>(),
+                                               Brn(TUNEIN_PARTNER_ID)));
 #endif  /* ENABLE_RADIO */
 }
 
