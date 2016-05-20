@@ -57,6 +57,11 @@ TUint VolumeProfile::FadeMax() const
     return kFadeMax;
 }
 
+TBool VolumeProfile::AlwaysOn() const
+{
+    return kAlwaysOn;
+}
+
 void VolumeControl::SetVolume(TUint aVolume)
 {
     const TUint MILLI_DB_PER_STEP = 1024;
