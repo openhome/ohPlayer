@@ -114,7 +114,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
     iInitParams->SetStarvationRamperSize(100 * Jiffies::kPerMs);
 
     // create MediaPlayer
-    iMediaPlayer = new MediaPlayer( aDvStack, *iDevice, *iShell, *iRamStore,
+    iMediaPlayer = new MediaPlayer( aDvStack, *iDevice, *iRamStore,
                                    *iConfigStore, iInitParams,
                                     volumeInit, volumeProfile, aUdn,
                                     Brn(aRoom), Brn(aProductName));
@@ -172,8 +172,8 @@ void ExampleMediaPlayer::SetSongcastTimestampers(
 }
 
 void ExampleMediaPlayer::SetSongcastTimestampMappers(
-                                              IOhmTimestampMapper& aTxTsMapper,
-                                              IOhmTimestampMapper& aRxTsMapper)
+                                              IOhmTimestamper& aTxTsMapper,
+                                              IOhmTimestamper& aRxTsMapper)
 {
     iTxTsMapper = &aTxTsMapper;
     iRxTsMapper = &aRxTsMapper;
@@ -304,11 +304,11 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 
     iMediaPlayer->Add(SourceFactory::NewUpnpAv(*iMediaPlayer, *iDeviceUpnpAv));
 
-    iMediaPlayer->Add(SourceFactory::NewReceiver(*iMediaPlayer,
-                                                  iTxTimestamper,
-                                                  iTxTsMapper,
-                                                  iRxTimestamper,
-                                                  iRxTsMapper));
+    iMediaPlayer->Add(SourceFactory::NewReceiver(
+                                  *iMediaPlayer,
+                                   Optional<IPullableClock>(),
+                                   Optional<IOhmTimestamper>(iTxTimestamper),
+                                   Optional<IOhmTimestamper>(iRxTimestamper)));
 
 #ifdef ENABLE_TIDAL
     // You must define your Tidal token
@@ -332,7 +332,8 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 #ifdef ENABLE_RADIO
     // Radio is disabled by default as many stations depend on AAC
     iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer,
-                                              Brn(TUNEIN_PARTNER_ID)));
+                                               Optional<IPullableClock>(),
+                                               Brn(TUNEIN_PARTNER_ID)));
 #endif  // ENABLE_RADIO
 }
 

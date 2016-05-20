@@ -58,7 +58,7 @@ public:
     void                    AddAttribute(const TChar* aAttribute);
     virtual void            RunWithSemaphore(Net::CpStack& aCpStack);
     void                    SetSongcastTimestampers(IOhmTimestamper& aTxTimestamper, IOhmTimestamper& aRxTimestamper);
-    void                    SetSongcastTimestampMappers(IOhmTimestampMapper& aTxTsMapper, IOhmTimestampMapper& aRxTsMapper);
+    void                    SetSongcastTimestampMappers(IOhmTimestamper& aTxTsMapper, IOhmTimestamper& aRxTsMapper);
     Media::PipelineManager &Pipeline();
     Net::DvDeviceStandard  *Device();
     Net::DvDevice          *UpnpAvDevice();
@@ -91,8 +91,8 @@ private:
     ControlPointProxy         *iCpProxy;
     IOhmTimestamper           *iTxTimestamper;
     IOhmTimestamper           *iRxTimestamper;
-    IOhmTimestampMapper       *iTxTsMapper;
-    IOhmTimestampMapper       *iRxTsMapper;
+    IOhmTimestamper           *iTxTsMapper;
+    IOhmTimestamper           *iRxTsMapper;
     const Brx                 &iUserAgent;
     Web::FileResourceHandlerFactory iFileResourceHandlerFactory;
     Web::ConfigAppMediaPlayer *iConfigApp;

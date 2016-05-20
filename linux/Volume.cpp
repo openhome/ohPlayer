@@ -58,6 +58,11 @@ TUint VolumeProfile::FadeMax() const
     return kFadeMax;
 }
 
+TBool VolumeProfile::AlwaysOn() const
+{
+    return kAlwaysOn;
+}
+
 VolumeControl::VolumeControl()
 {
     const TChar *CARD          = "default";
