@@ -96,9 +96,6 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
     // create a read/write store using the new config framework
     iConfigRegStore = new ConfigRegStore();
 
-    iConfigRegStore->Write(Brn("Product.Room"), Brn(aRoom));
-    iConfigRegStore->Write(Brn("Product.Name"), Brn(aProductName));
-
     // Volume Control
     VolumeProfile  volumeProfile;
     VolumeConsumer volumeInit;
