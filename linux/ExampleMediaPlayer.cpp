@@ -95,9 +95,6 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
     // create a read/write store using the new config framework
     iConfigStore = ConfigGTKKeyStore::getInstance();
 
-    iConfigStore->Write(Brn("Product.Room"), Brn(aRoom));
-    iConfigStore->Write(Brn("Product.Name"), Brn(aProductName));
-
     // Volume Control
     VolumeProfile  volumeProfile;
     VolumeConsumer volumeInit;
