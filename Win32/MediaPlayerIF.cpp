@@ -144,6 +144,7 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
         // in the config store.
         configStore.Write(Brn("Product.Name"), Brn(productName));
     }
+
     // Create the ExampleMediaPlayer instance.
     g_emp = new ExampleMediaPlayer(hwnd, *dvStack, Brn(udn), productRoom,
                                    productName, Brx::Empty()/*aUserAgent*/);

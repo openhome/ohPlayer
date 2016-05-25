@@ -94,10 +94,6 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
     // create a read/write store using the new config framework
     iConfigPersistentStore = new ConfigPersistentStore();
 
-    // FIXME - available store keys should be listed somewhere
-    iConfigPersistentStore->Write(Brn("Product.Room"), Brn(iRoom));
-    iConfigPersistentStore->Write(Brn("Product.Name"), Brn(iProductName));
-    
     // Volume Control
     VolumeProfile  volumeProfile;
     VolumeConsumer volumeInit;

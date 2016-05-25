@@ -160,10 +160,19 @@ TBool MediaPlayerIF::setup (TIpAddress subnet)
     NSString *udn = [NSString stringWithFormat:@"OsxPlayer-%@",computerName];
     const TChar *cookie = "OSXMediaPlayer";
 
+    Bws<512>        roomStore;
+    Bws<512>        nameStore;
+    const TChar    *productRoom = room;
+    const TChar    *productName = name;
+
+
+
     // Create the library on the supplied subnet.
     iLib = CreateLibrary(subnet);
     if (!iLib)
         return false;
+
+    Configuration::ConfigPersistentStore configStore;
 
     // Get the current network adapter.
     iAdapter = iLib->CurrentSubnetAdapter(cookie);
@@ -173,6 +182,42 @@ TBool MediaPlayerIF::setup (TIpAddress subnet)
     iLib->StartCombined(iAdapter->Subnet(), iCpStack, iDvStack);
 
     iAdapter->RemoveRef(cookie);
+
+    // Set the default room name from any existing key in the
+    // config store.
+    try
+    {
+        configStore.Read(Brn("Product.Room"), roomStore);
+        productRoom = roomStore.PtrZ();
+    }
+    catch (StoreReadBufferUndersized)
+    {
+        Log::Print("Error: MediaPlayerIF: 'productRoom' too short\n");
+    }
+    catch (StoreKeyNotFound)
+    {
+        // If no key exists use the hard coded room name and set it
+        // in the config store.
+        configStore.Write(Brn("Product.Room"), Brn(productRoom));
+    }
+
+    // Set the default product name from any existing key in the
+    // config store.
+    try
+    {
+        configStore.Read(Brn("Product.Name"), nameStore);
+        productName = nameStore.PtrZ();
+    }
+    catch (StoreReadBufferUndersized)
+    {
+        Log::Print("Error: MediaPlayerIF: 'productName' too short\n");
+    }
+    catch (StoreKeyNotFound)
+    {
+        // If no key exists use the hard coded product name and set it
+        // in the config store.
+        configStore.Write(Brn("Product.Name"), Brn(productName));
+    }
 
     // Create MediaPlayer.
     iDriver = nil;
