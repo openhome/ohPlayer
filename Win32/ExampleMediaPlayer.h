@@ -80,7 +80,9 @@ private:
     void  Disabled();
 protected:
     MediaPlayer                   *iMediaPlayer;
+#ifdef _DEBUG
     Media::IPipelineObserver      *iPipelineStateLogger;
+#endif // _DEBUG
     Media::PipelineInitParams     *iInitParams;
     Net::DvDeviceStandard         *iDevice;
     Net::DvDevice                 *iDeviceUpnpAv;

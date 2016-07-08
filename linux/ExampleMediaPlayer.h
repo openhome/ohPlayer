@@ -73,7 +73,9 @@ private:
     void  Disabled();
 protected:
     MediaPlayer                   *iMediaPlayer;
+#ifdef DEBUG
     Media::IPipelineObserver      *iPipelineStateLogger;
+#endif // DEBUG
     Media::PipelineInitParams     *iInitParams;
     Net::DvDeviceStandard         *iDevice;
     Net::DvDevice                 *iDeviceUpnpAv;

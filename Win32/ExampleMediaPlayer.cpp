@@ -114,8 +114,10 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
                                     volumeInit, volumeProfile, aUdn, Brn(aRoom),
                                     Brn(aProductName));
 
+#ifdef _DEBUG
     iPipelineStateLogger = new LoggingPipelineObserver();
     iMediaPlayer->Pipeline().AddObserver(*iPipelineStateLogger);
+#endif // _DEBUG
 
     // Set up config app.
     static const TUint addr = 0;    // Bind to all addresses.
@@ -134,7 +136,9 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
     ASSERT(!iDevice->Enabled());
     delete iAppFramework;
     delete iCpProxy;
+#ifdef _DEBUG
     delete iPipelineStateLogger;
+#endif // _DEBUG
     delete iMediaPlayer;
     delete iShellDebug;
     delete iShell;
