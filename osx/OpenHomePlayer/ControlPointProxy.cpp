@@ -11,7 +11,7 @@
 #include <OpenHome/Net/Core/CpAvOpenhomeOrgRadio1.h>
 #endif // ENABLE_RADIO
 #include <OpenHome/Net/Core/CpAvOpenhomeOrgReceiver1.h>
-#include <OpenHome/Net/Core/CpAvOpenhomeOrgProduct1.h>
+#include <OpenHome/Net/Core/CpAvOpenhomeOrgProduct2.h>
 #include <OpenHome/Net/Core/CpUpnpOrgAVTransport1.h>
 
 #include <string>
@@ -682,7 +682,7 @@ ControlPointProxy::CPProduct::CPProduct(Net::CpDeviceDv &aCpPlayer, ControlPoint
     iCpPlayer = &aCpPlayer;
     iCpPlayer->AddRef();
 
-    iProductProxy = new CpProxyAvOpenhomeOrgProduct1(*iCpPlayer);
+    iProductProxy = new CpProxyAvOpenhomeOrgProduct2(*iCpPlayer);
 
     // Create callbacks for playlist notifications we're interested in.
     iFuncSourceIndexChanged =
