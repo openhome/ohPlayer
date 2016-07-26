@@ -27,6 +27,7 @@
 #include <OpenHome/Av/Raop/Raop.h>
 #include <OpenHome/Web/ConfigUi/FileResourceHandler.h>
 #include <OpenHome/Av/Songcast/OhmTimestamp.h>
+#include <OpenHome/Av/UpnpAv/FriendlyNameUpnpAv.h>
 #include <OpenHome/PowerManager.h>
 #include <OpenHome/Web/WebAppFramework.h>
 #include <OpenHome/Av/VolumeManager.h>
@@ -48,7 +49,7 @@ namespace OpenHome {
     namespace Media {
         class PipelineManager;
         class DriverSongcastSender;
-        class IPullableClock;
+        class AllocatorInfoLogger;
     }
     namespace Configuration {
         class ConfigPersistentStore;
@@ -103,10 +104,12 @@ namespace OpenHome {
                 void Disabled();
 
             protected:
-                MediaPlayer*            iMediaPlayer;
+                MediaPlayer*                iMediaPlayer;
+                Media::AllocatorInfoLogger* iInfoLogger;
                 Net::DvDeviceStandard*  iDevice;
                 Net::DvDevice*          iDeviceUpnpAv;
                 Av::FriendlyNameAttributeUpdater* iFnUpdaterStandard;
+                FriendlyNameManagerUpnpAv*        iFnManagerUpnpAv;
                 Av::FriendlyNameAttributeUpdater* iFnUpdaterUpnpAv;
                 RamStore*               iRamStore;
                 Web::WebAppFramework*   iAppFramework;
