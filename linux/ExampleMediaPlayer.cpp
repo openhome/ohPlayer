@@ -11,6 +11,7 @@
 #include <OpenHome/Media/Debug.h>
 #include <OpenHome/Av/Debug.h>
 #include <OpenHome/Media/Pipeline/Pipeline.h>
+#include <OpenHome/Media/Utils/AllocatorInfoLogger.h>
 #include <OpenHome/Private/Printer.h>
 #include <OpenHome/Web/ConfigUi/FileResourceHandler.h>
 #include <OpenHome/Web/ConfigUi/ConfigUiMediaPlayer.h>
@@ -55,6 +56,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
 {
     iShell = new Shell(aDvStack.Env(), kShellPort);
     iShellDebug = new ShellCommandDebug(*iShell);
+    iInfoLogger = new Media::AllocatorInfoLogger();
 
     // Do NOT set UPnP friendly name attributes at this stage.
     // (Wait until MediaPlayer is created so that friendly name can be
@@ -111,13 +113,14 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
     // Set pipeline thread priority just below the pipeline animator.
     iInitParams = PipelineInitParams::New();
     iInitParams->SetThreadPriorityMax(kPriorityHighest);
-    iInitParams->SetStarvationRamperSize(100 * Jiffies::kPerMs);
+    iInitParams->SetStarvationRamperMinSize(100 * Jiffies::kPerMs);
+    iInitParams->SetGorgerDuration(iInitParams->DecodedReservoirJiffies());
 
     // create MediaPlayer
     iMediaPlayer = new MediaPlayer( aDvStack, *iDevice, *iRamStore,
                                    *iConfigStore, iInitParams,
-                                    volumeInit, volumeProfile, aUdn,
-                                    Brn(aRoom), Brn(aProductName));
+                                    volumeInit, volumeProfile, *iInfoLogger,
+                                    aUdn, Brn(aRoom), Brn(aProductName));
 
     iPipelineStateLogger = new LoggingPipelineObserver();
     iMediaPlayer->Pipeline().AddObserver(*iPipelineStateLogger);
@@ -126,10 +129,11 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
         Av::FriendlyNameAttributeUpdater(iMediaPlayer->FriendlyNameObservable(),
                                         *iDevice);
 
+    iFnManagerUpnpAv = new
+        Av::FriendlyNameManagerUpnpAv(iMediaPlayer->Product());
+
     iFnUpdaterUpnpAv = new
-        Av::FriendlyNameAttributeUpdater(iMediaPlayer->FriendlyNameObservable(),
-                                        *iDeviceUpnpAv,
-                                         Brn(":MediaRenderer"));
+        Av::FriendlyNameAttributeUpdater(*iFnManagerUpnpAv, *iDeviceUpnpAv);
 
     // Set up config app.
     static const TUint addr = 0;    // Bind to all addresses.
@@ -149,9 +153,11 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
     delete iAppFramework;
     delete iFnUpdaterStandard;
     delete iFnUpdaterUpnpAv;
+    delete iFnManagerUpnpAv;
     delete iCpProxy;
     delete iPipelineStateLogger;
     delete iMediaPlayer;
+    delete iInfoLogger;
     delete iShellDebug;
     delete iShell;
     delete iDevice;
@@ -306,7 +312,7 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 
     iMediaPlayer->Add(SourceFactory::NewReceiver(
                                   *iMediaPlayer,
-                                   Optional<IPullableClock>(),
+                                   Optional<IClockPuller>(nullptr),
                                    Optional<IOhmTimestamper>(iTxTimestamper),
                                    Optional<IOhmTimestamper>(iRxTimestamper)));
 
@@ -315,24 +321,20 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
     iMediaPlayer->Add(ProtocolFactory::NewTidal(
                                             aEnv,
                                             Brn(TIDAL_TOKEN),
-                                            iMediaPlayer->CredentialsManager(),
-                                            iMediaPlayer->ConfigInitialiser()));
+                                            *iMediaPlayer));
 #endif  // ENABLE_TIDAL
 
 #ifdef ENABLE_QOBUZ
     // You must define your QOBUZ appId and secret key
     iMediaPlayer->Add(ProtocolFactory::NewQobuz(
-                                            aEnv,
                                             Brn(QOBUZ_APPID),
                                             Brn(QOBUZ_SECRET),
-                                            iMediaPlayer->CredentialsManager(),
-                                            iMediaPlayer->ConfigInitialiser()));
+                                            *iMediaPlayer)),
 #endif  // ENABLE_QOBUZ
 
 #ifdef ENABLE_RADIO
     // Radio is disabled by default as many stations depend on AAC
     iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer,
-                                               Optional<IPullableClock>(),
                                                Brn(TUNEIN_PARTNER_ID)));
 #endif  // ENABLE_RADIO
 }
@@ -365,7 +367,7 @@ void ExampleMediaPlayer::AddConfigApp()
         sourcesBufs.push_back(new Brh(systemName));
     }
 
-    iConfigApp = new ConfigAppMediaPlayer(iMediaPlayer->InfoAggregator(),
+    iConfigApp = new ConfigAppMediaPlayer(*iInfoLogger,
                                           iMediaPlayer->Env(),
                                           iMediaPlayer->Product(),
                                           iMediaPlayer->ConfigManager(),

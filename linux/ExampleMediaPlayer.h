@@ -6,6 +6,7 @@
 #include <OpenHome/Media/PipelineManager.h>
 #include <OpenHome/Av/RebootHandler.h>
 #include <OpenHome/Av/Songcast/OhmTimestamp.h>
+#include <OpenHome/Av/UpnpAv/FriendlyNameUpnpAv.h>
 #include <OpenHome/Av/VolumeManager.h>
 #include <OpenHome/Web/ConfigUi/FileResourceHandler.h>
 #include <OpenHome/Web/WebAppFramework.h>
@@ -23,6 +24,7 @@ namespace Net {
 namespace Media {
     class PipelineManager;
     class DriverSongcastSender;
+    class AllocatorInfoLogger;
 }
 namespace Configuration {
     class ConfigGTKKeyStore;
@@ -76,9 +78,11 @@ protected:
     MediaPlayer                      *iMediaPlayer;
     Media::IPipelineObserver         *iPipelineStateLogger;
     Media::PipelineInitParams        *iInitParams;
+    Media::AllocatorInfoLogger       *iInfoLogger;
     Net::DvDeviceStandard            *iDevice;
     Net::DvDevice                    *iDeviceUpnpAv;
     Av::FriendlyNameAttributeUpdater *iFnUpdaterStandard;
+    FriendlyNameManagerUpnpAv        *iFnManagerUpnpAv;
     Av::FriendlyNameAttributeUpdater *iFnUpdaterUpnpAv;
     RamStore                         *iRamStore;
     Configuration::ConfigGTKKeyStore *iConfigStore;
