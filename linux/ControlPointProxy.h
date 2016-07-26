@@ -17,7 +17,7 @@ namespace Net {
     class CpProxyAvOpenhomeOrgRadio1;
 #endif // ENABLE_RADIO
     class CpProxyAvOpenhomeOrgReceiver1;
-    class CpProxyAvOpenhomeOrgProduct1;
+    class CpProxyAvOpenhomeOrgProduct2;
     class CpProxyUpnpOrgAVTransport1;
     class DvDevice;
 }
@@ -158,7 +158,7 @@ private:
             Sources GetSourceAtIndex(std::string &sourceXml, TInt sourceIndex);
             void sourceIndexChangedEvent();
         private:
-            Net::CpProxyAvOpenhomeOrgProduct1 *iProductProxy;
+            Net::CpProxyAvOpenhomeOrgProduct2 *iProductProxy;
             Net::CpDeviceDv                   *iCpPlayer;
             ControlPointProxy                 &iCcp;
 
