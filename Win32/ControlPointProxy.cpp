@@ -13,7 +13,7 @@
 #include <CpAvOpenhomeOrgRadio1.h>
 #endif // ENABLE_RADIO
 #include <CpAvOpenhomeOrgReceiver1.h>
-#include <CpAvOpenhomeOrgProduct1.h>
+#include <CpAvOpenhomeOrgProduct2.h>
 #include <CpUpnpOrgAVTransport1.h>
 
 #include <string>
@@ -693,7 +693,7 @@ ControlPointProxy::CPProduct::CPProduct(Net::CpDeviceDv &aCpPlayer, ControlPoint
     iCpPlayer = &aCpPlayer;
     iCpPlayer->AddRef();
 
-    iProductProxy = new CpProxyAvOpenhomeOrgProduct1(*iCpPlayer);
+    iProductProxy = new CpProxyAvOpenhomeOrgProduct2(*iCpPlayer);
 
     // Create callbacks for playlist notifications we're interested in.
     iFuncSourceIndexChanged =
