@@ -6,6 +6,7 @@
 #include <OpenHome/Media/PipelineManager.h>
 #include <OpenHome/Av/RebootHandler.h>
 #include <OpenHome/Av/Songcast/OhmTimestamp.h>
+#include <OpenHome/Av/UpnpAv/FriendlyNameUpnpAv.h>
 #include <OpenHome/Av/VolumeManager.h>
 #include <OpenHome/Web/ConfigUi/FileResourceHandler.h>
 #include <OpenHome/Web/WebAppFramework.h>
@@ -25,6 +26,7 @@ namespace Net {
 namespace Media {
     class PipelineManager;
     class DriverSongcastSender;
+    class AllocatorInfoLogger;
 }
 namespace Configuration {
     class ConfigRegStore;
@@ -70,6 +72,7 @@ public:
     Net::DvDeviceStandard            *Device();
     Net::DvDevice                    *UpnpAvDevice();
     Av::FriendlyNameAttributeUpdater *iFnUpdaterStandard;
+    FriendlyNameManagerUpnpAv        *iFnManagerUpnpAv;
     Av::FriendlyNameAttributeUpdater *iFnUpdaterUpnpAv;
 private: // from Net::IResourceManager
     void WriteResource(const Brx& aUriTail, TIpAddress aInterface,
@@ -87,6 +90,7 @@ protected:
     Media::IPipelineObserver      *iPipelineStateLogger;
 #endif // _DEBUG
     Media::PipelineInitParams     *iInitParams;
+    Media::AllocatorInfoLogger    *iInfoLogger;
     Net::DvDeviceStandard         *iDevice;
     Net::DvDevice                 *iDeviceUpnpAv;
     RamStore                      *iRamStore;
