@@ -118,8 +118,8 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
         Av::FriendlyNameManagerUpnpAv(iMediaPlayer->Product());
 
     iFnUpdaterUpnpAv = new
-        Av::FriendlyNameAttributeUpdater(iMediaPlayer->FriendlyNameObservable(),
-                                        *iDeviceUpnpAv);
+        Av::FriendlyNameAttributeUpdater(*iFnManagerUpnpAv, *iDeviceUpnpAv);
+
     // Set up config app.
     static const TUint addr = 0;    // Bind to all addresses.
     static const TUint port = 0;    // Bind to whatever free port the OS allocates to the framework server.
