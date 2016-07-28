@@ -158,14 +158,10 @@ void ControlPointProxy::CPPlaylist::transportChangedEvent()
     // Keep the native audio state synced with the transport state.
     string stateStr(state.CString());
 
-    if (stateStr == kTransportStatePlaying)
+    if ((stateStr == kTransportStatePlaying) ||
+        (stateStr == kTransportStateBuffering))
     {
         iDriver.Resume();
-    }
-    else if (stateStr == kTransportStatePaused ||
-             stateStr == kTransportStateStopped)
-    {
-        iDriver.Pause();
     }
 
     // Log the new state.
@@ -307,13 +303,10 @@ void ControlPointProxy::CPRadio::transportChangedEvent()
     // Keep the native audio state synced with the transport state.
     string stateStr(state.CString());
 
-    if (stateStr == kTransportStatePlaying)
+    if ((stateStr == kTransportStatePlaying) ||
+        (stateStr == kTransportStateBuffering))
     {
         iDriver.Resume();
-    }
-    else if (stateStr == kTransportStateStopped)
-    {
-        iDriver.Pause();
     }
 
     // Log the new state.
@@ -431,13 +424,10 @@ void ControlPointProxy::CPReceiver::transportChangedEvent()
     // Keep the native audio state synced with the transport state.
     string stateStr(state.CString());
 
-    if (stateStr == kTransportStatePlaying)
+    if ((stateStr == kTransportStatePlaying) ||
+        (stateStr == kTransportStateBuffering))
     {
         iDriver.Resume();
-    }
-    else if (stateStr == kTransportStateStopped)
-    {
-        iDriver.Pause();
     }
 
     // Log the new state.
@@ -553,14 +543,10 @@ void ControlPointProxy::CPUpnpAv::pipelineChangedEvent()
     // Keep the native audio state synced with the transport state.
     string stateStr(state.Extract());
 
-    if (stateStr == kPipelineStatePlaying)
+    if ((stateStr == kPipelineStatePlaying) ||
+        (stateStr == kPipelineStateBuffering))
     {
         iDriver.Resume();
-    }
-    else if (stateStr == kPipelineStatePaused ||
-            (stateStr == kPipelineStateStopped))
-    {
-        iDriver.Pause();
     }
 
     // Log the new state.

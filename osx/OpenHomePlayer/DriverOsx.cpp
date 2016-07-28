@@ -270,6 +270,9 @@ Msg* DriverOsx::ProcessMsg(MsgDrain* aMsg)
 Msg* DriverOsx::ProcessMsg(MsgHalt* aMsg)
 {
     DBG(("MsgHalt\n"));
+
+    pauseQueue();
+
     aMsg->ReportHalted();
     aMsg->RemoveRef();
     return NULL;
