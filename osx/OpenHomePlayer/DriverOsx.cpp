@@ -323,6 +323,7 @@ Msg* DriverOsx::ProcessMsg(MsgDecodedStream* aMsg)
     startQueue();
 
     iPlaying = true;
+    iPcmHandler.setStreamFormat(stream.BitDepth()/8, stream.NumChannels());
     iPcmHandler.setOutputActive(true);
 
     aMsg->RemoveRef();
