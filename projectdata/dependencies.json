@@ -2,7 +2,7 @@
     {   "name": "ohNet",
         "type": "openhome",
         "platform-specific": true,
-        "version": "1.7.2172",
+        "version": "1.7.2183",
         "archive-suffix": "-${debugmode}",
         "main-dir": "${dest}${name}-${platform}-${debugmode}",
         "configure-args": [
@@ -27,7 +27,7 @@
     {   "name": "ohMediaPlayer",
         "type": "openhome",
         "platform-specific": true,
-        "version": "1.35.444",
+        "version": "1.36.449",
         "archive-suffix": "-${debugmode}",
         "source-git": "https://github.com/openhome/LitePipe.git"
     },
