@@ -243,7 +243,10 @@ void DriverOsx::AudioThread()
 
 void DriverOsx::ProcessAudio(MsgPlayable* aMsg)
 {
-    /* process the PCM audio data - this may block */
+    // Resume the AudioQueue, if not already running.
+    resumeQueue();
+
+    // process the PCM audio data - this may block
     iPcmHandler.enqueue(aMsg);
 }
 
