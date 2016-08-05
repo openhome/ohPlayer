@@ -100,7 +100,6 @@ void ProcessorPcmBufWASAPI::ProcessFragment24(const Brx& aData,
 void ProcessorPcmBufWASAPI::ProcessFragment32(const Brx& aData,
                                               TUint      /*aNumChannels*/)
 {
-    ASSERTS();
     TByte *nData;
     TUint  bytes;
 
@@ -110,17 +109,17 @@ void ProcessorPcmBufWASAPI::ProcessFragment32(const Brx& aData,
     ASSERT(nData != NULL);
 
     TByte *ptr  = (TByte *)(aData.Ptr() + 0);
+    TByte *endp = ptr + bytes;
     TByte *ptr1 = (TByte *)nData;
-    TByte *endp = ptr1 + bytes;
 
     ASSERT(bytes % 4 == 0);
 
     // Little endian byte order required by native audio.
     TUint outBytes = 0;
 
-    while (ptr1 < endp)
+    while (ptr < endp)
     {
-        // The pipeline may generate 32 bit PCM.
+        // The pipeline may auto-generate 32 bit PCM.
         // This must be converted to the same format as the audio stream.
         switch (iBitDepth)
         {
@@ -157,101 +156,4 @@ void ProcessorPcmBufWASAPI::ProcessFragment32(const Brx& aData,
     ProcessFragment(fragment);
 
     delete[] nData;
-}
-
-void ProcessorPcmBufWASAPI::ProcessSample8(const TByte* aSample,
-                                           TUint        aNumChannels)
-{
-    TByte sample[8]  = { 0 };
-    TUint sampleSize = 1;
-
-    for (TUint i=0; i<aNumChannels; i++) {
-        sample[0] = *aSample;
-
-        aSample++;
-        Brn sampleBuf(sample, sampleSize);
-        ProcessFragment(sampleBuf);
-    }
-}
-
-void ProcessorPcmBufWASAPI::ProcessSample16(const TByte* aSample,
-                                            TUint        aNumChannels)
-{
-    TByte sample[8]  = { 0 };
-    TUint sampleSize = 2;
-
-    for (TUint i=0; i<aNumChannels; i++) {
-        sample[0] = *(aSample + 1);
-        sample[1] = *aSample;
-
-        aSample += 2;
-
-        Brn sampleBuf(sample, sampleSize);
-        ProcessFragment(sampleBuf);
-    }
-
-}
-
-void ProcessorPcmBufWASAPI::ProcessSample24(const TByte* aSample,
-                                            TUint        aNumChannels)
-{
-    TByte sample[8]  = { 0 };
-    TUint sampleSize = 3;
-
-    for (TUint i=0; i<aNumChannels; i++) {
-        sample[0] = *(aSample + 2);
-        sample[1] = *(aSample + 1);
-        sample[2] = *aSample;
-
-        aSample += 3;
-
-        Brn sampleBuf(sample, sampleSize);
-        ProcessFragment(sampleBuf);
-    }
-}
-
-void ProcessorPcmBufWASAPI::ProcessSample32(const TByte* aSample,
-                                            TUint        aNumChannels)
-{
-    TByte sample[8]  = { 0 };
-
-    for (TUint i=0; i<aNumChannels; i++) {
-        TUint outBytes = 0;
-        TUint index    = 0;
-
-        // The pipeline may generate 32 bit PCM.
-        // This must be converted to the same format as the audio stream.
-        switch (iBitDepth)
-        {
-            case 32:
-            {
-                sample[index++] = *(aSample + 3);
-                outBytes++;
-                // fallthrough
-            }
-            case 24:
-            {
-                sample[index++] = *(aSample + 2);
-                outBytes++;
-                // fallthrough
-            }
-            case 16:
-            {
-                sample[index++] = *(aSample + 1);
-                outBytes++;
-                // fallthrough
-            }
-            case 8:
-            {
-                sample[index++] = *(aSample + 0);
-                outBytes++;
-                break;
-            }
-        }
-
-        aSample += 4;
-
-        Brn sampleBuf(sample, outBytes);
-        ProcessFragment(sampleBuf);
-    }
 }

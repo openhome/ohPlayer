@@ -373,6 +373,11 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
         return;
     }
 
+    // This does not take into account the fact that this message may be
+    // auto-generated 32 bit PCM and not the expected pcm format.
+    //
+    // At worst this should result in us asking for a larger render buffer
+    // than is actually required.
     bytes = aMsg->Bytes();
 
     if (iResamplingInput)
@@ -452,9 +457,10 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
     if (iResamplingInput)
     {
         WWMFSampleData sampleData;
+        Brn buf(pcmProcessor.Buf());
 
-        hr = iResampler.Resample(pcmProcessor.Ptr(),
-                                 aMsg->Bytes(),
+        hr = iResampler.Resample(buf.Ptr(),
+                                 buf.Bytes(),
                                  &sampleData);
 
         if (hr == S_OK)
@@ -472,7 +478,7 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
                 Log::Print("ReleaseBuffer failed Reserved [%d] Written [%d]\n",
                            bytes, sampleData.bytes);
                 Log::Print("aMsg [%d] InBps [%d] OutBps [%d]\n",
-                            aMsg->Bytes(),
+                            buf.Bytes(),
                             iResampleInputBps ,
                             iResampleOutputBps);
             }
