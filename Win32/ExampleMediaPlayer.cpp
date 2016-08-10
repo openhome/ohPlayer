@@ -129,16 +129,6 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
     iFnUpdaterUpnpAv = new
         Av::FriendlyNameAttributeUpdater(*iFnManagerUpnpAv, *iDeviceUpnpAv);
 
-    iFnUpdaterStandard = new
-        Av::FriendlyNameAttributeUpdater(iMediaPlayer->FriendlyNameObservable(),
-                                        *iDevice);
-
-    iFnManagerUpnpAv = new
-        Av::FriendlyNameManagerUpnpAv(iMediaPlayer->Product());
-
-    iFnUpdaterUpnpAv = new
-        Av::FriendlyNameAttributeUpdater(*iFnManagerUpnpAv, *iDeviceUpnpAv);
-
     // Set up config app.
     static const TUint addr = 0;    // Bind to all addresses.
     static const TUint port = 0;    // Bind to whatever free port the OS
