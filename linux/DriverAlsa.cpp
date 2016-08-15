@@ -851,6 +851,25 @@ TUint DriverAlsa::Pimpl::DriverDelayJiffies(TUint aSampleRate)
         return 0;
     }
 
+    // Verify the supplied sample rate is supported.
+    snd_pcm_hw_params_t *hwParams;
+    TUint                err;
+
+    snd_pcm_hw_params_alloca(&hwParams);
+    err = snd_pcm_hw_params_any(iHandle, hwParams);
+    if (err < 0)
+    {
+        Log::Print("DriverAlsa: Cannot get hardware parameters: %s\n",
+                   snd_strerror(err));
+
+        THROW(SampleRateUnsupported);
+    }
+
+    if (snd_pcm_hw_params_test_rate(iHandle, hwParams, aSampleRate, 0) < 0)
+    {
+        THROW(SampleRateUnsupported);
+    }
+
     ret = snd_pcm_delay(iHandle, &dp);
     if (ret < 0) {
         Log::Print("DriverAlsa: snd_pcm_delay() error : %s\n",
