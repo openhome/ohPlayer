@@ -114,6 +114,10 @@ public:
     virtual void Flush() {}
 
 private:
+    // The lowest common multiple of the available sample sizes  (1/2/3/4 bytes)
+    // multiplied by the maximum number of channels.
+    static const TUint kMsgSplitBoundary = 12 * 2;
+
     AudioQueueBufferRef   iBuff;
     TUint32 iBuffsize;
     TUint32 iReadIndex;
