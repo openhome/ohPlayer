@@ -6,7 +6,6 @@
 #include <OpenHome/Av/Product.h>
 #include <OpenHome/Av/SourceFactory.h>
 #include <OpenHome/Av/UpnpAv/UpnpAv.h>
-#include <OpenHome/Av/Utils/IconDriverSongcastSender.h>
 #include <OpenHome/Media/Debug.h>
 #include <OpenHome/Av/Debug.h>
 #include <OpenHome/Media/Pipeline/Pipeline.h>
@@ -23,6 +22,7 @@
 #include "ControlPointProxy.h"
 #include "CustomMessages.h"
 #include "ExampleMediaPlayer.h"
+#include "IconOpenHome.h"
 #include "MemoryCheck.h"
 #include "MediaPlayerIF.h"
 #include "OptionalFeatures.h"
@@ -37,7 +37,7 @@ using namespace OpenHome::Web;
 
 // ExampleMediaPlayer
 
-const Brn ExampleMediaPlayer::kSongcastSenderIconFileName("SongcastSenderIcon");
+const Brn ExampleMediaPlayer::kIconOpenHomeFileName("OpenHomeIcon");
 
 ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
                                        Net::DvStack& aDvStack,
@@ -88,7 +88,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
 
     // create read/write store.  This creates a number of static (constant)
     // entries automatically
-    iRamStore = new RamStore();
+    iRamStore = new RamStore(kIconOpenHomeFileName);
 
     // create a read/write store using the new config framework
     iConfigRegStore = new ConfigRegStore();
@@ -344,12 +344,12 @@ void ExampleMediaPlayer::WriteResource(const Brx&          aUriTail,
                                        std::vector<char*>& /*aLanguageList*/,
                                        IResourceWriter&    aResourceWriter)
 {
-    if (aUriTail == kSongcastSenderIconFileName)
+    if (aUriTail == kIconOpenHomeFileName)
     {
-        aResourceWriter.WriteResourceBegin(sizeof(kIconDriverSongcastSender),
-                                           kIconDriverSongcastSenderMimeType);
-        aResourceWriter.WriteResource(kIconDriverSongcastSender,
-                                      sizeof(kIconDriverSongcastSender));
+        aResourceWriter.WriteResourceBegin(sizeof(kIconOpenHome),
+                                           kIconOpenHomeMimeType);
+        aResourceWriter.WriteResource(kIconOpenHome,
+                                      sizeof(kIconOpenHome));
         aResourceWriter.WriteResourceEnd();
     }
 }
@@ -389,17 +389,9 @@ void ExampleMediaPlayer::AddConfigApp()
 
 void ExampleMediaPlayer::PresentationUrlChanged(const Brx& aUrl)
 {
-    if (!iDevice->Enabled()) {
-        // FIXME - can only set Product attribute once (meaning no updates on subnet change)
-        const TBool firstChange = (iPresentationUrl.Bytes() == 0);
-        iPresentationUrl.Replace(aUrl);
-        iDevice->SetAttribute("Upnp.PresentationUrl", iPresentationUrl.PtrZ());
-        if (firstChange) {
-            Bws<128> configAtt("App:Config=");
-            configAtt.Append(iPresentationUrl);
-            iMediaPlayer->Product().AddAttribute(configAtt);
-        }
-    }
+    iPresentationUrl.Replace(aUrl);
+    iMediaPlayer->Product().SetConfigAppUrl(iPresentationUrl);
+    iDevice->SetAttribute("Upnp.PresentationUrl", iPresentationUrl.PtrZ());
 }
 
 TBool ExampleMediaPlayer::TryDisable(DvDevice& aDevice)

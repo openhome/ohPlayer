@@ -2,7 +2,6 @@
 
 #include <OpenHome/Av/MediaPlayer.h>
 #include <OpenHome/Av/FriendlyNameAdapter.h>
-#include <OpenHome/Av/Utils/DriverSongcastSender.h>
 #include <OpenHome/Media/PipelineManager.h>
 #include <OpenHome/Av/RebootHandler.h>
 #include <OpenHome/Av/Songcast/OhmTimestamp.h>
@@ -41,7 +40,7 @@ namespace Av {
 
 class ExampleMediaPlayer : private Net::IResourceManager
 {
-    static const Brn kSongcastSenderIconFileName;
+    static const Brn   kIconOpenHomeFileName;
     static const TUint kMaxUiTabs       = 4;
     static const TUint kUiSendQueueSize = kMaxUiTabs * 200;
     static const TUint kShellPort       = 2323;
