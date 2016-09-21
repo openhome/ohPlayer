@@ -11,7 +11,6 @@
 
 #include <OpenHome/Av/MediaPlayer.h>
 #include <OpenHome/Net/Core/DvDevice.h>
-#include <OpenHome/Av/Utils/DriverSongcastSender.h>
 #include <OpenHome/Av/FriendlyNameAdapter.h>
 #include <OpenHome/Media/PipelineManager.h>
 #include <OpenHome/Media/UriProviderSingleTrack.h>
@@ -65,7 +64,7 @@ namespace OpenHome {
             class ExampleMediaPlayer :  private Net::IResourceManager
             {
             private:
-                static const Brn kSongcastSenderIconFileName;
+                static const Brn   kIconOpenHomeFileName;
                 static const TUint kMaxUiTabs       = 4;
                 static const TUint kUiSendQueueSize = kMaxUiTabs * 200;
                 static const TUint kShellPort       = 2323;
@@ -127,6 +126,7 @@ namespace OpenHome {
                 IOhmTimestamper*        iRxTsMapper;
                 Web::FileResourceHandlerFactory iFileResourceHandlerFactory;
                 Web::ConfigAppMediaPlayer* iConfigApp;
+                Bws<Uri::kMaxUriBytes+1>   iPresentationUrl;
                 Net::Shell*             iShell;
                 Net::ShellCommandDebug* iShellDebug;
 

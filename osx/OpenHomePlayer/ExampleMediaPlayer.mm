@@ -10,13 +10,13 @@
 #include <OpenHome/Web/ConfigUi/FileResourceHandler.h>
 #include <OpenHome/Web/ConfigUi/ConfigUiMediaPlayer.h>
 #include <OpenHome/Web/ConfigUi/ConfigUi.h>
-#include <OpenHome/Av/Utils/IconDriverSongcastSender.h>
 #include <OpenHome/Media/Debug.h>
 #include <OpenHome/Av/Debug.h>
 #include <OpenHome/Net/Core/DvDevice.h>
 #include <OpenHome/Net/Private/Shell.h>
 #include <OpenHome/Net/Private/ShellCommandDebug.h>
 
+#include "IconOpenHome.h"
 #include "OptionalFeatures.h"
 
 #import "ConfigPersistentStore.h"
@@ -30,7 +30,7 @@ using namespace OpenHome::Net;
 using namespace OpenHome::TestFramework;
 using namespace OpenHome::Web;
 
-const Brn ExampleMediaPlayer::kSongcastSenderIconFileName("SongcastSenderIcon");
+const Brn ExampleMediaPlayer::kIconOpenHomeFileName("OpenHomeIcon");
 
 #define DBG(_x)
 //#define DBG(_x)   Log::Print(_x)
@@ -79,8 +79,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
     iDeviceUpnpAv->SetAttribute("Upnp.ModelName", "ExampleMediaPlayer");
 
     // create read/write store.  This creates a number of static (constant) entries automatically
-    // FIXME - to be removed; this only exists to populate static data
-    iRamStore = new RamStore();
+    iRamStore = new RamStore(kIconOpenHomeFileName);
 
     // create a read/write store using the new config framework
     iConfigPersistentStore = new ConfigPersistentStore();
@@ -385,10 +384,12 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 
 void ExampleMediaPlayer::WriteResource(const Brx& aUriTail, TIpAddress /*aInterface*/, std::vector<char*>& /*aLanguageList*/, IResourceWriter& aResourceWriter)
 {
-    if (aUriTail == kSongcastSenderIconFileName)
+    if (aUriTail == kIconOpenHomeFileName)
     {
-        aResourceWriter.WriteResourceBegin(sizeof(kIconDriverSongcastSender), kIconDriverSongcastSenderMimeType);
-        aResourceWriter.WriteResource(kIconDriverSongcastSender, sizeof(kIconDriverSongcastSender));
+        aResourceWriter.WriteResourceBegin(sizeof(kIconOpenHome),
+                                           kIconOpenHomeMimeType);
+        aResourceWriter.WriteResource(kIconOpenHome,
+                                      sizeof(kIconOpenHome));
         aResourceWriter.WriteResourceEnd();
     }
 }
@@ -396,8 +397,9 @@ void ExampleMediaPlayer::WriteResource(const Brx& aUriTail, TIpAddress /*aInterf
 
 void ExampleMediaPlayer::PresentationUrlChanged(const Brx& aUrl)
 {
-    Bws<Uri::kMaxUriBytes+1> url(aUrl);   // +1 for '\0'
-    iDevice->SetAttribute("Upnp.PresentationUrl", url.PtrZ());
+    iPresentationUrl.Replace(aUrl);
+    iMediaPlayer->Product().SetConfigAppUrl(iPresentationUrl);
+    iDevice->SetAttribute("Upnp.PresentationUrl", iPresentationUrl.PtrZ());
 }
 
 TBool ExampleMediaPlayer::TryDisable(DvDevice& aDevice)

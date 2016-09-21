@@ -2,10 +2,6 @@
 #define HEADER_RAM_STORE
 
 #include <OpenHome/Av/KvpStore.h>
-#include <OpenHome/Types.h>
-#include <OpenHome/Buffer.h>
-
-#include <map>
 
 namespace OpenHome {
 namespace Av {
@@ -16,9 +12,12 @@ namespace Av {
 class RamStore : public IStaticDataSource
 {
 public:
+    RamStore(const Brx& aImageFileName);
     virtual ~RamStore();
 private: // from IStaticDataSource
     void LoadStaticData(IStoreLoaderStatic& aLoader) override;
+private:
+    Brhz iImageFileName;
 };
 
 } // namespace Av
