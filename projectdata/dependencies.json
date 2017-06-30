@@ -2,7 +2,7 @@
     {   "name": "ohNet",
         "type": "openhome",
         "platform-specific": true,
-        "version": "1.7.2233",
+        "version": "1.7.2259",
         "archive-suffix": "-${debugmode}",
         "main-dir": "${dest}${name}-${platform}-${debugmode}",
         "configure-args": [
@@ -14,7 +14,7 @@
     {   "name": "ohWafHelpers",
         "type": "openhome",
         "platform-specific": false,
-        "version": "0.0.95",
+        "version": "0.0.96",
         "archive-filename": "${name}-${version}.tar.gz",
         "source-git": "https://github.com/openhome/ohWafHelpers.git"
     },
@@ -27,7 +27,7 @@
     {   "name": "ohMediaPlayer",
         "type": "openhome",
         "platform-specific": true,
-        "version": "1.43.486",
+        "version": "1.43.489",
         "archive-suffix": "-${debugmode}",
         "source-git": "https://github.com/openhome/LitePipe.git"
     },
