@@ -148,6 +148,9 @@ void ConfigGTKKeyStore::Read(const Brx& aKey, Bwx& aDest)
     }
 }
 
+void ConfigGTKKeyStore::Read(const Brx& aKey, IWriter& aWriter)
+{}
+
 void ConfigGTKKeyStore::Write(const Brx& aKey, const Brx& aSource)
 {
     string  keyStr((const char *)(aKey.Ptr()), aKey.Bytes());
@@ -230,3 +233,6 @@ void ConfigGTKKeyStore::Delete(const Brx& aKey)
         g_error_free(error);
     }
 }
+
+void ConfigGTKKeyStore::ResetToDefaults()
+{}

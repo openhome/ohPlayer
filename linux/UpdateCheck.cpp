@@ -9,6 +9,7 @@
 #include <OpenHome/Buffer.h>
 #include <OpenHome/Private/Http.h>
 #include <OpenHome/Private/Stream.h>
+#include <OpenHome/SocketHttp.h>
 
 #include "UpdateCheck.h"
 #include "version.h"
@@ -95,7 +96,8 @@ TBool UpdateChecker::updateAvailable(Environment& aEnv,
                                      const TChar* aFeed,
                                      Bwx& aUrl)
 {
-    HttpReader         client(aEnv);
+#if 0
+    SocketHttp         client(aEnv, Brn("rpi-UpdateChecker"));
     ReaderUntilS<1024> readerUntil(client);
     Brn                urlBuf(aFeed);
     Uri                feed(urlBuf);
@@ -152,6 +154,7 @@ TBool UpdateChecker::updateAvailable(Environment& aEnv,
     catch (ReaderError&)
     {
     }
+#endif
 
     return false;
 }

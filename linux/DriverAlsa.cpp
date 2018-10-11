@@ -881,10 +881,6 @@ TUint DriverAlsa::Pimpl::DriverDelayJiffies(TUint aSampleRate)
     return dp * Jiffies::PerSample(aSampleRate);
 }
 
-TUint DriverAlsa::PipelineAnimatorBufferJiffies()
-{
-    return 0;
-}
 
 // DriverAlsa
 
@@ -937,11 +933,25 @@ void DriverAlsa::AudioThread()
     catch (ThreadKill&) {}
 }
 
-TUint DriverAlsa::PipelineAnimatorDelayJiffies(TUint aSampleRate,
-                                               TUint /*aBitDepth*/,
-                                               TUint /*aNumChannels*/)
+TUint DriverAlsa::PipelineAnimatorBufferJiffies() const
 {
+	return 0;
+}
+
+TUint DriverAlsa::PipelineAnimatorDelayJiffies(AudioFormat aFormat,
+											   TUint aSampleRate,
+                                               TUint /*aBitDepth*/,
+                                               TUint /*aNumChannels*/) const
+{
+	if (aFormat == AudioFormat::Dsd) {
+		THROW(FormatUnsupported);
+	}
     return iPimpl->DriverDelayJiffies(aSampleRate);
+}
+
+TUint DriverAlsa::PipelineAnimatorDsdBlockSizeBytes() const
+{
+	return 0;
 }
 
 Msg* DriverAlsa::ProcessMsg(MsgHalt* aMsg)

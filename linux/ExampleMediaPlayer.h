@@ -13,12 +13,14 @@
 #include "Volume.h"
 
 namespace OpenHome {
+    class Shell;
+    class ShellCommandDebug;
+    
 namespace Net {
     class DviServerUpnp;
     class DvStack;
+    class CpStack;
     class DvDevice;
-    class Shell;
-    class ShellCommandDebug;
 }
 namespace Media {
     class PipelineManager;
@@ -43,7 +45,8 @@ class ExampleMediaPlayer : private Net::IResourceManager
     static const TUint kUiSendQueueSize = kMaxUiTabs * 200;
     static const TUint kShellPort       = 2323;
 public:
-    ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn,
+    ExampleMediaPlayer(Net::DvStack& aDvStack, Net::CpStack& aCpStack,
+					   const Brx& aUdn,
                        const TChar* aRoom, const TChar* aProductName,
                        const Brx& aUserAgent);
     virtual ~ExampleMediaPlayer();
@@ -102,8 +105,8 @@ private:
     Web::FileResourceHandlerFactory iFileResourceHandlerFactory;
     Web::ConfigAppMediaPlayer *iConfigApp;
     Bws<Uri::kMaxUriBytes+1>   iPresentationUrl;
-    Net::Shell* iShell;
-    Net::ShellCommandDebug* iShellDebug;
+    Shell* iShell;
+    ShellCommandDebug* iShellDebug;
 };
 
 class ExampleMediaPlayerInit

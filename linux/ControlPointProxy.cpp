@@ -680,7 +680,8 @@ void ControlPointProxy::CPUpnpAv::NotifyPipelineState(Media::EPipelineState aSta
 }
 
 void ControlPointProxy::CPUpnpAv::NotifyMode(const Brx& /*aMode*/,
-                                             const Media::ModeInfo& /*aInfo*/)
+                                             const Media::ModeInfo& /*aInfo*/,
+                                             const Media::ModeTransportControls& /*aTransportControls*/)
 {
 }
 

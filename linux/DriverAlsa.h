@@ -3,7 +3,7 @@
 
 #include <OpenHome/OhNetTypes.h>
 #include <OpenHome/Media/Pipeline/Msg.h>
-#include <OpenHome/Media/Utils/ProcessorPcmUtils.h>
+#include <OpenHome/Media/Utils/ProcessorAudioUtils.h>
 #include <OpenHome/Private/Thread.h>
 
 namespace OpenHome {
@@ -39,8 +39,10 @@ private: // from IMsgProcessor
     Msg* ProcessMsg(MsgPlayable* aMsg) override;
     Msg* ProcessMsg(MsgQuit* aMsg) override;
 private: // from IPipelineAnimator
-    TUint PipelineAnimatorBufferJiffies();
-    TUint PipelineAnimatorDelayJiffies(TUint aSampleRate, TUint aBitDepth, TUint aNumChannels);
+    TUint PipelineAnimatorBufferJiffies() const override;
+    TUint PipelineAnimatorDelayJiffies(AudioFormat aFormat, TUint aSampleRate,
+									   TUint aBitDepth, TUint aNumChannels) const override;
+    TUint PipelineAnimatorDsdBlockSizeBytes() const override;
 private:
     class Pimpl;
     Pimpl* iPimpl;

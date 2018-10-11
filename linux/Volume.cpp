@@ -48,6 +48,11 @@ TUint VolumeProfile::VolumeMilliDbPerStep() const
     return kVolumeMilliDbPerStep;
 }
 
+TUint VolumeProfile::ThreadPriority() const
+{
+	return kThreadPriority;
+}
+
 TUint VolumeProfile::BalanceMax() const
 {
     return kBalanceMax;
@@ -56,6 +61,11 @@ TUint VolumeProfile::BalanceMax() const
 TUint VolumeProfile::FadeMax() const
 {
     return kFadeMax;
+}
+
+TUint VolumeProfile::OffsetMax() const
+{
+	return kOffsetMax;
 }
 
 TBool VolumeProfile::AlwaysOn() const

@@ -16,8 +16,8 @@
 #include <OpenHome/Web/ConfigUi/ConfigUiMediaPlayer.h>
 #include <OpenHome/Web/WebAppFramework.h>
 #include <OpenHome/Web/ConfigUi/ConfigUi.h>
-#include <OpenHome/Net/Private/Shell.h>
-#include <OpenHome/Net/Private/ShellCommandDebug.h>
+#include <OpenHome/Private/Shell.h>
+#include <OpenHome/Private/ShellCommandDebug.h>
 
 #include "ConfigGTKKeyStore.h"
 #include "ControlPointProxy.h"
@@ -41,6 +41,7 @@ using namespace OpenHome::Web;
 const Brn ExampleMediaPlayer::kIconOpenHomeFileName("OpenHomeIcon");
 
 ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
+									   Net::CpStack& aCpStack,
                                        const Brx& aUdn,
                                        const TChar* aRoom,
                                        const TChar* aProductName,
@@ -114,10 +115,11 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
     iInitParams->SetGorgerDuration(iInitParams->DecodedReservoirJiffies());
 
     // create MediaPlayer
-    iMediaPlayer = new MediaPlayer( aDvStack, *iDevice, *iRamStore,
+    auto mpInit = MediaPlayerInitParams::New(Brn(aRoom), Brn(aProductName));
+    iMediaPlayer = new MediaPlayer( aDvStack, aCpStack, *iDevice, *iRamStore,
                                    *iConfigStore, iInitParams,
                                     volumeInit, volumeProfile, *iInfoLogger,
-                                    aUdn, Brn(aRoom), Brn(aProductName));
+                                    aUdn, mpInit);
 
 #ifdef DEBUG
     iPipelineStateLogger = new LoggingPipelineObserver();
@@ -126,24 +128,24 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
 
     iFnUpdaterStandard = new
         Av::FriendlyNameAttributeUpdater(iMediaPlayer->FriendlyNameObservable(),
+										 iMediaPlayer->ThreadPool(),
                                         *iDevice);
 
     iFnManagerUpnpAv = new
         Av::FriendlyNameManagerUpnpAv(iMediaPlayer->Product());
 
     iFnUpdaterUpnpAv = new
-        Av::FriendlyNameAttributeUpdater(*iFnManagerUpnpAv, *iDeviceUpnpAv);
+        Av::FriendlyNameAttributeUpdater(*iFnManagerUpnpAv,
+										 iMediaPlayer->ThreadPool(),
+										 *iDeviceUpnpAv);
 
     // Set up config app.
-    static const TUint addr = 0;    // Bind to all addresses.
-    static const TUint port = 0;    // Bind to whatever free port the OS
-                                    // allocates to the framework server.
-
+	auto webAppInit = new WebAppFrameworkInitParams();
+    webAppInit->SetServerPort(0);
+    webAppInit->SetSendQueueSize(kUiSendQueueSize);
     iAppFramework = new WebAppFramework(aDvStack.Env(),
-                                        addr,
-                                        port,
-                                        kMaxUiTabs,
-                                        kUiSendQueueSize);
+                                        webAppInit,
+                                        iMediaPlayer->ThreadPool());
 }
 
 ExampleMediaPlayer::~ExampleMediaPlayer()
@@ -234,7 +236,7 @@ void ExampleMediaPlayer::RunWithSemaphore(Net::CpStack& aCpStack)
 {
     RegisterPlugins(iMediaPlayer->Env());
     AddConfigApp();
-    iMediaPlayer->Start();
+    iMediaPlayer->Start(iRebootHandler);
     iAppFramework->Start();
     iDevice->SetEnabled();
     iDeviceUpnpAv->SetEnabled();
@@ -307,7 +309,7 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
     iMediaPlayer->Add(ProtocolFactory::NewHls(aEnv, iUserAgent));
 
     // Add sources
-    iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer));
+    iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer,Optional<IPlaylistLoader>(nullptr)));
 
     iMediaPlayer->Add(SourceFactory::NewUpnpAv(*iMediaPlayer, *iDeviceUpnpAv));
 
@@ -315,7 +317,8 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
                                   *iMediaPlayer,
                                    Optional<IClockPuller>(nullptr),
                                    Optional<IOhmTimestamper>(iTxTimestamper),
-                                   Optional<IOhmTimestamper>(iRxTimestamper)));
+                                   Optional<IOhmTimestamper>(iRxTimestamper),
+                                   Optional<IOhmMsgProcessor>(nullptr)));
 
 #ifdef ENABLE_TIDAL
     // You must define your Tidal token
@@ -377,6 +380,7 @@ void ExampleMediaPlayer::AddConfigApp()
                                           Brn("Softplayer"),
                                           Brn("/usr/share/"
                                               "openhome-player/res/"),
+                                          30,
                                           kMaxUiTabs,
                                           kUiSendQueueSize,
                                           iRebootHandler);

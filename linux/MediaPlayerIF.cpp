@@ -182,7 +182,7 @@ void InitAndRunMediaPlayer(gpointer args)
     }
 
     // Create the ExampleMediaPlayer instance.
-    g_emp = new ExampleMediaPlayer(*dvStack, Brn(udn), productRoom, productName,
+    g_emp = new ExampleMediaPlayer(*dvStack, *cpStack, Brn(udn), productRoom, productName,
                                    Brx::Empty()/*aUserAgent*/);
 
     // Add the audio driver to the pipeline.
