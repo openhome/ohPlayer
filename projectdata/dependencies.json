@@ -21,8 +21,8 @@
     {   "name": "openssl",
         "type": "openhome",
         "platform-specific": true,
-        "version": "0.2.61",
-        "archive-filename": "${name}-${version}-Linux-armhf-${debugmode}.tar.bz2"
+        "version": "0.2.91",
+        "archive-filename": "${name}-${version}-${platform}-${debugmode}.tar.bz2"
     },
     {   "name": "ohMediaPlayer",
         "type": "openhome",
