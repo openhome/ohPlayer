@@ -287,8 +287,8 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 #else // USE_LIBAVCODEC
 #ifdef ENABLE_AAC
     // Disabled by default - requires patent license
-    iMediaPlayer->Add(Codec::CodecFactory::NewAac(iMediaPlayer->MimeTypes()));
-    iMediaPlayer->Add(Codec::CodecFactory::NewAdts(iMediaPlayer->MimeTypes()));
+    iMediaPlayer->Add(Codec::CodecFactory::NewAacFdkMp4(iMediaPlayer->MimeTypes()));
+    iMediaPlayer->Add(Codec::CodecFactory::NewAacFdkAdts(iMediaPlayer->MimeTypes()));
 #endif // ENABLE_AAC
 
 #ifdef ENABLE_MP3
