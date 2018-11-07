@@ -21,13 +21,13 @@
     {   "name": "openssl",
         "type": "openhome",
         "platform-specific": true,
-        "version": "0.2.91",
+        "version": "0.3.92",
         "archive-filename": "${name}-${version}-${platform}-${debugmode}.tar.bz2"
     },
     {   "name": "ohMediaPlayer",
         "type": "openhome",
         "platform-specific": true,
-        "version": "1.93.785",
+        "version": "1.96.795",
         "archive-suffix": "-${debugmode}",
         "source-git": "https://github.com/openhome/LitePipe.git"
     },
