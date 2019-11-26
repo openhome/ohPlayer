@@ -333,7 +333,7 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
     iMediaPlayer->Add(ProtocolFactory::NewQobuz(
                                             Brn(QOBUZ_APPID),
                                             Brn(QOBUZ_SECRET),
-                                            *iMediaPlayer)),
+                                            *iMediaPlayer));
 #endif  // ENABLE_QOBUZ
 
 #ifdef ENABLE_RADIO
