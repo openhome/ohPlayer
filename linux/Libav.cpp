@@ -745,13 +745,13 @@ void CodecLibAV::StreamInitialise()
             goto failure;
     }
 
-    if (iAvFormatCtx->duration != AV_NOPTS_VALUE)
+    if (iAvFormatCtx->duration != (TInt64)AV_NOPTS_VALUE)
     {
         TInt64 duration;
 
         duration = iAvFormatCtx->duration + kDurationRoundUp;
 
-        if (iAvFormatCtx->start_time != AV_NOPTS_VALUE)
+        if (iAvFormatCtx->start_time != (TInt64)AV_NOPTS_VALUE)
         {
             duration -= iAvFormatCtx->start_time;
         }
@@ -777,7 +777,11 @@ void CodecLibAV::StreamInitialise()
                                      false);
 
     // Create a frame to hold the decoded packets.
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55, 45, 101)
+    iAvFrame = av_frame_alloc();
+#else // LIBAVCODEC_VERSION_INT
     iAvFrame = avcodec_alloc_frame();
+#endif // LIBAVCODEC_VERSION_INT
 
     if (iAvFrame == NULL)
     {
@@ -814,7 +818,12 @@ void CodecLibAV::StreamCompleted()
 
     if (iAvFrame != NULL)
     {
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55, 45, 101)
+        av_frame_free(&iAvFrame);
+#else // LIBAVCODEC_VERSION_INT
         avcodec_free_frame(&iAvFrame);
+#endif // LIBAVCODEC_VERSION_INT
+
         iAvFrame = NULL;
     }
 
@@ -853,7 +862,7 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
     TInt64 seekTarget  = TInt64(frac *
                                 (iAvFormatCtx->duration + kDurationRoundUp));
 
-    if (iAvFormatCtx->start_time != AV_NOPTS_VALUE)
+    if (iAvFormatCtx->start_time != (TInt64)AV_NOPTS_VALUE)
         seekTarget += iAvFormatCtx->start_time;
 
 #ifdef DEBUG
@@ -989,7 +998,7 @@ void CodecLibAV::processPCM(TUint8 **pcmData, AVSampleFormat fmt,
                                     iAvCodecContext->channels,
                                     iAvCodecContext->sample_rate,
                                     iOutputBitDepth,
-                                    EMediaDataEndianBig,
+                                    AudioDataEndian::Big,
                                     iTrackOffset);
 
                 iOutput.SetBytes(0);
@@ -1230,7 +1239,7 @@ void CodecLibAV::Process()
                                 iAvCodecContext->channels,
                                 iAvCodecContext->sample_rate,
                                 iOutputBitDepth,
-                                EMediaDataEndianBig,
+                                AudioDataEndian::Big,
                                 iTrackOffset);
 
             iOutput.SetBytes(0);

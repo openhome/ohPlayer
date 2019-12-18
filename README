@@ -1,27 +1,48 @@
-OpenHome Sample Players (https://github.com/openhome/ohPlayer) for Mac, Windows, Linux and Raspberry Pi.
+OpenHome Sample Players (https://github.com/openhome/ohPlayer) for Mac
+Windows, Linux and Raspberry Pi.
 
 Repository and source setup
----------------------------
-Before building, clone ohdevtools (https://github.com/openhome/ohdevtools.git) into the same parent directory as ohPlayer.
+===========================
 
-OpenHome can fetch pre-built dependencies for ohNet and ohPipeline from the OpenHome build server.
+Before building, clone ohdevtools (https://github.com/openhome/ohdevtools.git)
+into the same parent directory as ohPlayer.
+
+OpenHome can fetch pre-built dependencies for ohNet and ohPipeline from the
+OpenHome build server.
 
 To fetch dependencies, run
     'go fetch --all'
 or
     'go fetch --all --debug'
+
 depending on your build requirements.
+
 App dependencies will be downloaded to the ohPlayer/dependencies directory.
 
-Building OpenHome Player sample apps:
-------------------------------------------
+Building OpenHome Player sample apps
+====================================
+
+There are a number of optional features that are disabled by default.
+
+These can be enabled by editing the 'OptionalFeatures.h' file for the
+platform or on the command line for the 'MakeRelease.pl' script.
+
+If Mp3/Aac support is enabled the required pre-built codecs will be pulled
+in from the OpenHome dependencies.
+
+Commercial distribution of the application containing the pre-built MP3 and
+AAC codecs will incur license fees. This can be avoided by following the
+instructions relating to building for native codecs. In this case platform
+codecs will be utilised for these formats.
 
 Linux (Ubuntu 12.x onward, Raspbian)
--------------------------------------
+------------------------------------
 
-# install compiler dependencies
+# Install compiler dependencies. Gcc/G++ 4.8 is the minimum requirement.
+# Later versions should work, the alternatives instructions below are
+# required only in the case where the default version is earlier than 4.8
 sudo apt-get update
-sudo apt-get install gcc-4.8 g++-4.8 
+sudo apt-get install gcc-4.8 g++-4.8
 
 # set up gcc alternates; we need gcc4.8
 
@@ -30,65 +51,141 @@ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
 sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.6 20
 sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
 
-# install audio and UI dependencies
-sudo apt-get install gtk+-3-dev libnotify-dev notify-osd libasound2-dev
+# Install audio and UI dependencies
+sudo apt-get install gtk+-3-dev libnotify-dev notify-osd libasound2-dev libappindicator3-dev
 
-# install package maker
+# Install native codec dependencies (if required)
+sudo apt-get install libavcodec-dev libavformat-dev libavresample-dev
+
+# Install package maker
 sudo apt-get install ruby-dev
 sudo gem install fpm
+
+# Install package maker, if previous method fails to install gem
+sudo apt-get install ruby-dev jruby
+sudo gem2.1 install fpm
 
 # make the project
 cd ohPlayer/linux
 
-make ubuntu     // release build
+make ubuntu             // ubuntu release build
 or
-make raspbian   // release build
-or
-DEBUG=1 make ubuntu   // debug build
-or
-DEBUG=1 make raspbian // debug build
-or
-make ubuntu-install     // build and install locally
-or
-make raspbian-install   // build and install locally
+make raspbian           // raspbian release build
 
-# generate a debian package for distribution
-./GeneratePkg.pl --platform=raspbian --application=openhome-player --version=0.1.2.3
+# Extra options
 
-# generate an installer package
-./GeneratePkg.pl --platform=raspbian --application=openhome-player --version=0.1.2.3 --installer
+DEBUG=1 <make command>          // debug build
+DISABLE_GTK=1 <make command>    // headless (without GUI)
+USE_LIBAVCODEC=1 <make command> // native codec build
+
+# install the application locally and resources
+
+make ubuntu-install
+or
+make raspbian-install
 
 Cross-compilation is not yet supported. Test applications must be built on the target platform at present.
+
 The project will build a GTK menubar application.
 
 
-Windows (Visual Studion 2013)
------------------------------
+Windows (Visual Studio 2013 Express)
+-------------------------------------
 
-Open the OpenHomePlayer solution in Visual Studio 2013 and build release or debug variants
+Open the OpenHomePlayer solution in Visual Studio 2013 Express and build the
+required configuration
 
   Win32/OpenHomePlayer.sln
 
+The solution has 4 configurations:
+  - Release
+  - Debug
+  - ReleaseIMF
+  - DebugIMF
+
+The '*IMF' configurations build in the native codecs, based on the Microsoft
+Media Foundation Interface.
+
 The solution will build a windows tray application.
-
-The installer generation process employs the Inno Setup 5 tool - http://www.jrsoftware.org/isinfo.php
-The actual download was 'isetup-5.5.5.exe'.
-
-All defaults were chosen during application installation including the installation of the optional pre-processor extensions..
-To create the installer, compile the installer script, OpenHomePlayerInstaller.iss, as follows:
-
-  iscc /dMySrcDir="C:\<src folder>" OpenHomePlayer Installer.iss
-
-Where <src folder> identifies the parent folder of the installer (Win32Installer) and application source (Win32) folders.
-
-'setup.exe' will be generated in the Win32Installer folder.
-
 
 Mac OSX (Mountain Lion onward)
 -------------------------------
 
-Open the Sample Xcode project and build release or debug variants.
+Open the Sample Xcode project and build the required target
 
    osx/OpenHomePlayer.xcodeproj
-   
+
+The project has the following targets each having Release and Debug
+configurations:
+
+  - OpenHomePlayer
+  - OpenHomePlayerAFSCodec
+
+The OpenHomePlayerAFSCodec target builds in the native codecs based on
+the AudioFileStream interface.
+
 The project will build a system menu application.
+
+
+Generating Application Installers
+=================================
+
+The 'MakeRelease.pl' script, in the top level directory, can be used to
+generate installer packages for all supported platforms.
+
+Platform Specifics
+------------------
+
+ - Linux
+
+   - As mentioned in the earlier section the 'fpm' utility is required.
+
+   - A debian package (openhome-player-X.Y.Z_armhf.deb) and self extracting
+     installer (openhome-player-X.Y.Z_armhf.sh) will be generated in the
+     the 'linux/<platform>/' directory.
+
+ - Windows
+
+   - The Inno Setup 5 utility is required (http://www.jrsoftware.org/isinfo.php)
+     The actual download was 'isetup-5.5.5.exe'.
+
+     All defaults were chosen during application installation including the
+     installation of the optional pre-processor extensions..
+
+   - The script *must* be run from a Visual Studio 2013 Express command prompt
+     The Inno Setup 5 utility *must* be in the path.
+
+   - An installer executable (OpenHomeOPlayerSetup-X-Y-Z.exe) will be
+     generated in the 'Win32Installer' directory.
+
+ - Osx
+
+   - The Xcode LIne Command Tools package is required.
+
+   - An installer (OpenHOmePlayer-X-Y-Z.pkg) will be generated in the 'osx'
+     directory.
+
+Script Usage
+------------
+
+MakeRelease.pl --platform=<ubuntu|raspbian|Win32|osx> --version=<version>
+               [--debug] [--headless]
+               [[--enable-mp3] [--enable-aac] [--use-native-codecs]]
+               [--enable-radio --tunein-partner-id=<tunein partner id]
+               [--enable-tidal --tidal-token=<tidal token>]
+               [--enable-qobuz --qobuz-secret=<qobuz secret>
+                --qobuz-app-id=<qobuz app id>]
+
+
+The script should be run from the directory in which it reside.
+
+- The 'version' should be of the form 'X.Y.Z'
+- Headless builds are currently available for the 'raspbian' platform only.
+- The optional Mp3/Aac codecs should be enabled when enabling the
+  Radio, Qobuz, Tidal features.
+
+
+eg. The following command will build an osx installer with all features enabled
+    and native codecs used for the restricted formats.
+
+./MakeRelease.pl --platform=osx -v=1.2.3 --debug --enable-mp3 --enable-aac --use-native-codecs --enable-radio --tunein-partner-id="your tunein id" --enable-tidal --tidal-token="your tidal token" --enable-qobuz --qobuz-app-id="your qobuz app id" --qobuz-secret="your qobuz secret"

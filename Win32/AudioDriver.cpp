@@ -113,34 +113,15 @@ Msg* AudioDriver::ProcessMsg(MsgDrain* aMsg)
     return NULL;
 }
 
-TUint AudioDriver::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/,
-                                              TUint aSampleRateTo)
+TUint AudioDriver::PipelineAnimatorDelayJiffies(TUint /*aSampleRate*/,
+                                                TUint /*aBitDepth*/,
+                                                TUint /*aNumChannels*/)
 {
-    switch (aSampleRateTo)
-    {
-        // 48 KHz family rates
-        case 192000:
-        case 96000:
-        case 64000:
-        case 48000:
-        case 32000:
-        case 16000:
-        case 8000:
-        // 44.1 KHz family rates
-        case 176400:
-        case 88200:
-        case 44100:
-        case 22050:
-        case 11025:
-            break;
+    return 0;
+}
 
-        default:
-            Log::Print("Warning sample rate not supported [%u]\n",
-                       aSampleRateTo);
-
-            THROW(SampleRateUnsupported);
-    }
-
+TUint AudioDriver::PipelineAnimatorBufferJiffies()
+{
     return 0;
 }
 
@@ -392,6 +373,11 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
         return;
     }
 
+    // This does not take into account the fact that this message may be
+    // auto-generated 32 bit PCM and not the expected pcm format.
+    //
+    // At worst this should result in us asking for a larger render buffer
+    // than is actually required.
     bytes = aMsg->Bytes();
 
     if (iResamplingInput)
@@ -463,6 +449,7 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
     // Get the message data. This converts the pipeline data into a format
     // suitable for the native audio system.
     ProcessorPcmBufWASAPI pcmProcessor;
+    pcmProcessor.SetBitDepth(iBitDepth);
 
     aMsg->Read(pcmProcessor);
 
@@ -470,9 +457,10 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
     if (iResamplingInput)
     {
         WWMFSampleData sampleData;
+        Brn buf(pcmProcessor.Buf());
 
-        hr = iResampler.Resample(pcmProcessor.Ptr(),
-                                 aMsg->Bytes(),
+        hr = iResampler.Resample(buf.Ptr(),
+                                 buf.Bytes(),
                                  &sampleData);
 
         if (hr == S_OK)
@@ -490,7 +478,7 @@ void AudioDriver::ProcessAudio(MsgPlayable* aMsg)
                 Log::Print("ReleaseBuffer failed Reserved [%d] Written [%d]\n",
                            bytes, sampleData.bytes);
                 Log::Print("aMsg [%d] InBps [%d] OutBps [%d]\n",
-                            aMsg->Bytes(),
+                            buf.Bytes(),
                             iResampleInputBps ,
                             iResampleOutputBps);
             }
@@ -550,6 +538,7 @@ Msg* AudioDriver::ProcessMsg(MsgHalt* aMsg)
 {
     Log::Print("Pipeline Halt Msg\n");
 
+    aMsg->ReportHalted();
     aMsg->RemoveRef();
     return NULL;
 }

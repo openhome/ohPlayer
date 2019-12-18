@@ -193,6 +193,7 @@ sub buildLinuxRelease
 
     $options .= " DEBUG=0" if (defined $debug);
     $options .= " USE_LIBAVCODEC=0" if (defined $nativeCodecs);
+    $options .= " DISABLE_GTK=0" if (defined $headless);
 
     # Execute the build
     system("make $options $platform");
@@ -291,9 +292,10 @@ sub buildWin32Release
 
 sub buildOsxRelease
 {
-    my ($version, $debug) = @_;
-    my $plistBuddy        = "/usr/libexec/PlistBuddy";
-    my $plistFile         = "Info.plist";
+    my ($version, $debug, $nativeCodecs) = @_;
+    my $plistBuddy                       = "/usr/libexec/PlistBuddy";
+    my $plistFile                        = "Info.plist";
+    my $target                           = "OpenHomePlayer";
 
     # Check the PlistBuddy utility is present and correct.
     eval {my @dummy = `$plistBuddy 2>&1` or die "$!\n"};
@@ -322,19 +324,50 @@ sub buildOsxRelease
     # Move to folder containing the xcode project.
     chdir "..";
 
+    # Select the native codec target if required.
+    if (defined $nativeCodecs)
+    {
+        $target = "OpenHomePlayerAFSCodec";
+    }
+
     # Build and install the application to our temporary folder.
     if (defined $debug)
     {
-        system("xcodebuild -project OpenHomePlayer.xcodeproj -configuration " .
-               "Debug clean install DSTROOT=$scratchDir/OpenHomePlayer.dst");
+        system("xcodebuild -project OpenHomePlayer.xcodeproj -target $target " .
+               "-configuration Debug clean install "                           .
+               "DSTROOT=$scratchDir/OpenHomePlayer.dst");
     }
     else
     {
-        system("xcodebuild -project OpenHomePlayer.xcodeproj -configuration " .
-               "Release clean install DSTROOT=$scratchDir/OpenHomePlayer.dst");
+        system("xcodebuild -project OpenHomePlayer.xcodeproj -target $target " .
+               "-configuration Release clean install "                         .
+               "DSTROOT=$scratchDir/OpenHomePlayer.dst");
     }
 
     die "ERROR: Installation Build Failed\n" unless ($? == 0);
+
+    # Copy the latest resources into the pkg
+    my $pkgResDir = "$scratchDir/OpenHomePlayer.dst/Applications/" .
+                    "$target.app/Contents/Resources/";
+
+    # Clear out any existing, possibly out of date, resources.
+    remove_tree("$pkgResDir/SoftPlayer") or
+        die "ERROR: Cannot remove pkg resource directory. $!\n";
+
+    # Copy over the latest resources from the dependencies
+    system("cp -R ../dependencies/Mac-x64/ohMediaPlayer/res $pkgResDir");
+
+    die "ERROR: Failed to copy current resources into pkg. $!\n"
+        unless ($? == 0);
+
+    # Name the resource folder correctly.
+    move("$pkgResDir/res", "$pkgResDir/SoftPlayer") or
+        die "ERROR: Failed to rename resource fodler $!\n";
+
+    # Duplicate the English language UI strings in the fallback location.
+    copy("$pkgResDir/SoftPlayer/lang/en-gb/ConfigOptions.txt",
+         "$pkgResDir/SoftPlayer/lang") or
+        die "ERROR: Failed to install default string resources. $!\n";
 
     # Generate the OpenHomePlayer component package.
     #
@@ -358,10 +391,10 @@ sub buildOsxRelease
 
 my $USAGE = <<EndOfText;
 Usage: MakeRelease.pl --platform=<ubuntu|raspbian|Win32|osx> --version=<version>
-                      [--debug] [--use-native-codecs] [--enable-mp3]
-                      [--enable-aac]
+                      [--debug] [--headless]
+                      [[--enable-mp3] [--enable-aac] [--use-native-codecs]]
                       [--enable-radio --tunein-partner-id=<tunein partner id]
-                      [--enable-tidal --tidal-token=<tidal token>]s
+                      [--enable-tidal --tidal-token=<tidal token>]
                       [--enable-qobuz --qobuz-secret=<qobuz secret>
                        --qobuz-app-id=<qobuz app id>]
 EndOfText
@@ -370,6 +403,7 @@ GetOptions("platform=s"          => \$platform,
            "version=s"           => \$version,
            "debug"               => \$debug,
            "use-native-codecs"   => \$nativeCodecs,
+           "headless"            => \$headless,
            "enable-mp3"          => \$enableMp3,
            "enable-aac"          => \$enableAac,
            "enable-radio"        => \$enableRadio,
@@ -391,6 +425,11 @@ if ($platform !~ /ubuntu|raspbian|Win32|osx/)
     die "Invalid Platform: $platform\n";
 }
 
+if (defined $nativeCodecs && (! defined $enableMp3 && ! defined $enableAac))
+{
+    die "Native codecs require eith Mp3 or Aac to be enabeled\n";
+}
+
 if ((defined $enableRadio && ! defined $tuneInPartnedId) ||
     (! defined $enableRadio && defined $tuneInPartnedId))
 {
@@ -409,9 +448,9 @@ if ((defined $enableQobuz && !(defined $qobuzSecret && defined $qobuzAppId)) ||
     die "$USAGE\n";
 }
 
-if (defined $nativeCodecs && ($platform eq "osx"))
+if (defined $headless && ($platform ne "raspbian"))
 {
-    die "Native Codecs currently unavailable for this platform\n";
+    die "Headless target is currently unavailable for this platform\n";
 }
 
 # Move to the directory containing the platform source.
@@ -450,7 +489,7 @@ if ($platform !~ /osx/)
 # Generate the release
 if ($platform =~ /raspbian|ubuntu/)
 {
-    &buildLinuxRelease($platform, $version, $debug, $nativeCodecs);
+    &buildLinuxRelease($platform, $version, $debug, $nativeCodecs, $headless);
 }
 elsif ($platform =~ /Win32/)
 {
@@ -458,7 +497,7 @@ elsif ($platform =~ /Win32/)
 }
 elsif ($platform =~ /osx/)
 {
-    &buildOsxRelease($version, $debug);
+    &buildOsxRelease($version, $debug, $nativeCodecs);
 }
 
 1;

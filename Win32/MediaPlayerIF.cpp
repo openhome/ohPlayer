@@ -6,6 +6,7 @@
 
 #include "ExampleMediaPlayer.h"
 #include "AudioDriver.h"
+#include "ConfigRegStore.h"
 #include "CustomMessages.h"
 #include "MediaPlayerIF.h"
 #include "MemoryCheck.h"
@@ -14,6 +15,7 @@
 
 using namespace OpenHome;
 using namespace OpenHome::Av;
+using namespace OpenHome::Configuration;
 using namespace OpenHome::Media;
 using namespace OpenHome::Net;
 
@@ -63,6 +65,11 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
     strcat_s(udn, computerName);
     static const TChar *cookie = "ExampleMediaPlayer";
 
+    Bws<512>        roomStore;
+    Bws<512>        nameStore;
+    const TChar    *productRoom = room;
+    const TChar    *productName = name;
+
     NetworkAdapter *adapter = NULL;
     Net::CpStack   *cpStack = NULL;
     Net::DvStack   *dvStack = NULL;
@@ -85,6 +92,9 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
         return 1;
     }
 
+    // create a read/write store using the new config framework
+    Configuration::ConfigRegStore configStore;
+
     // Get the current network adapter.
     adapter = g_lib->CurrentSubnetAdapter(cookie);
     if (adapter == NULL)
@@ -99,9 +109,45 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
 
     adapter->RemoveRef(cookie);
 
+    // Set the default room name from any existing key in the
+    // config store.
+    try
+    {
+        configStore.Read(Brn("Product.Room"), roomStore);
+        productRoom = roomStore.PtrZ();
+    }
+    catch (StoreReadBufferUndersized)
+    {
+        Log::Print("Error: MediaPlayerIF: 'productRoom' too short\n");
+    }
+    catch (StoreKeyNotFound)
+    {
+        // If no key exists use the hard coded room name and set it
+        // in the config store.
+        configStore.Write(Brn("Product.Room"), Brn(productRoom));
+    }
+
+    // Set the default product name from any existing key in the
+    // config store.
+    try
+    {
+        configStore.Read(Brn("Product.Name"), nameStore);
+        productName = nameStore.PtrZ();
+    }
+    catch (StoreReadBufferUndersized)
+    {
+        Log::Print("Error: MediaPlayerIF: 'productName' too short\n");
+    }
+    catch (StoreKeyNotFound)
+    {
+        // If no key exists use the hard coded product name and set it
+        // in the config store.
+        configStore.Write(Brn("Product.Name"), Brn(productName));
+    }
+
     // Create the ExampleMediaPlayer instance.
-    g_emp = new ExampleMediaPlayer(hwnd, *dvStack, Brn(udn), room, name,
-                                   Brx::Empty()/*aUserAgent*/);
+    g_emp = new ExampleMediaPlayer(hwnd, *dvStack, Brn(udn), productRoom,
+                                   productName, Brx::Empty()/*aUserAgent*/);
 
     // Add the audio driver to the pipeline.
     driver = new AudioDriver(dvStack->Env(), g_emp->Pipeline(), hwnd);

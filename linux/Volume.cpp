@@ -11,6 +11,13 @@ using namespace OpenHome;
 using namespace OpenHome::Av;
 using namespace OpenHome::Media;
 
+// RebootLogger
+void RebootLogger::Reboot(const Brx& aReason)
+{
+    Log::Print("\n\n\nRebootLogger::Reboot. Reason:\n%.*s\n\n\n",
+               PBUF(aReason));
+}
+
 TUint VolumeProfile::VolumeMax() const
 {
     return kVolumeMax;
@@ -41,6 +48,11 @@ TUint VolumeProfile::VolumeMilliDbPerStep() const
     return kVolumeMilliDbPerStep;
 }
 
+TUint VolumeProfile::ThreadPriority() const
+{
+	return kThreadPriority;
+}
+
 TUint VolumeProfile::BalanceMax() const
 {
     return kBalanceMax;
@@ -49,6 +61,16 @@ TUint VolumeProfile::BalanceMax() const
 TUint VolumeProfile::FadeMax() const
 {
     return kFadeMax;
+}
+
+TUint VolumeProfile::OffsetMax() const
+{
+	return kOffsetMax;
+}
+
+TBool VolumeProfile::AlwaysOn() const
+{
+    return kAlwaysOn;
 }
 
 VolumeControl::VolumeControl()
@@ -97,17 +119,20 @@ TBool VolumeControl::IsVolumeSupported()
 
 void VolumeControl::SetVolume(TUint aVolume)
 {
-    const long MAX_LINEAR_DB_SCALE = 24;
-    double     volume              = double(aVolume/100.0f);
-    double     min_norm;
-    long       min, max, value;
-    TInt       err;
+    const long  MAX_LINEAR_DB_SCALE = 24;
+    const TUint MILLI_DB_PER_STEP   = 1024;
+    double      volume;
+    double      min_norm;
+    long        min, max, value;
+    TInt        err;
 
     // Sanity Check
     if (! IsVolumeSupported())
     {
         return;
     }
+
+    volume = double((aVolume / MILLI_DB_PER_STEP)/100.0f);
 
     // Use the dB range to map the volume to a scale more in tune
     // with the human ear, if possible.

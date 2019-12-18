@@ -1,10 +1,13 @@
 #pragma once
 
 #include <OpenHome/Av/MediaPlayer.h>
-#include <OpenHome/Av/Utils/DriverSongcastSender.h>
+#include <OpenHome/Av/FriendlyNameAdapter.h>
 #include <OpenHome/Media/PipelineManager.h>
+#include <OpenHome/Av/RebootHandler.h>
 #include <OpenHome/Av/Songcast/OhmTimestamp.h>
+#include <OpenHome/Av/UpnpAv/FriendlyNameUpnpAv.h>
 #include <OpenHome/Av/VolumeManager.h>
+#include <OpenHome/Web/ConfigUi/FileResourceHandler.h>
 #include <OpenHome/Web/WebAppFramework.h>
 
 #include <Windows.h>
@@ -22,6 +25,7 @@ namespace Net {
 namespace Media {
     class PipelineManager;
     class DriverSongcastSender;
+    class AllocatorInfoLogger;
 }
 namespace Configuration {
     class ConfigRegStore;
@@ -36,9 +40,9 @@ namespace Av {
 
 class ExampleMediaPlayer : private Net::IResourceManager
 {
-    static const Brn kSongcastSenderIconFileName;
+    static const Brn   kIconOpenHomeFileName;
     static const TUint kMaxUiTabs       = 4;
-    static const TUint kUiSendQueueSize = 32;
+    static const TUint kUiSendQueueSize = kMaxUiTabs * 200;
     static const TUint kShellPort       = 2323;
 
 public:
@@ -61,11 +65,14 @@ public:
                                                IOhmTimestamper& aTxTimestamper,
                                                IOhmTimestamper& aRxTimestamper);
     void                    SetSongcastTimestampMappers(
-                                              IOhmTimestampMapper& aTxTsMapper,
-                                              IOhmTimestampMapper& aRxTsMapper);
-    Media::PipelineManager &Pipeline();
-    Net::DvDeviceStandard  *Device();
-    Net::DvDevice          *UpnpAvDevice();
+                                              IOhmTimestamper& aTxTsMapper,
+                                              IOhmTimestamper& aRxTsMapper);
+    Media::PipelineManager           &Pipeline();
+    Net::DvDeviceStandard            *Device();
+    Net::DvDevice                    *UpnpAvDevice();
+    Av::FriendlyNameAttributeUpdater *iFnUpdaterStandard;
+    FriendlyNameManagerUpnpAv        *iFnManagerUpnpAv;
+    Av::FriendlyNameAttributeUpdater *iFnUpdaterUpnpAv;
 private: // from Net::IResourceManager
     void WriteResource(const Brx& aUriTail, TIpAddress aInterface,
                        std::vector<char*>& aLanguageList,
@@ -78,23 +85,28 @@ private:
     void  Disabled();
 protected:
     MediaPlayer                   *iMediaPlayer;
+#ifdef _DEBUG
     Media::IPipelineObserver      *iPipelineStateLogger;
+#endif // _DEBUG
     Media::PipelineInitParams     *iInitParams;
+    Media::AllocatorInfoLogger    *iInfoLogger;
     Net::DvDeviceStandard         *iDevice;
     Net::DvDevice                 *iDeviceUpnpAv;
     RamStore                      *iRamStore;
     Configuration::ConfigRegStore *iConfigRegStore;
     Semaphore                      iSemShutdown;
     Web::WebAppFramework          *iAppFramework;
+    RebootLogger                   iRebootHandler;
 private:
     Semaphore                  iDisabled;
     Av::VolumeControl          iVolume;
     ControlPointProxy         *iCpProxy;
     IOhmTimestamper           *iTxTimestamper;
     IOhmTimestamper           *iRxTimestamper;
-    IOhmTimestampMapper       *iTxTsMapper;
-    IOhmTimestampMapper       *iRxTsMapper;
+    IOhmTimestamper           *iTxTsMapper;
+    IOhmTimestamper           *iRxTsMapper;
     const Brx                 &iUserAgent;
+    Web::FileResourceHandlerFactory iFileResourceHandlerFactory;
     Web::ConfigAppMediaPlayer *iConfigApp;
     HWND                       iHwnd; // Main window handle
     Bws<Uri::kMaxUriBytes+1>   iPresentationUrl;

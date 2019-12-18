@@ -243,7 +243,10 @@ void DriverOsx::AudioThread()
 
 void DriverOsx::ProcessAudio(MsgPlayable* aMsg)
 {
-    /* process the PCM audio data - this may block */
+    // Resume the AudioQueue, if not already running.
+    resumeQueue();
+
+    // process the PCM audio data - this may block
     iPcmHandler.enqueue(aMsg);
 }
 
@@ -261,9 +264,6 @@ Msg* DriverOsx::ProcessMsg(MsgDrain* aMsg)
     // active audio buffers
     flushQueue();
 
-    // Pause the queue. We assume drain signals a gap in playback.
-    pauseQueue();
-
     aMsg->ReportDrained();
     aMsg->RemoveRef();
 
@@ -273,6 +273,10 @@ Msg* DriverOsx::ProcessMsg(MsgDrain* aMsg)
 Msg* DriverOsx::ProcessMsg(MsgHalt* aMsg)
 {
     DBG(("MsgHalt\n"));
+
+    pauseQueue();
+
+    aMsg->ReportHalted();
     aMsg->RemoveRef();
     return NULL;
 }
@@ -322,6 +326,7 @@ Msg* DriverOsx::ProcessMsg(MsgDecodedStream* aMsg)
     startQueue();
 
     iPlaying = true;
+    iPcmHandler.setStreamFormat(stream.BitDepth()/8, stream.NumChannels());
     iPcmHandler.setOutputActive(true);
 
     aMsg->RemoveRef();
@@ -351,11 +356,15 @@ void DriverOsx::Resume()
     resumeQueue();
 }
 
-TUint DriverOsx::PipelineDriverDelayJiffies(TUint /*aSampleRateFrom*/, TUint /*aSampleRateTo*/)
+TUint DriverOsx::PipelineAnimatorDelayJiffies(TUint /*aSampleRate*/, TUint /*aBitDepth*/, TUint /*aNumChannels*/)
 {
     return 0;
 }
 
+TUint DriverOsx::PipelineAnimatorBufferJiffies()
+{
+    return 0;
+}
 
 void DriverOsx::fillBuffer(AudioQueueBufferRef inBuffer)
 {

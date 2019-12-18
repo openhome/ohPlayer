@@ -1,25 +1,31 @@
 #pragma once
 
 #include <OpenHome/Av/MediaPlayer.h>
-#include <OpenHome/Av/Utils/DriverSongcastSender.h>
+#include <OpenHome/Av/FriendlyNameAdapter.h>
 #include <OpenHome/Media/PipelineManager.h>
+#include <OpenHome/Av/RebootHandler.h>
 #include <OpenHome/Av/Songcast/OhmTimestamp.h>
+#include <OpenHome/Av/UpnpAv/FriendlyNameUpnpAv.h>
 #include <OpenHome/Av/VolumeManager.h>
+#include <OpenHome/Web/ConfigUi/FileResourceHandler.h>
 #include <OpenHome/Web/WebAppFramework.h>
 
 #include "Volume.h"
 
 namespace OpenHome {
+    class Shell;
+    class ShellCommandDebug;
+    
 namespace Net {
     class DviServerUpnp;
     class DvStack;
+    class CpStack;
     class DvDevice;
-    class Shell;
-    class ShellCommandDebug;
 }
 namespace Media {
     class PipelineManager;
     class DriverSongcastSender;
+    class AllocatorInfoLogger;
 }
 namespace Configuration {
     class ConfigGTKKeyStore;
@@ -34,12 +40,13 @@ namespace Av {
 
 class ExampleMediaPlayer : private Net::IResourceManager
 {
-    static const Brn   kSongcastSenderIconFileName;
+    static const Brn   kIconOpenHomeFileName;
     static const TUint kMaxUiTabs       = 4;
-    static const TUint kUiSendQueueSize = 32;
+    static const TUint kUiSendQueueSize = kMaxUiTabs * 200;
     static const TUint kShellPort       = 2323;
 public:
-    ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn,
+    ExampleMediaPlayer(Net::DvStack& aDvStack, Net::CpStack& aCpStack,
+					   const Brx& aUdn,
                        const TChar* aRoom, const TChar* aProductName,
                        const Brx& aUserAgent);
     virtual ~ExampleMediaPlayer();
@@ -55,7 +62,7 @@ public:
     void                    AddAttribute(const TChar* aAttribute);
     virtual void            RunWithSemaphore(Net::CpStack& aCpStack);
     void                    SetSongcastTimestampers(IOhmTimestamper& aTxTimestamper, IOhmTimestamper& aRxTimestamper);
-    void                    SetSongcastTimestampMappers(IOhmTimestampMapper& aTxTsMapper, IOhmTimestampMapper& aRxTsMapper);
+    void                    SetSongcastTimestampMappers(IOhmTimestamper& aTxTsMapper, IOhmTimestamper& aRxTsMapper);
     Media::PipelineManager &Pipeline();
     Net::DvDeviceStandard  *Device();
     Net::DvDevice          *UpnpAvDevice();
@@ -70,28 +77,36 @@ private:
     TBool TryDisable(Net::DvDevice& aDevice);
     void  Disabled();
 protected:
-    MediaPlayer                   *iMediaPlayer;
-    Media::IPipelineObserver      *iPipelineStateLogger;
-    Media::PipelineInitParams     *iInitParams;
-    Net::DvDeviceStandard         *iDevice;
-    Net::DvDevice                 *iDeviceUpnpAv;
-    RamStore                      *iRamStore;
+    MediaPlayer                      *iMediaPlayer;
+#ifdef DEBUG
+    Media::IPipelineObserver         *iPipelineStateLogger;
+#endif // DEBUG
+    Media::PipelineInitParams        *iInitParams;
+    Media::AllocatorInfoLogger       *iInfoLogger;
+    Net::DvDeviceStandard            *iDevice;
+    Net::DvDevice                    *iDeviceUpnpAv;
+    Av::FriendlyNameAttributeUpdater *iFnUpdaterStandard;
+    FriendlyNameManagerUpnpAv        *iFnManagerUpnpAv;
+    Av::FriendlyNameAttributeUpdater *iFnUpdaterUpnpAv;
+    RamStore                         *iRamStore;
     Configuration::ConfigGTKKeyStore *iConfigStore;
-    Semaphore                      iSemShutdown;
-    Web::WebAppFramework          *iAppFramework;
+    Semaphore                         iSemShutdown;
+    Web::WebAppFramework             *iAppFramework;
+    RebootLogger                      iRebootHandler;
 private:
     Semaphore                  iDisabled;
     Av::VolumeControl          iVolume;
     ControlPointProxy         *iCpProxy;
     IOhmTimestamper           *iTxTimestamper;
     IOhmTimestamper           *iRxTimestamper;
-    IOhmTimestampMapper       *iTxTsMapper;
-    IOhmTimestampMapper       *iRxTsMapper;
+    IOhmTimestamper           *iTxTsMapper;
+    IOhmTimestamper           *iRxTsMapper;
     const Brx                 &iUserAgent;
+    Web::FileResourceHandlerFactory iFileResourceHandlerFactory;
     Web::ConfigAppMediaPlayer *iConfigApp;
     Bws<Uri::kMaxUriBytes+1>   iPresentationUrl;
-    Net::Shell* iShell;
-    Net::ShellCommandDebug* iShellDebug;
+    Shell* iShell;
+    ShellCommandDebug* iShellDebug;
 };
 
 class ExampleMediaPlayerInit

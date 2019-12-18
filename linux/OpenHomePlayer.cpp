@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef USE_GTK
 #include <gtk/gtk.h>
-#ifdef USE_UNITY
-#include <libappindicator/app-indicator.h>
-#endif // USE_UNITY
-#include <gio/gappinfo.h>
 #include <libnotify/notify.h>
+#include <libappindicator/app-indicator.h>
+#else // USE_GTK
+#include <syslog.h>
+#include <glib.h>
+#endif // USE_GTK
+#include <gio/gio.h>
 #include <vector>
 
 #include "CustomMessages.h"
@@ -15,12 +18,12 @@
 #ifdef DEBUG
 // Mtrace allocation tracing.
 #include <mcheck.h>
-#endif
+#endif // DEBUG
 
 #ifdef USE_NVWA
 // New/Delete tracing.
 #include "debug_new.h"
-#endif
+#endif // USE_NVWA
 
 // Type definitions
 
@@ -33,6 +36,7 @@ enum class NotificationClassifiction
 // Global variables
 
 // System Tray Menu Items
+#ifdef USE_GTK
 static GtkWidget *g_mi_play     = NULL;
 static GtkWidget *g_mi_pause    = NULL;
 static GtkWidget *g_mi_stop     = NULL;
@@ -42,22 +46,31 @@ static GtkWidget *g_mi_about    = NULL;
 static GtkWidget *g_mi_exit     = NULL;
 static GtkWidget *g_mi_sep      = NULL;
 static GtkWidget *g_mi_sep1     = NULL;
+#else // USE_GTK
+static GMainLoop *loop = NULL;
+#endif // USE_GTK
 
+static guint     g_mediaOptions     = 0;     // Available media playback options
 static gboolean  g_updatesAvailable = false; // App updates availability.
 static gchar    *g_updateLocation   = NULL;  // Update location URL.
-static guint     g_mediaOptions     = 0;     // Available media playback options
 static GThread  *g_mplayerThread    = NULL;  // Media Player thread
 static InitArgs  g_mPlayerArgs;              // Media Player arguments.
 
-#ifdef USE_UNITY
+#ifdef USE_GTK
 static const gchar *g_light_icon_path = "/usr/share/openhome-player";
+#ifdef USE_UNITY
 static const gchar *g_light_icon_name = "OpenHome-Light-48x48";
+#else // USE_UNITY
+static const gchar *g_light_icon_name = "OpenHome-48x48";
 #endif // USE_UNITY
+
 static const gchar *g_icon_path =
                         "/usr/share/openhome-player/OpenHome-48x48.png";
+#endif // USE_GTK
 
 const gchar        *g_appName   = "OpenHomePlayer";
 
+#ifdef USE_GTK
 static void displayNotification(const gchar *summary,
                                 const gchar *body,
                                 NotificationClassifiction nClass)
@@ -90,14 +103,6 @@ static void displayNotification(const gchar *summary,
 
     g_object_unref(G_OBJECT(notification));
 }
-
-#ifndef USE_UNITY
-static void tray_icon_on_click(GtkStatusIcon *status_icon,
-                               gpointer       user_data)
-{
-    g_debug("Clicked on tray icon\n");
-}
-#endif // USE_UNITY
 
 // Context Menu Handlers.
 static void playSelectionHandler()
@@ -214,7 +219,8 @@ static void NetworkSelectionHandler(GtkMenuItem * /*menuitem*/, gpointer args)
     g_thread_join(g_mplayerThread);
 
     /* Re-Register UPnP/OhMedia devices. */
-    g_mPlayerArgs.subnet = subnet;
+    g_mPlayerArgs.restarted = true;
+    g_mPlayerArgs.subnet    = subnet;
 
     g_mplayerThread = g_thread_new("MediaPlayerIF",
                                    (GThreadFunc)InitAndRunMediaPlayer,
@@ -299,16 +305,8 @@ static void CreateNetworkAdapterSubmenu(GtkWidget *networkMenuItem)
     gtk_menu_item_set_submenu (GTK_MENU_ITEM(networkMenuItem), submenu);
 }
 
-#ifdef USE_UNITY
 // Create the context menu
 static GtkMenu* tray_icon_on_menu()
-#else // USE_UNITY
-// Display the context menu
-static void tray_icon_on_menu(GtkStatusIcon *status_icon,
-                              guint          button,
-                              guint          activate_time,
-                              gpointer       user_data)
-#endif // USE_UNITY
 {
     GtkMenu   *menu    = (GtkMenu*)gtk_menu_new();
 
@@ -356,11 +354,6 @@ static void tray_icon_on_menu(GtkStatusIcon *status_icon,
     g_signal_connect(G_OBJECT(g_mi_exit), "activate",
                               G_CALLBACK(exitSelectionHandler), NULL);
 
-#ifndef USE_UNITY
-    // Populate the 'Networks' submenu.
-    CreateNetworkAdapterSubmenu(g_mi_networks);
-#endif // USE_UNITY
-
     // Update the playback options in the UI
     UpdatePlaybackOptions();
 
@@ -374,20 +367,9 @@ static void tray_icon_on_menu(GtkStatusIcon *status_icon,
         gtk_widget_set_sensitive(g_mi_update,false);
     }
 
-#ifdef USE_UNITY
     return menu;
-#else  // USE_UNITY
-    gtk_menu_popup(menu,
-                   NULL,
-                   NULL,
-                   NULL,
-                   NULL,
-                   button,
-                   activate_time);
-#endif // USE_UNITY
 }
 
-#ifdef USE_UNITY
 static void create_tray_icon(AppIndicator **indicator)
 {
     // Create the application indicator
@@ -405,39 +387,7 @@ static void create_tray_icon(AppIndicator **indicator)
     // Attach the menu to the indicator.
     app_indicator_set_menu(*indicator, menu);
 }
-#else // USE_UNITY
-static void create_tray_icon()
-{
-    GtkStatusIcon *tray_icon;
 
-    tray_icon = gtk_status_icon_new_from_file(g_icon_path);
-
-    gtk_status_icon_set_tooltip_text(tray_icon, g_appName);
-
-    g_signal_connect(G_OBJECT(tray_icon), "activate",
-                     G_CALLBACK(tray_icon_on_click), NULL);
-
-    g_signal_connect(G_OBJECT(tray_icon),
-                     "popup-menu",
-                     G_CALLBACK(tray_icon_on_menu), NULL);
-
-    gtk_status_icon_set_visible(tray_icon, TRUE);
-}
-#endif // USE_UNITY
-
-gboolean updateUI(gpointer mediaOptions)
-{
-    // The audio pipeline state has changed. Update the available
-    // menu options in line with the current state.
-    g_mediaOptions = GPOINTER_TO_UINT(mediaOptions);
-
-    // Update the playback options in the UI
-    UpdatePlaybackOptions();
-
-    return false;
-}
-
-#ifdef USE_UNITY
 gboolean networkAdaptersAvailable()
 {
     // Add the available adapters to the networks submenu.
@@ -445,12 +395,29 @@ gboolean networkAdaptersAvailable()
 
     return false;
 }
-#endif // USE_UNITY
+#endif // USE_GTK
+
+gboolean updateUI(gpointer mediaOptions)
+{
+    // The audio pipeline state has changed. Update the available
+    // menu options in line with the current state.
+    g_mediaOptions = GPOINTER_TO_UINT(mediaOptions);
+
+#ifdef USE_GTK
+    // Update the playback options in the UI
+    UpdatePlaybackOptions();
+#else // USE_GTK
+    g_debug("The playback options have changed");
+#endif  // USE_GTK
+
+    return false;
+}
 
 gboolean updatesAvailable(gpointer data)
 {
     g_updatesAvailable = true;
 
+#ifdef USE_GTK
     // Alert the user to availability of an application update.
     displayNotification("Update",
                         "There are updates available for this application",
@@ -461,6 +428,10 @@ gboolean updatesAvailable(gpointer data)
     {
         gtk_widget_set_sensitive(g_mi_update,true);
     }
+#else // USE_GTK
+    syslog(LOG_INFO, "There are updates available for this application");
+    syslog(LOG_INFO, "Download and Install %s", (gchar *)data);
+#endif // USE_GTK
 
     // Free up any previously stored location.
     delete[] g_updateLocation;
@@ -473,29 +444,77 @@ gboolean updatesAvailable(gpointer data)
 
 int main(int argc, char **argv)
 {
+    const gchar* usage = "openhome-player [subnet address]";
+
+    // Verify command line options.
+    if (argc > 2)
+    {
+        fprintf(stderr, "%s\n", usage);
+        exit(1);
+    }
+
+    g_mPlayerArgs.restarted = false;
+    g_mPlayerArgs.subnet    = InitArgs::NO_SUBNET;
+
+    // Validate the format of any supplied subnet.
+    if (argc == 2)
+    {
+        guint byte1, byte2, byte3, byte4 = 0;
+
+        if (sscanf(argv[1], "%u.%u.%u.%u", &byte1, &byte2, &byte3, &byte4) == 4)
+        {
+            if ((byte1 > 0xFF) || (byte2 > 0xFF) ||
+                (byte3 > 0xFF) || (byte4 > 0xFF))
+            {
+                fprintf(stderr, "%s\n", "ERROR: Malformed Subnet Address\n");
+                exit(1);
+            }
+
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+            g_mPlayerArgs.subnet = (TIpAddress)((byte1 & 0xFF) |
+                                                ((byte2 & 0xFF) << 8)|
+                                                ((byte3 & 0xFF) << 16)|
+                                                ((byte4 & 0xFF) << 24));
+#else // __ORDER_LITTLE_ENDIAN__
+            g_mPlayerArgs.subnet = (TIpAddress)((byte4 & 0xFF) |
+                                                ((byte3 & 0xFF) << 8)|
+                                                ((byte2 & 0xFF) << 16)|
+                                                ((byte1 & 0xFF) << 24));
+#endif //__ORDER_LITTLE_ENDIAN__
+        }
+        else
+        {
+            fprintf(stderr, "%s\n", "ERROR: Malformed Subnet Address\n");
+            exit(1);
+        }
+    }
+
 #ifdef DEBUG
     // Enable malloc tracing.
     mtrace();
-#endif
+#endif // DEBUG
 
+#ifdef USE_GTK
     gtk_init(&argc, &argv);
     notify_init(g_appName);
 
-#ifdef USE_UNITY
     AppIndicator *indicator;
     create_tray_icon(&indicator);
-#else
-    create_tray_icon();
-#endif
+#else // USE_GTK
+    // For headless builds open syslog for update availability logging
+    openlog(g_appName, LOG_PERROR, LOG_LOCAL0);
+#endif // USE_GTK
 
     // Start MediaPlayer thread.
-    g_mPlayerArgs.subnet = InitArgs::NO_SUBNET;
-
     g_mplayerThread = g_thread_new("MediaPlayerIF",
                                    (GThreadFunc)InitAndRunMediaPlayer,
                                    (gpointer)&g_mPlayerArgs);
-
+#ifdef USE_GTK
     gtk_main();
+#else // USE_GTK
+    loop = g_main_loop_new(NULL, FALSE);
+    g_main_loop_run(loop);
+#endif // USE_GTK
 
     // Wait on the Media Player thread to complete.
     g_thread_join(g_mplayerThread);
@@ -504,7 +523,11 @@ int main(int argc, char **argv)
     delete[] g_updateLocation;
     g_updateLocation = NULL;
 
+#ifdef USE_GTK
     notify_uninit();
+#else // USE_GTK
+    closelog();
+#endif //USE_GTK
 
     return 0;
 }

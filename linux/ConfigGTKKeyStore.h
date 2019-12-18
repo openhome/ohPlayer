@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gtk/gtk.h>
+#include <glib.h>
 
 #include <OpenHome/Configuration/BufferPtrCmp.h>
 #include <OpenHome/Configuration/IStore.h>
@@ -29,8 +29,10 @@ public:
 
 public: // from IStoreReadWrite
     void Read(const Brx& aKey, Bwx& aDest) override;
+    void Read(const Brx& aKey, IWriter& aWriter) override;
     void Write(const Brx& aKey, const Brx& aSource) override;
     void Delete(const Brx& aKey) override;
+    void ResetToDefaults() override;
 private:
     bool mkPath(std::vector<std::string>);
 private:

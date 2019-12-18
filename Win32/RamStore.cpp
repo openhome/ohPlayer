@@ -4,6 +4,11 @@
 using namespace OpenHome;
 using namespace OpenHome::Av;
 
+RamStore::RamStore(const Brx& aImageFileName)
+    : iImageFileName(aImageFileName)
+{
+}
+
 RamStore::~RamStore() {}
 
 // Initialise static, read only properties.
@@ -16,5 +21,5 @@ void RamStore::LoadStaticData(IStoreLoaderStatic& aLoader)
     aLoader.AddStaticItem(StaticDataKey::kBufModelName, "OpenHome Media Player (test)");
     aLoader.AddStaticItem(StaticDataKey::kBufModelInfo, "Example implementation of ohMediaPlayer");
     aLoader.AddStaticItem(StaticDataKey::kBufModelUrl, "http://www.openhome.org/wiki/OhMedia");
-    aLoader.AddStaticItem(StaticDataKey::kBufModelImageUrl, "http://www.openhome.org/common/images/core/open-home-logo.png");
+    aLoader.AddStaticItem(StaticDataKey::kBufModelImageUrl, iImageFileName.CString());
 }

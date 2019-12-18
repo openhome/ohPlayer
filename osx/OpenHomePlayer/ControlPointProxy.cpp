@@ -11,7 +11,7 @@
 #include <OpenHome/Net/Core/CpAvOpenhomeOrgRadio1.h>
 #endif // ENABLE_RADIO
 #include <OpenHome/Net/Core/CpAvOpenhomeOrgReceiver1.h>
-#include <OpenHome/Net/Core/CpAvOpenhomeOrgProduct1.h>
+#include <OpenHome/Net/Core/CpAvOpenhomeOrgProduct2.h>
 #include <OpenHome/Net/Core/CpUpnpOrgAVTransport1.h>
 
 #include <string>
@@ -158,16 +158,6 @@ void ControlPointProxy::CPPlaylist::transportChangedEvent()
     // Keep the native audio state synced with the transport state.
     string stateStr(state.CString());
 
-    if (stateStr == kTransportStatePlaying)
-    {
-        iDriver.Resume();
-    }
-    else if (stateStr == kTransportStatePaused ||
-             stateStr == kTransportStateStopped)
-    {
-        iDriver.Pause();
-    }
-
     // Log the new state.
     Log::Print("New Playlist State: %s\n", state.CString());
 }
@@ -307,15 +297,6 @@ void ControlPointProxy::CPRadio::transportChangedEvent()
     // Keep the native audio state synced with the transport state.
     string stateStr(state.CString());
 
-    if (stateStr == kTransportStatePlaying)
-    {
-        iDriver.resume();
-    }
-    else if (stateStr == kTransportStateStopped)
-    {
-        iDriver.pause();
-    }
-
     // Log the new state.
     Log::Print("New Radio State: %s\n", state.CString());
 }
@@ -431,15 +412,6 @@ void ControlPointProxy::CPReceiver::transportChangedEvent()
     // Keep the native audio state synced with the transport state.
     string stateStr(state.CString());
 
-    if (stateStr == kTransportStatePlaying)
-    {
-        iDriver.Resume();
-    }
-    else if (stateStr == kTransportStateStopped)
-    {
-        iDriver.Pause();
-    }
-
     // Log the new state.
     Log::Print("New Receiver State: %s\n", state.CString());
 }
@@ -552,16 +524,6 @@ void ControlPointProxy::CPUpnpAv::pipelineChangedEvent()
 
     // Keep the native audio state synced with the transport state.
     string stateStr(state.Extract());
-
-    if (stateStr == kPipelineStatePlaying)
-    {
-        iDriver.Resume();
-    }
-    else if (stateStr == kPipelineStatePaused ||
-            (stateStr == kPipelineStateStopped))
-    {
-        iDriver.Pause();
-    }
 
     // Log the new state.
     Log::Print("New UpnpAV State: %s\n", stateStr.c_str());
@@ -682,7 +644,7 @@ ControlPointProxy::CPProduct::CPProduct(Net::CpDeviceDv &aCpPlayer, ControlPoint
     iCpPlayer = &aCpPlayer;
     iCpPlayer->AddRef();
 
-    iProductProxy = new CpProxyAvOpenhomeOrgProduct1(*iCpPlayer);
+    iProductProxy = new CpProxyAvOpenhomeOrgProduct2(*iCpPlayer);
 
     // Create callbacks for playlist notifications we're interested in.
     iFuncSourceIndexChanged =

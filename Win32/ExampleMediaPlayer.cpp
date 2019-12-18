@@ -6,11 +6,13 @@
 #include <OpenHome/Av/Product.h>
 #include <OpenHome/Av/SourceFactory.h>
 #include <OpenHome/Av/UpnpAv/UpnpAv.h>
-#include <OpenHome/Av/Utils/IconDriverSongcastSender.h>
 #include <OpenHome/Media/Debug.h>
 #include <OpenHome/Av/Debug.h>
 #include <OpenHome/Media/Pipeline/Pipeline.h>
+#include <OpenHome/Media/Utils/AllocatorInfoLogger.h>
 #include <OpenHome/Private/Printer.h>
+#include <OpenHome/Web/ConfigUi/FileResourceHandler.h>
+#include <OpenHome/Web/ConfigUi/ConfigUiMediaPlayer.h>
 #include <OpenHome/Web/WebAppFramework.h>
 #include <OpenHome/Web/ConfigUi/ConfigUi.h>
 #include <OpenHome/Net/Private/Shell.h>
@@ -20,6 +22,7 @@
 #include "ControlPointProxy.h"
 #include "CustomMessages.h"
 #include "ExampleMediaPlayer.h"
+#include "IconOpenHome.h"
 #include "MemoryCheck.h"
 #include "MediaPlayerIF.h"
 #include "OptionalFeatures.h"
@@ -34,7 +37,7 @@ using namespace OpenHome::Web;
 
 // ExampleMediaPlayer
 
-const Brn ExampleMediaPlayer::kSongcastSenderIconFileName("SongcastSenderIcon");
+const Brn ExampleMediaPlayer::kIconOpenHomeFileName("OpenHomeIcon");
 
 ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
                                        Net::DvStack& aDvStack,
@@ -54,18 +57,18 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
 {
     iShell = new Shell(aDvStack.Env(), kShellPort);
     iShellDebug = new ShellCommandDebug(*iShell);
+    iInfoLogger = new Media::AllocatorInfoLogger();
 
-    Bws<256> friendlyName;
-    friendlyName.Append(aRoom);
-    friendlyName.Append(':');
-    friendlyName.Append(aProductName);
+    // Do NOT set UPnP friendly name attributes at this stage.
+    // (Wait until MediaPlayer is created so that friendly name can be
+    // observed.)
 
     // create UPnP device
+    // Friendly name not set here
     iDevice = new DvDeviceStandard(aDvStack, aUdn, *this);
     iDevice->SetAttribute("Upnp.Domain", "av.openhome.org");
     iDevice->SetAttribute("Upnp.Type", "Source");
     iDevice->SetAttribute("Upnp.Version", "1");
-    iDevice->SetAttribute("Upnp.FriendlyName", friendlyName.PtrZ());
     iDevice->SetAttribute("Upnp.Manufacturer", "OpenHome");
     iDevice->SetAttribute("Upnp.ModelName", "ExampleMediaPlayer");
 
@@ -75,27 +78,20 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
 
     // The renderer name should be <room name>:<UPnP AV source name> to allow
     // our control point to match the renderer device to the upnp av source.
-    Bws<256> rendererName(aRoom);
-    rendererName.Append(":");
-    rendererName.Append(SourceUpnpAv::kSourceName);
     iDeviceUpnpAv = new DvDeviceStandard(aDvStack, buf);
+    // Friendly name not set here
     iDeviceUpnpAv->SetAttribute("Upnp.Domain", "upnp.org");
     iDeviceUpnpAv->SetAttribute("Upnp.Type", "MediaRenderer");
     iDeviceUpnpAv->SetAttribute("Upnp.Version", "1");
-    friendlyName.Append(":MediaRenderer");
-    iDeviceUpnpAv->SetAttribute("Upnp.FriendlyName", rendererName.PtrZ());
     iDeviceUpnpAv->SetAttribute("Upnp.Manufacturer", "OpenHome");
     iDeviceUpnpAv->SetAttribute("Upnp.ModelName", "ExampleMediaPlayer");
 
     // create read/write store.  This creates a number of static (constant)
     // entries automatically
-    iRamStore = new RamStore();
+    iRamStore = new RamStore(kIconOpenHomeFileName);
 
     // create a read/write store using the new config framework
     iConfigRegStore = new ConfigRegStore();
-
-    iConfigRegStore->Write(Brn("Product.Room"), Brn(aRoom));
-    iConfigRegStore->Write(Brn("Product.Name"), Brn(aProductName));
 
     // Volume Control
     VolumeProfile  volumeProfile;
@@ -107,16 +103,31 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
     // Set pipeline thread priority just below the pipeline animator.
     iInitParams = PipelineInitParams::New();
     iInitParams->SetThreadPriorityMax(kPriorityHighest);
-    iInitParams->SetStarvationMonitorMaxSize(Jiffies::kPerMs * 100);
+    iInitParams->SetStarvationRamperMinSize(100 * Jiffies::kPerMs);
+    iInitParams->SetGorgerDuration(iInitParams->DecodedReservoirJiffies());
+
 
     // create MediaPlayer
-    iMediaPlayer = new MediaPlayer(aDvStack, *iDevice, *iShell, *iRamStore,
+    iMediaPlayer = new MediaPlayer(aDvStack, *iDevice, *iRamStore,
                                    *iConfigRegStore, iInitParams,
-                                    volumeInit, volumeProfile, aUdn, Brn(aRoom),
+                                    volumeInit, volumeProfile, *iInfoLogger,
+                                    aUdn, Brn(aRoom),
                                     Brn(aProductName));
 
+#ifdef _DEBUG
     iPipelineStateLogger = new LoggingPipelineObserver();
     iMediaPlayer->Pipeline().AddObserver(*iPipelineStateLogger);
+#endif // _DEBUG
+
+    iFnUpdaterStandard = new
+        Av::FriendlyNameAttributeUpdater(iMediaPlayer->FriendlyNameObservable(),
+                                        *iDevice);
+
+    iFnManagerUpnpAv = new
+        Av::FriendlyNameManagerUpnpAv(iMediaPlayer->Product());
+
+    iFnUpdaterUpnpAv = new
+        Av::FriendlyNameAttributeUpdater(*iFnManagerUpnpAv, *iDeviceUpnpAv);
 
     // Set up config app.
     static const TUint addr = 0;    // Bind to all addresses.
@@ -134,9 +145,15 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
 {
     ASSERT(!iDevice->Enabled());
     delete iAppFramework;
+    delete iFnUpdaterStandard;
+    delete iFnUpdaterUpnpAv;
+    delete iFnManagerUpnpAv;
     delete iCpProxy;
+#ifdef _DEBUG
     delete iPipelineStateLogger;
+#endif // _DEBUG
     delete iMediaPlayer;
+    delete iInfoLogger;
     delete iShellDebug;
     delete iShell;
     delete iDevice;
@@ -221,8 +238,8 @@ void ExampleMediaPlayer::SetSongcastTimestampers(
 }
 
 void ExampleMediaPlayer::SetSongcastTimestampMappers(
-                                              IOhmTimestampMapper& aTxTsMapper,
-                                              IOhmTimestampMapper& aRxTsMapper)
+                                              IOhmTimestamper& aTxTsMapper,
+                                              IOhmTimestamper& aRxTsMapper)
 {
     iTxTsMapper = &aTxTsMapper;
     iRxTsMapper = &aRxTsMapper;
@@ -275,7 +292,7 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
     iMediaPlayer->Add(Codec::CodecFactory::NewMp3(iMediaPlayer->MimeTypes()));
 #endif // ENABLE_MP3
 #endif // USE_IMFCODEC
-    iMediaPlayer->Add(Codec::CodecFactory::NewAlac(iMediaPlayer->MimeTypes()));
+    iMediaPlayer->Add(Codec::CodecFactory::NewAlacApple(iMediaPlayer->MimeTypes()));
     iMediaPlayer->Add(Codec::CodecFactory::NewPcm());
     iMediaPlayer->Add(Codec::CodecFactory::NewVorbis(iMediaPlayer->MimeTypes()));
 
@@ -292,36 +309,33 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 
     iMediaPlayer->Add(SourceFactory::NewUpnpAv(*iMediaPlayer, *iDeviceUpnpAv));
 
-    iMediaPlayer->Add(SourceFactory::NewReceiver(*iMediaPlayer,
-                                                  iTxTimestamper,
-                                                  iTxTsMapper,
-                                                  iRxTimestamper,
-                                                  iRxTsMapper,
-                                                  kSongcastSenderIconFileName));
+    iMediaPlayer->Add(SourceFactory::NewReceiver(
+                                  *iMediaPlayer,
+                                   Optional<IClockPuller>(nullptr),
+                                   Optional<IOhmTimestamper>(iTxTimestamper),
+                                   Optional<IOhmTimestamper>(iRxTimestamper)));
+
 
 #ifdef ENABLE_TIDAL
     // You must define your Tidal token
     iMediaPlayer->Add(ProtocolFactory::NewTidal(
                                             aEnv,
                                             Brn(TIDAL_TOKEN),
-                                            iMediaPlayer->CredentialsManager(),
-                                            iMediaPlayer->ConfigInitialiser()));
+                                           *iMediaPlayer));
 #endif  // ENABLE_TIDAL
 
 #ifdef ENABLE_QOBUZ
     // You must define your QOBUZ appId and secret key
     iMediaPlayer->Add(ProtocolFactory::NewQobuz(
-                                            aEnv,
                                             Brn(QOBUZ_APPID),
                                             Brn(QOBUZ_SECRET),
-                                            iMediaPlayer->CredentialsManager(),
-                                            iMediaPlayer->ConfigInitialiser()));
+                                           *iMediaPlayer));
 #endif  // ENABLE_QOBUZ
 
 #ifdef ENABLE_RADIO
     // Radio is disabled by default as many stations depend on AAC
     iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer,
-                                              Brn(TUNEIN_PARTNER_ID)));
+                                               Brn(TUNEIN_PARTNER_ID)));
 #endif  // ENABLE_RADIO
 }
 
@@ -330,12 +344,12 @@ void ExampleMediaPlayer::WriteResource(const Brx&          aUriTail,
                                        std::vector<char*>& /*aLanguageList*/,
                                        IResourceWriter&    aResourceWriter)
 {
-    if (aUriTail == kSongcastSenderIconFileName)
+    if (aUriTail == kIconOpenHomeFileName)
     {
-        aResourceWriter.WriteResourceBegin(sizeof(kIconDriverSongcastSender),
-                                           kIconDriverSongcastSenderMimeType);
-        aResourceWriter.WriteResource(kIconDriverSongcastSender,
-                                      sizeof(kIconDriverSongcastSender));
+        aResourceWriter.WriteResourceBegin(sizeof(kIconOpenHome),
+                                           kIconOpenHomeMimeType);
+        aResourceWriter.WriteResource(kIconOpenHome,
+                                      sizeof(kIconOpenHome));
         aResourceWriter.WriteResourceEnd();
     }
 }
@@ -353,12 +367,17 @@ void ExampleMediaPlayer::AddConfigApp()
         sourcesBufs.push_back(new Brh(systemName));
     }
 
-    iConfigApp = new ConfigAppMediaPlayer(iMediaPlayer->ConfigManager(),
+    iConfigApp = new ConfigAppMediaPlayer(*iInfoLogger,
+                                          iMediaPlayer->Env(),
+                                          iMediaPlayer->Product(),
+                                          iMediaPlayer->ConfigManager(),
+                                          iFileResourceHandlerFactory,
                                           sourcesBufs,
                                           Brn("Softplayer"),
                                           Brn("res/"),
                                           kMaxUiTabs,
-                                          kUiSendQueueSize);
+                                          kUiSendQueueSize,
+                                          iRebootHandler);
 
     iAppFramework->Add(iConfigApp,              // iAppFramework takes ownership
                        MakeFunctorGeneric(*this, &ExampleMediaPlayer::PresentationUrlChanged));
@@ -370,17 +389,9 @@ void ExampleMediaPlayer::AddConfigApp()
 
 void ExampleMediaPlayer::PresentationUrlChanged(const Brx& aUrl)
 {
-    if (!iDevice->Enabled()) {
-        // FIXME - can only set Product attribute once (meaning no updates on subnet change)
-        const TBool firstChange = (iPresentationUrl.Bytes() == 0);
-        iPresentationUrl.Replace(aUrl);
-        iDevice->SetAttribute("Upnp.PresentationUrl", iPresentationUrl.PtrZ());
-        if (firstChange) {
-            Bws<128> configAtt("App:Config=");
-            configAtt.Append(iPresentationUrl);
-            iMediaPlayer->Product().AddAttribute(configAtt);
-        }
-    }
+    iPresentationUrl.Replace(aUrl);
+    iMediaPlayer->Product().SetConfigAppUrl(iPresentationUrl);
+    iDevice->SetAttribute("Upnp.PresentationUrl", iPresentationUrl.PtrZ());
 }
 
 TBool ExampleMediaPlayer::TryDisable(DvDevice& aDevice)

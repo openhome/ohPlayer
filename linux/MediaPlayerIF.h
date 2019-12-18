@@ -13,11 +13,12 @@ typedef struct
     OpenHome::TBool  isCurrent;   // Is this the current active subnet
 } SubnetRecord;
 
-typedef struct
+typedef struct InitArgsStruct
 {
     static const TIpAddress NO_SUBNET = 0xFFFFFFFF;
 
-    TIpAddress subnet;                   // Requested subnet
+    TIpAddress      subnet;              // Requested subnet
+    OpenHome::TBool restarted;           // Has the MediaPlayer been restarted.
 } InitArgs;
 
 void InitAndRunMediaPlayer(gpointer args);

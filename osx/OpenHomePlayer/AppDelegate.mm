@@ -59,6 +59,7 @@ NSMenuItem *subnetItem =  nil;
         if(uri !=nil)
         {
             NSString * uriString = [NSString stringWithUTF8String:uri];
+            delete uri;
             [self showUpdateNotification:self updateUri:uriString];
         }
     }

@@ -8,6 +8,14 @@ using namespace OpenHome;
 using namespace OpenHome::Av;
 using namespace OpenHome::Media;
 
+// RebootLogger
+
+void RebootLogger::Reboot(const Brx& aReason)
+{
+    Log::Print("\n\n\nRebootLogger::Reboot. Reason:\n%.*s\n\n\n",
+               PBUF(aReason));
+}
+
 TUint VolumeProfile::VolumeMax() const
 {
     return kVolumeMax;
@@ -48,6 +56,11 @@ TUint VolumeProfile::FadeMax() const
     return kFadeMax;
 }
 
+TBool VolumeProfile::AlwaysOn() const
+{
+    return kAlwaysOn;
+}
+
 void VolumeControl::SetHost(Media::DriverOsx *driver)
 {
     // Set the audio driver for use in volume calls.
@@ -57,6 +70,10 @@ void VolumeControl::SetHost(Media::DriverOsx *driver)
 
 void VolumeControl::SetVolume(TUint aVolume)
 {
+    const TUint MILLI_DB_PER_STEP  = 1024;
+
+    aVolume /= MILLI_DB_PER_STEP;
+
     // Set the audio session volume.
     if(aVolume != iVolume)
     {

@@ -39,6 +39,16 @@ public:
     void setOutputActive(bool active);
 
     /**
+      * Note the number of bytes in an audio sample and the number of channels
+      * in a frame.
+      *
+      * This is used to allow auto-generated 32 bit pcm to converted to
+      * match the current audio stream.
+      */
+    void setStreamFormat(TUint8 aSampleBytes, TUint aNumChannels)
+         { iSampleBytes = aSampleBytes; iNumChannels = aNumChannels; }
+
+    /**
      * get the size of data in the buffer
      */
     TUint32 size() { return iWriteIndex; }
@@ -47,6 +57,17 @@ public:
      * quit outstanding processing
      */
     void quit();
+
+    /**
+     * Convert the supplied 32 bit big endian pcm to the bit depth required by
+     * the current audio queue.
+     *
+     * @param aData         Packed big endian pcm data.
+     *                      Will always be a complete number of samples.
+     * @param aSampleSize   Number of bytes in a single sample.
+     * @param aNumChannels  Number of channels.
+     */
+    void convertPcm(const Brx& aData, TByte aSampleSize, TUint aNumChannels);
 
     /**
      * Called once per call to MsgPlayable::Read.
@@ -81,29 +102,6 @@ public:
     virtual void ProcessFragment32(const Brx& aData, TUint aNumChannels);
 
     /**
-     * Process a single sample of audio.
-     *
-     * Data is packed and big endian.
-     * Bit depth is indicated in function name; number of channels is passed as a parameter.
-     *
-     * @param aSample  Pcm data for a single sample.  Length will be (bitDepth * numChannels).
-     */
-    virtual void ProcessSample(const TByte* aSample, const TUint8 aSampleSize, TUint aNumChannels);
-
-    /**
-     * Process a single sample of audio.
-     *
-     * Data is packed and big endian.
-     * Bit depth is indicated in function name; number of channels is passed as a parameter.
-     *
-     * @param aSample  Pcm data for a single sample.  Length will be (bitDepth * numChannels).
-     */
-    virtual void ProcessSample8(const TByte* aSample, TUint aNumChannels);
-    virtual void ProcessSample16(const TByte* aSample, TUint aNumChannels);
-    virtual void ProcessSample24(const TByte* aSample, TUint aNumChannels);
-    virtual void ProcessSample32(const TByte* aSample, TUint aNumChannels);
-
-    /**
      * Called once per call to MsgPlayable::Read.
      *
      * No more calls to ProcessFragment or ProcessSample will be made after this.
@@ -116,12 +114,18 @@ public:
     virtual void Flush() {}
 
 private:
+    // The lowest common multiple of the available sample sizes  (1/2/3/4 bytes)
+    // multiplied by the maximum number of channels.
+    static const TUint kMsgSplitBoundary = 12 * 2;
+
     AudioQueueBufferRef   iBuff;
     TUint32 iBuffsize;
     TUint32 iReadIndex;
     TUint32 iWriteIndex;
     TUint32 iBytesToRead;
-    TUint8  iFrameSize;
+    TUint8  iSampleBytes;
+    TUint8  iNumChannels;
+    TUint8  iBitDepth;
     Mutex iSampleBufferLock;
     Mutex iOutputLock;
     Semaphore iSemHostReady;

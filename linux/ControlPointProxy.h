@@ -17,7 +17,7 @@ namespace Net {
     class CpProxyAvOpenhomeOrgRadio1;
 #endif // ENABLE_RADIO
     class CpProxyAvOpenhomeOrgReceiver1;
-    class CpProxyAvOpenhomeOrgProduct1;
+    class CpProxyAvOpenhomeOrgProduct2;
     class CpProxyUpnpOrgAVTransport1;
     class DvDevice;
 }
@@ -136,7 +136,8 @@ private:
         private: // from Media::IPipelineObserver
             void NotifyPipelineState(Media::EPipelineState aState) override;
             void NotifyMode(const Brx& aMode,
-                            const Media::ModeInfo& aInfo) override;
+                            const Media::ModeInfo& aInfo,
+							const Media::ModeTransportControls& aTransportControls) override;
             void NotifyTrack(Media::Track& aTrack, const Brx& aMode,
                              TBool aStartOfStream) override;
             void NotifyMetaText(const Brx& aText) override;
@@ -158,7 +159,7 @@ private:
             Sources GetSourceAtIndex(std::string &sourceXml, TInt sourceIndex);
             void sourceIndexChangedEvent();
         private:
-            Net::CpProxyAvOpenhomeOrgProduct1 *iProductProxy;
+            Net::CpProxyAvOpenhomeOrgProduct2 *iProductProxy;
             Net::CpDeviceDv                   *iCpPlayer;
             ControlPointProxy                 &iCcp;
 

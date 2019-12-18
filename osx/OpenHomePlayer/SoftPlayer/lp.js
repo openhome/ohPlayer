@@ -117,10 +117,12 @@ WebUi = function() {
 
     LongPoll.prototype.Terminate = function()
     {
-        this.SendTerminate();
-        this.iSessionId = 0;
-        // this.iState = this.EStates.eCreate;
-        this.iState = this.EStates.eTerminate;
+        if (this.iSessionId != 0) {
+            this.SendTerminate();
+            this.iSessionId = 0;
+            // this.iState = this.EStates.eCreate;
+            this.iState = this.EStates.eTerminate;
+        }
     }
 
     LongPoll.prototype.ConstructSessionId = function()
@@ -139,6 +141,7 @@ WebUi = function() {
 
     LongPoll.prototype.SendCreate = function()
     {
+        console.log(">LongPoll.SendCreate\n")
         var request = LongPoll.CreateLongPollRequest(this);
         // FIXME - need to send URI prefix here
         // FIXME - what if we don't get a response to this?
@@ -146,24 +149,29 @@ WebUi = function() {
         request.Open("POST", "lpcreate", true);
         try {
             request.Send()
+            console.log("LongPoll.SendCreate Request sent\n")
         }
         catch (err) { // InvalidStateError
             // If InvalidStateError, aRequest was not opened.
             // Try calling SendCreate() again.
             // FIXME - delay for 5s first?
+            console.log("LongPoll.SendCreate Request failed. Retrying.\n")
             this.SendCreate();
         }
     }
 
     LongPoll.prototype.SendTerminate = function()
     {
+        // This should only be called when a browser tab closes.
+        // Therefore, can't rely on asynchronous requests, so use a synchronous request.
         var request = LongPoll.CreateLongPollRequest(this);
-        request.Open("POST", "lpterminate", true);
+        request.Open("POST", "lpterminate", false); // "false" makes request synchronous
         this.SendSessionId(request);
     }
 
     LongPoll.prototype.SendPoll = function()
     {
+        console.log("LongPoll.SendPoll\n");
         var request = LongPoll.CreateLongPollRequest(this);
         request.Open("POST", "lp", true);
         this.SendSessionId(request);
@@ -177,7 +185,7 @@ WebUi = function() {
         Response = function() {
             if (request.ReadyState() == 4) {
                 if (request.Status() == 200) {
-                    aCallbackResponse(aString, request.responseText);
+                    aCallbackResponse(aString, request.ResponseText());
                 }
                 else {
                     aCallbackError(aString);
@@ -204,20 +212,24 @@ WebUi = function() {
 
     LongPoll.prototype.ParseResponse = function(aResponse)
     {
+        var parseErr = "Unable to parse JSON";
         if (aResponse == "") {
             this.iCallbackSuccess(aResponse);
         }
         else {
             try {
                 var json = JSON.parse(aResponse);
+                if (!json) {
+                    throw parseErr;
+                }
+                for (var i=0; i<json.length; i++) {
+                    this.iCallbackSuccess(json[i]);
+                }
             }
-            catch (err)
-            {
-                alert("Error: LongPoll.ParseResponse could not parse JSON response");
+            catch (err) {
+                throw parseErr;
             }
-            for (var i=0; i<json.length; i++) {
-                this.iCallbackSuccess(json[i]);
-            }
+
         }
     }
 
@@ -237,11 +249,15 @@ WebUi = function() {
             // this.SendCreate();
         // }
 
+        if (aRequest == null || aRequest.ReadyState() != 4) {
+            return;
+        }
 
-        var urlSplit = aRequest.ResponseUrl().split("/");
-        var urlTail = urlSplit[urlSplit.length-1];
+        console.log("LongPoll.ProcessResponse response: " + aRequest.ResponseText() + "\n");
+        var lines = aRequest.ResponseText().split("\r\n");
+        var request = lines[0]
 
-        if (this.iState == this.EStates.eTerminate && urlTail == "lpcreate") {
+        if (this.iState == this.EStates.eTerminate && request == "lpcreate") {
             if (aRequest.ReadyState()==4 && aRequest.Status()==200) {
                 this.iState = this.EStates.eTerminate;
                 location.reload();  // re-established connection; reload page
@@ -249,10 +265,10 @@ WebUi = function() {
             }
         }
 
-        if (urlTail == "lpcreate" || urlTail == 'lp') {
+        if (request == "lpcreate" || request == 'lp') {
             if (aRequest.ReadyState()==4 && aRequest.Status()==200) {
-                if (urlTail == 'lpcreate') {
-                    session = aRequest.ResponseText().split(":");
+                if (request == 'lpcreate') {
+                    session = lines[1].split(":");
                     if (session.length == 2) {
                         sessionVal = session[1].split(" ");
                         if (session[0] == "session-id" && sessionVal.length == 2) {
@@ -263,16 +279,31 @@ WebUi = function() {
                             return;
                         }
                     }
+                    // FIXME - wait for 5s and/or go into probing mode
+                    sleep(5)
                     this.SendCreate();
                 }
-                else { // urlTail == lp
+                else { // request == lp
                     // FIXME - check session ID?
-                    this.ParseResponse(aRequest.ResponseText());
-                    // FIXME - should delay for 5s
-                    this.SendPoll();
+                    // Split string after request line, as the response (i.e., any JSON) may contain newlines.
+                    var json = aRequest.ResponseText().substring(lines[0].length+2);    // +2 to account for stripped \r\n
+                    try {
+                    this.ParseResponse(json);
+                        console.log("LongPoll.ProcessResponse sending next lp request\n");
+                        this.SendPoll();
+                    }
+                    catch (err) {
+                        out = "LongPoll.ProcessResponse " + err + ". Terminating long polling\n"
+                        console.log(out);
+                        // FIXME - as web page is no longer usable at this point (as long polls have been terminated),
+                        // replace with a custom error page (that encourages user to reload, and/or also trigger a probe // request that will attempt to reload the page if the user doesn't manually reload)?
+                        alert(out);
+                    }
                 }
             }
             else if (aRequest.Status() == 0) {
+                // FIXME - wait for 5s and/or go into probing mode
+                sleep(5)
                 this.SendCreate();
             }
         }

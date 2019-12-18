@@ -13,8 +13,13 @@ using namespace OpenHome::Media;
 // Takes PCM data from the pipeline and formats it for the WASAPI
 // audio subsystem.
 
-ProcessorPcmBufWASAPI::ProcessorPcmBufWASAPI()
+ProcessorPcmBufWASAPI::ProcessorPcmBufWASAPI() : iBitDepth(0)
 {
+}
+
+void ProcessorPcmBufWASAPI::SetBitDepth(TUint bitDepth)
+{
+    iBitDepth = bitDepth;
 }
 
 void ProcessorPcmBufWASAPI::ProcessFragment8(const Brx& aData,
@@ -92,65 +97,63 @@ void ProcessorPcmBufWASAPI::ProcessFragment24(const Brx& aData,
     delete[] nData;
 }
 
-void ProcessorPcmBufWASAPI::ProcessFragment32(const Brx& /*aData*/,
+void ProcessorPcmBufWASAPI::ProcessFragment32(const Brx& aData,
                                               TUint      /*aNumChannels*/)
 {
-    ASSERTS();
-}
+    TByte *nData;
+    TUint  bytes;
 
-void ProcessorPcmBufWASAPI::ProcessSample8(const TByte* aSample,
-                                           TUint        aNumChannels)
-{
-    TByte sample[8]  = { 0 };
-    TUint sampleSize = 1;
+    bytes = aData.Bytes();
 
-    for (TUint i=0; i<aNumChannels; i++) {
-        sample[0] = *aSample;
+    nData = new TByte[bytes];
+    ASSERT(nData != NULL);
 
-        aSample++;
-        Brn sampleBuf(sample, sampleSize);
-        ProcessFragment(sampleBuf);
+    TByte *ptr  = (TByte *)(aData.Ptr() + 0);
+    TByte *endp = ptr + bytes;
+    TByte *ptr1 = (TByte *)nData;
+
+    ASSERT(bytes % 4 == 0);
+
+    // Little endian byte order required by native audio.
+    TUint outBytes = 0;
+
+    while (ptr < endp)
+    {
+        // The pipeline may auto-generate 32 bit PCM.
+        // This must be converted to the same format as the audio stream.
+        switch (iBitDepth)
+        {
+            case 32:
+            {
+                *ptr1++ = *(ptr+3);
+                outBytes++;
+                // fallthrough
+            }
+            case 24:
+            {
+                *ptr1++ = *(ptr+2);
+                outBytes++;
+                // fallthrough
+            }
+            case 16:
+            {
+                *ptr1++ = *(ptr+1);
+                outBytes++;
+                // fallthrough
+            }
+            case 8:
+            {
+                *ptr1++ = *(ptr+0);
+                outBytes++;
+                break;
+            }
+        }
+
+        ptr += 4;
     }
-}
 
-void ProcessorPcmBufWASAPI::ProcessSample16(const TByte* aSample,
-                                            TUint        aNumChannels)
-{
-    TByte sample[8]  = { 0 };
-    TUint sampleSize = 2;
+    Brn fragment(nData, outBytes);
+    ProcessFragment(fragment);
 
-    for (TUint i=0; i<aNumChannels; i++) {
-        sample[0] = *(aSample + 1);
-        sample[1] = *aSample;
-
-        aSample += 2;
-
-        Brn sampleBuf(sample, sampleSize);
-        ProcessFragment(sampleBuf);
-    }
-
-}
-
-void ProcessorPcmBufWASAPI::ProcessSample24(const TByte* aSample,
-                                            TUint        aNumChannels)
-{
-    TByte sample[8]  = { 0 };
-    TUint sampleSize = 3;
-
-    for (TUint i=0; i<aNumChannels; i++) {
-        sample[0] = *(aSample + 2);
-        sample[1] = *(aSample + 1);
-        sample[2] = *aSample;
-
-        aSample += 3;
-
-        Brn sampleBuf(sample, sampleSize);
-        ProcessFragment(sampleBuf);
-    }
-}
-
-void ProcessorPcmBufWASAPI::ProcessSample32(const TByte* /*aSample*/,
-                                            TUint        /*aNumChannels*/)
-{
-    ASSERTS();
+    delete[] nData;
 }

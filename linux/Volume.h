@@ -1,12 +1,20 @@
 #pragma once
 
+#include <OpenHome/Av/RebootHandler.h>
 #include <OpenHome/Av/VolumeManager.h>
 #include <OpenHome/Media/MuteManager.h>
+#include <OpenHome/Private/Thread.h>
 
 #include <alsa/asoundlib.h>
 
 namespace OpenHome {
 namespace Av {
+
+class RebootLogger : public IRebootHandler
+{
+public: // from IRebootHandler
+    void Reboot(const Brx& aReason) override;
+};
 
 class VolumeProfile : public IVolumeProfile
 {
@@ -16,8 +24,11 @@ class VolumeProfile : public IVolumeProfile
     static const TUint kVolumeDefaultLimit = 85;
     static const TUint kVolumeStep = 1;
     static const TUint kVolumeMilliDbPerStep = 1024;
+    static const TUint kThreadPriority = OpenHome::kPriorityHigh;
     static const TUint kBalanceMax = 12;
     static const TUint kFadeMax = 10;
+    static const TUint kOffsetMax = 4 * 1024;
+    static const TBool kAlwaysOn = false;
 private: // from IVolumeProfile
     TUint VolumeMax() const override;
     TUint VolumeDefault() const override;
@@ -25,8 +36,11 @@ private: // from IVolumeProfile
     TUint VolumeDefaultLimit() const override;
     TUint VolumeStep() const override;
     TUint VolumeMilliDbPerStep() const override;
+    TUint ThreadPriority() const override;
     TUint BalanceMax() const override;
     TUint FadeMax() const override;
+    TUint OffsetMax() const override;
+    TBool AlwaysOn() const override;
 };
 
 class VolumeControl : public IVolume, public IBalance, public IFade

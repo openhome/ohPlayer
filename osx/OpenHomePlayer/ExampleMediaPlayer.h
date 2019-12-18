@@ -11,7 +11,7 @@
 
 #include <OpenHome/Av/MediaPlayer.h>
 #include <OpenHome/Net/Core/DvDevice.h>
-#include <OpenHome/Av/Utils/DriverSongcastSender.h>
+#include <OpenHome/Av/FriendlyNameAdapter.h>
 #include <OpenHome/Media/PipelineManager.h>
 #include <OpenHome/Media/UriProviderSingleTrack.h>
 #include <OpenHome/Private/Printer.h>
@@ -24,10 +24,13 @@
 #include <OpenHome/Av/SourceFactory.h>
 #include <OpenHome/Av/KvpStore.h>
 #include <OpenHome/Av/Raop/Raop.h>
+#include <OpenHome/Web/ConfigUi/FileResourceHandler.h>
 #include <OpenHome/Av/Songcast/OhmTimestamp.h>
+#include <OpenHome/Av/UpnpAv/FriendlyNameUpnpAv.h>
 #include <OpenHome/PowerManager.h>
 #include <OpenHome/Web/WebAppFramework.h>
 #include <OpenHome/Av/VolumeManager.h>
+#include <OpenHome/Av/RebootHandler.h>
 
 #include "RamStore.h"
 #include "Volume.h"
@@ -45,7 +48,7 @@ namespace OpenHome {
     namespace Media {
         class PipelineManager;
         class DriverSongcastSender;
-        class IPullableClock;
+        class AllocatorInfoLogger;
     }
     namespace Configuration {
         class ConfigPersistentStore;
@@ -61,9 +64,9 @@ namespace OpenHome {
             class ExampleMediaPlayer :  private Net::IResourceManager
             {
             private:
-                static const Brn kSongcastSenderIconFileName;
-                static const TUint kMaxUiTabs = 4;
-                static const TUint kUiSendQueueSize = 32;
+                static const Brn   kIconOpenHomeFileName;
+                static const TUint kMaxUiTabs       = 4;
+                static const TUint kUiSendQueueSize = kMaxUiTabs * 200;
                 static const TUint kShellPort       = 2323;
 
             public:
@@ -100,13 +103,18 @@ namespace OpenHome {
                 void Disabled();
 
             protected:
-                MediaPlayer*            iMediaPlayer;
+                MediaPlayer*                iMediaPlayer;
+                Media::AllocatorInfoLogger* iInfoLogger;
                 Net::DvDeviceStandard*  iDevice;
                 Net::DvDevice*          iDeviceUpnpAv;
+                Av::FriendlyNameAttributeUpdater* iFnUpdaterStandard;
+                FriendlyNameManagerUpnpAv*        iFnManagerUpnpAv;
+                Av::FriendlyNameAttributeUpdater* iFnUpdaterUpnpAv;
                 RamStore*               iRamStore;
                 Web::WebAppFramework*   iAppFramework;
-                Media::DriverOsx*              iDriver;
+                Media::DriverOsx*       iDriver;
                 Configuration::ConfigPersistentStore* iConfigPersistentStore;
+                RebootLogger            iRebootHandler;
             private:
                 Semaphore iDisabled;
                 Av::VolumeControl       iVolume;
@@ -116,7 +124,9 @@ namespace OpenHome {
                 IOhmTimestamper*        iRxTimestamper;
                 IOhmTimestamper*        iTxTsMapper;
                 IOhmTimestamper*        iRxTsMapper;
+                Web::FileResourceHandlerFactory iFileResourceHandlerFactory;
                 Web::ConfigAppMediaPlayer* iConfigApp;
+                Bws<Uri::kMaxUriBytes+1>   iPresentationUrl;
                 Net::Shell*             iShell;
                 Net::ShellCommandDebug* iShellDebug;
 

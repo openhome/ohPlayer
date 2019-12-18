@@ -1,4 +1,6 @@
+#ifdef USE_GTK
 #include <gtk/gtk.h>
+#endif // USE_GTK
 
 #include <OpenHome/Av/Source.h>
 #include <OpenHome/Media/Pipeline/Msg.h>
@@ -13,7 +15,7 @@
 #include <CpAvOpenhomeOrgRadio1.h>
 #endif // ENABLE_RADIO
 #include <CpAvOpenhomeOrgReceiver1.h>
-#include <CpAvOpenhomeOrgProduct1.h>
+#include <CpAvOpenhomeOrgProduct2.h>
 #include <CpUpnpOrgAVTransport1.h>
 
 #include <string>
@@ -169,7 +171,13 @@ void ControlPointProxy::CPPlaylist::transportChangedEvent()
     }
 
     // Adjust the UI accordingly.
+#ifdef USE_GTK
     gdk_threads_add_idle((GSourceFunc)updateUI, GINT_TO_POINTER(mediaOptions));
+#else // USE_GTK
+    g_main_context_invoke(NULL,
+                          (GSourceFunc)updateUI,
+                          GINT_TO_POINTER(mediaOptions));
+#endif // USE_GTK
 }
 
 void ControlPointProxy::CPPlaylist::setActive(TBool active)
@@ -317,7 +325,13 @@ void ControlPointProxy::CPRadio::transportChangedEvent()
     }
 
     // Adjust the UI accordingly.
+#ifdef USE_GTK
     gdk_threads_add_idle((GSourceFunc)updateUI, GINT_TO_POINTER(mediaOptions));
+#else // USE_GTK
+    g_main_context_invoke(NULL,
+                          (GSourceFunc)updateUI,
+                          GINT_TO_POINTER(mediaOptions));
+#endif // USE_GDK
 }
 
 void ControlPointProxy::CPRadio::setActive(TBool active)
@@ -443,7 +457,13 @@ void ControlPointProxy::CPReceiver::transportChangedEvent()
     }
 
     // Adjust the UI accordingly.
+#ifdef USE_GTK
     gdk_threads_add_idle((GSourceFunc)updateUI, GINT_TO_POINTER(mediaOptions));
+#else // USE_GTK
+    g_main_context_invoke(NULL,
+                          (GSourceFunc)updateUI,
+                          GINT_TO_POINTER(mediaOptions));
+#endif // USE_GDK
 }
 
 void ControlPointProxy::CPReceiver::setActive(TBool active)
@@ -570,7 +590,13 @@ void ControlPointProxy::CPUpnpAv::pipelineChangedEvent()
     }
 
     // Adjust the UI accordingly.
+#ifdef USE_GTK
     gdk_threads_add_idle((GSourceFunc)updateUI, GINT_TO_POINTER(mediaOptions));
+#else // USE_GTK
+    g_main_context_invoke(NULL,
+                          (GSourceFunc)updateUI,
+                          GINT_TO_POINTER(mediaOptions));
+#endif // USE_GDK
 }
 
 void ControlPointProxy::CPUpnpAv::setActive(TBool active)
@@ -654,7 +680,8 @@ void ControlPointProxy::CPUpnpAv::NotifyPipelineState(Media::EPipelineState aSta
 }
 
 void ControlPointProxy::CPUpnpAv::NotifyMode(const Brx& /*aMode*/,
-                                             const Media::ModeInfo& /*aInfo*/)
+                                             const Media::ModeInfo& /*aInfo*/,
+                                             const Media::ModeTransportControls& /*aTransportControls*/)
 {
 }
 
@@ -685,7 +712,7 @@ ControlPointProxy::CPProduct::CPProduct(Net::CpDeviceDv &aCpPlayer, ControlPoint
     iCpPlayer = &aCpPlayer;
     iCpPlayer->AddRef();
 
-    iProductProxy = new CpProxyAvOpenhomeOrgProduct1(*iCpPlayer);
+    iProductProxy = new CpProxyAvOpenhomeOrgProduct2(*iCpPlayer);
 
     // Create callbacks for playlist notifications we're interested in.
     iFuncSourceIndexChanged =
