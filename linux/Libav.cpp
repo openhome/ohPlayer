@@ -42,7 +42,7 @@ extern "C"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
 #include "libavformat/avformat.h"
-#include "libavresample/avresample.h"
+#include <libswresample/swresample.h>
 }
 
 #include "OptionalFeatures.h"
@@ -114,8 +114,6 @@ private:
     static const TInt32  kInt24Min        = -8388608L;
     static const TInt    kDurationRoundUp = 50000;
 
-    const TChar         *kFmtMp3;
-    const TChar         *kFmtAac;
 
     static int     avCodecRead(void* ptr, TUint8* buf, TInt buf_size);
     static TInt64  avCodecSeek(void* ptr, TInt64 offset, TInt whence);
@@ -136,7 +134,7 @@ private:
     TBool                   iAvPacketCached;
     AVPacket                iAvPacket;
     AVFrame                *iAvFrame;
-    AVAudioResampleContext *iAvResampleCtx;
+    SwrContext       *iSwrResampleCtx;
     TInt             iStreamId;
     const TChar     *iStreamFormat;
     TUint            iOutputBitDepth;
@@ -167,8 +165,6 @@ CodecBase* CodecFactory::NewMp3(IMimeTypeList& aMimeTypeList)
 
 CodecLibAV::CodecLibAV(IMimeTypeList& aMimeTypeList)
     : CodecBase("LIBAV")
-    , kFmtMp3("Mp3")
-    , kFmtAac("Aac")
     , iTotalSamples(0)
     , iTrackLengthJiffies(0)
     , iTrackOffset(0)
@@ -178,7 +174,7 @@ CodecLibAV::CodecLibAV(IMimeTypeList& aMimeTypeList)
     , iAvCodecContext(NULL)
     , iAvPacketCached(false)
     , iAvFrame(NULL)
-    , iAvResampleCtx(NULL)
+    , iSwrResampleCtx(NULL)
     , iStreamId(-1)
     , iStreamFormat(NULL)
     , iOutputBitDepth(0)
@@ -200,9 +196,14 @@ CodecLibAV::CodecLibAV(IMimeTypeList& aMimeTypeList)
     aMimeTypeList.Add("audio/aac");
     aMimeTypeList.Add("audio/aacp");
 #endif // ENABLE_AAC
-
+    
+    // av_register_all() got deprecated in lavf 58.9.100
+    // It is now useless
+    // https://github.com/FFmpeg/FFmpeg/blob/70d25268c21cbee5f08304da95be1f647c630c15/doc/APIchanges#L86
+    //
+    #if ( LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58,9,100) ) 
     av_register_all();
-
+    #endif
     // Initialise our encoded packet container.
     av_init_packet(&iAvPacket);
 }
@@ -486,7 +487,7 @@ TBool CodecLibAV::Recognise(const EncodedStreamInfo& aStreamInfo)
     DBUG_F("[CodecLibAV] Recognise\n");
 #endif
 
-    if (aStreamInfo.RawPcm())
+    if (aStreamInfo.StreamFormat()==EncodedStreamInfo::Format::Pcm)
     {
         return false;
     }
@@ -618,50 +619,45 @@ void CodecLibAV::StreamInitialise()
 #endif // DEBUG
 
     // Identify the audio stream.
-    for (TInt i=0; i<(TInt)iAvFormatCtx->nb_streams; i++)
-    {
-        if (iAvFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO)
-        {
-            iStreamId = i;
-
-            switch (iAvFormatCtx->streams[i]->codec->codec_id)
-            {
-                case AV_CODEC_ID_AAC:
-                    iStreamFormat = kFmtAac;
-                    break;
-                case AV_CODEC_ID_MP3:
-                    iStreamFormat = kFmtMp3;
-                    break;
-                default:
-                    DBUG_F("[CodecLibAV] StreamInitialise - AUDIO FORMAT: "
-                           "UNKNOWN\n");
-                    break;
-            }
-
-            break;
-        }
-    }
-
+    iStreamId = av_find_best_stream(iAvFormatCtx, AVMEDIA_TYPE_AUDIO, -1, -1, NULL, 0);
     if (iStreamId == -1)
     {
         DBUG_F("[CodecLibAV] StreamInitialise - Could not find Audio Stream\n");
         goto failure;
     }
 
+    // Disable all other streams
+    for (TInt i=0; i<(TInt)iAvFormatCtx->nb_streams; i++)
+    {
+        if(i!=iStreamId) iAvFormatCtx->streams[i]->discard = AVDISCARD_ALL;
+    }
+
     // Identify and open the correct codec for the audio stream.
-    AVCodec *codec;
+    AVCodec *codec; 
+    AVCodecParameters *origin_par;
+    
+    origin_par = iAvFormatCtx->streams[iStreamId]->codecpar;
 
-    iAvCodecContext = iAvFormatCtx->streams[iStreamId]->codec;
-    codec           = avcodec_find_decoder(iAvCodecContext->codec_id);
-
+    codec = avcodec_find_decoder(origin_par->codec_id);
     if (codec == NULL)
     {
         DBUG_F("[CodecLibAV] StreamInitialise - Cannot find codec!\n");
         goto failure;
     }
 
-    if (avcodec_open2(iAvCodecContext,codec,NULL) < 0)
-    {
+    iAvCodecContext = avcodec_alloc_context3(codec);
+    if (!iAvCodecContext) {
+        DBUG_F("[CodecLibAV] StreamInitialise - Can't allocate decoder context\n");
+        goto failure;
+    }
+
+    if (avcodec_parameters_to_context(iAvCodecContext, origin_par) < 0) {
+        DBUG_F("[CodecLibAV] StreamInitialise - Can't copy decoder context\n");
+        goto failure;
+    }
+
+   if (avcodec_open2(iAvCodecContext,codec,NULL) < 0)
+   {
         DBUG_F("[CodecLibAV] StreamInitialise - Codec cannot be opened\n");
         goto failure;
     }
@@ -685,9 +681,9 @@ void CodecLibAV::StreamInitialise()
             // For best playback quality use 'libavresample' to convert this
             // format to a PCM format we can handle.
 
-            iAvResampleCtx = avresample_alloc_context();
+            iSwrResampleCtx = swr_alloc();
 
-            if (iAvResampleCtx != NULL)
+            if (iSwrResampleCtx != NULL)
             {
                 TInt64 channelLayout = AV_CH_LAYOUT_STEREO;
 
@@ -696,15 +692,15 @@ void CodecLibAV::StreamInitialise()
                     channelLayout = AV_CH_LAYOUT_MONO;
                 }
 
-                av_opt_set_int(iAvResampleCtx, "in_channel_layout",
+                av_opt_set_int(iSwrResampleCtx, "in_channel_layout",
                                channelLayout, 0);
-                av_opt_set_int(iAvResampleCtx, "out_channel_layout",
+                av_opt_set_int(iSwrResampleCtx, "out_channel_layout",
                                channelLayout, 0);
-                av_opt_set_int(iAvResampleCtx, "in_sample_rate",
+                av_opt_set_int(iSwrResampleCtx, "in_sample_rate",
                                iAvCodecContext->sample_rate, 0);
-                av_opt_set_int(iAvResampleCtx, "out_sample_rate",
+                av_opt_set_int(iSwrResampleCtx, "out_sample_rate",
                                iAvCodecContext->sample_rate, 0);
-                av_opt_set_int(iAvResampleCtx, "in_sample_fmt",
+                av_opt_set_int(iSwrResampleCtx, "in_sample_fmt",
                                iAvCodecContext->sample_fmt, 0);
 
                 // Convert to S32P (this will be sampled down manually to 24
@@ -712,10 +708,10 @@ void CodecLibAV::StreamInitialise()
                 iOutputBitDepth  = 24;
                 iConvertedFormat = AV_SAMPLE_FMT_S32P;
 
-                av_opt_set_int(iAvResampleCtx, "out_sample_fmt",
+                av_opt_set_int(iSwrResampleCtx, "out_sample_fmt",
                                iConvertedFormat, 0);
 
-                if (avresample_open(iAvResampleCtx) < 0)
+                if (swr_init(iSwrResampleCtx) < 0)
                 {
                     DBUG_F("[CodecLibAV] StreamInitialise - Cannot "
                            "Open Resampler\n");
@@ -771,10 +767,11 @@ void CodecLibAV::StreamInitialise()
                                      iOutputBitDepth,
                                      iAvCodecContext->sample_rate,
                                      iAvCodecContext->channels,
-                                     Brn(iStreamFormat),
+                                     Brn(codec->name),
                                      iTrackLengthJiffies,
                                      0,
-                                     false);
+                                     false,
+				                     DeriveProfile(iAvCodecContext->channels));
 
     // Create a frame to hold the decoded packets.
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55, 45, 101)
@@ -804,16 +801,16 @@ void CodecLibAV::StreamCompleted()
 
     iFormat = NULL;
 
-    if (iAvResampleCtx != NULL)
+    if (iSwrResampleCtx != NULL)
     {
-        avresample_free(&iAvResampleCtx);
-        iAvResampleCtx = NULL;
+        swr_free(&iSwrResampleCtx);
+        iSwrResampleCtx = NULL;
     }
 
     if (iAvPacketCached)
     {
         iAvPacketCached = false;
-        av_free_packet(&iAvPacket);
+        av_packet_unref(&iAvPacket);
     }
 
     if (iAvFrame != NULL)
@@ -910,6 +907,11 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
         {
             iAvPacketCached = true;
         }
+        else
+        {
+            DBUG_F("[CodecLibAV] av_read_frame problem\n");
+        }
+        
 
         if (iSeekSuccess)
         {
@@ -945,7 +947,9 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
                                      Brn(iStreamFormat),
                                      iTrackLengthJiffies,
                                      aSample,
-                                     false);
+                                     false,
+				                     DeriveProfile(iAvCodecContext->channels)
+				     );
 
     // Ditch any PCM we have buffered.
     iOutput.SetBytes(0);
@@ -1082,8 +1086,8 @@ void CodecLibAV::processPCM(TUint8 **pcmData, AVSampleFormat fmt,
 
 void CodecLibAV::Process()
 {
-    TInt frameFinished = 0;
     TInt plane_size;
+    TInt ret ;
 
     if (! iAvPacketCached)
     {
@@ -1096,27 +1100,31 @@ void CodecLibAV::Process()
             THROW(CodecStreamEnded);
         }
     }
+    if (iAvPacket.stream_index != iStreamId)
+    {
+        DBUG_F("[CodecLibAV] Process - ERROR: Skip Packet with Stream %d\n",iAvPacket.stream_index);
+	    return;
+    }
 
     iAvPacketCached = false;
 
-    if (iAvPacket.stream_index == iStreamId)
+    ret = avcodec_send_packet(iAvCodecContext, &iAvPacket);
+    if(ret < 0)
     {
-        avcodec_decode_audio4(iAvCodecContext,
-                              iAvFrame,
-                             &frameFinished,
-                              &iAvPacket);
-
-        if (! frameFinished)
-        {
-            // Couldn't decode a full frame.
-            // This can happen after seek or on initial switch to radio so
-            // don't throw an exception.
 #ifdef DEBUG
-            DBUG_F("Info: [CodecLibAV] Process - Error Decoding Frame\n");
+        DBUG_F("Info: [CodecLibAV] Process - Error Decoding Frame\n");
 #endif // DEBUG
 
-            av_free_packet(&iAvPacket);
+        av_packet_unref(&iAvPacket);
 
+        return;
+    }
+    while (ret >= 0)
+    {
+        ret = avcodec_receive_frame(iAvCodecContext, iAvFrame);
+        if (ret < 0 || ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) 
+        {
+            av_packet_unref(&iAvPacket);
             return;
         }
 
@@ -1131,7 +1139,7 @@ void CodecLibAV::Process()
         {
             DBUG_F("ERROR:  Cannot obtain frame plane size\n");
 
-            av_free_packet(&iAvPacket);
+            av_packet_unref(&iAvPacket);
             THROW(CodecStreamCorrupt);
         }
 
@@ -1154,38 +1162,34 @@ void CodecLibAV::Process()
                 // This should equal the number in the input buffer as the
                 // sample rate is not being modified.
                 outSamples =
-                    avresample_available(iAvResampleCtx) +
-                    av_rescale_rnd(avresample_get_delay(iAvResampleCtx) +
-                                   iAvFrame->nb_samples,
-                                   iAvCodecContext->sample_rate,
-                                   iAvCodecContext->sample_rate,
-                                   AV_ROUND_UP);
+                    av_rescale_rnd(swr_get_delay(iSwrResampleCtx, iAvCodecContext->sample_rate) +
+                                iAvFrame->nb_samples,
+                                iAvCodecContext->sample_rate,
+                                iAvCodecContext->sample_rate,
+                                AV_ROUND_UP);
 
                 // Allocate a buffer for the conversion output.
                 ret = av_samples_alloc((TUint8 **)&convertedData,
-                                       &outLinesize,
-                                       iAvCodecContext->channels,
-                                       outSamples,
-                                       iConvertedFormat,
-                                       0);
+                                    &outLinesize,
+                                    iAvCodecContext->channels,
+                                    outSamples,
+                                    iConvertedFormat,
+                                    0);
 
                 if (ret < 0)
                 {
                     DBUG_F("[CodecLibAV] Process - ERROR: Cannot "
-                           "Allocate Sample Conversion Buffer\n");
+                        "Allocate Sample Conversion Buffer\n");
                     THROW(CodecStreamEnded);
                 }
-
-                avresample_convert(iAvResampleCtx,
-                                   (TUint8 **)&convertedData,
-                                   outLinesize,
-                                   outSamples,
-                                   iAvFrame->extended_data,
-                                   plane_size,
-                                   iAvFrame->nb_samples);
+                swr_convert(iSwrResampleCtx,
+                                (TUint8 **)&convertedData,
+                                outSamples,
+                                (const uint8_t**)iAvFrame->extended_data,
+                                iAvFrame->nb_samples);
 
                 processPCM((TUint8 **)&convertedData, iConvertedFormat,
-                           outLinesize);
+                        outLinesize);
 
                 av_freep(&convertedData);
 
@@ -1198,7 +1202,7 @@ void CodecLibAV::Process()
             case AV_SAMPLE_FMT_U8P:
             {
                 processPCM(iAvFrame->extended_data, iAvCodecContext->sample_fmt,
-                           plane_size);
+                        plane_size);
                 break;
             }
 
@@ -1209,24 +1213,19 @@ void CodecLibAV::Process()
             case AV_SAMPLE_FMT_U8:
             {
                 processPCM(iAvFrame->extended_data, iAvCodecContext->sample_fmt,
-                           iAvFrame->linesize[0]);
+                        iAvFrame->linesize[0]);
                 break;
             }
             default:
             {
                 DBUG_F("[CodecLibAV] Process - ERROR: Format Not "
-                       "Supported Yet\n");
+                    "Supported Yet\n");
                 break;
             }
         }
     }
-    else
-    {
-        DBUG_F("[CodecLibAV] Process Unrecognised StreamId [%d], Expected "
-               "[%d]\n", iAvPacket.stream_index, iStreamId);
-    }
 
-    av_free_packet(&iAvPacket);
+    av_packet_unref(&iAvPacket);
 
     if (iStreamStart || iStreamEnded)
     {
