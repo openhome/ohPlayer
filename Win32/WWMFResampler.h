@@ -24,6 +24,7 @@
 // THE SOFTWARE.
 
 #pragma once
+#pragma warning ( disable : 4091 )
 
 //#define WINVER _WIN32_WINNT_WIN7
 
@@ -177,3 +178,4 @@ private:
     HRESULT ConvertMFSampleToWWSampleData(IMFSample *pSample, WWMFSampleData *sampleData_return);
     HRESULT GetSampleDataFromMFTransform(WWMFSampleData *sampleData_return);
 };
+

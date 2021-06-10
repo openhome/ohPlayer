@@ -23,7 +23,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#pragma warning(disable:4127)  // Disable warning C4127: conditional expression is constant
+#pragma warning(disable : 4127)  // Disable warning C4127: conditional expression is constant
+#pragma warning(disable : 4091 ) // Disable warning C4091: Typedef ignored on left of... (Inside the Windows SDKs - ksmedia.h)
 
 #define WINVER _WIN32_WINNT_WIN7
 
@@ -45,6 +46,7 @@
 #pragma comment(lib, "mf")
 #pragma comment(lib, "mfuuid")
 #pragma comment(lib, "wmcodecdspuuid")
+
 
 enum WWAvailableType {
     WWAvailableInput,

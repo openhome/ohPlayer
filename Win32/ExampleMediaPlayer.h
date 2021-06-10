@@ -15,12 +15,13 @@
 #include "Volume.h"
 
 namespace OpenHome {
+    class Shell;
+    class ShellCommandDebug;
 namespace Net {
     class DviServerUpnp;
     class DvStack;
     class DvDevice;
-    class Shell;
-    class ShellCommandDebug;
+    class CpStack;
 }
 namespace Media {
     class PipelineManager;
@@ -38,6 +39,25 @@ namespace Av {
     class RamStore;
     class ControlPointProxy;
 
+
+// Helpers
+static TBool CompareIPv4Addrs(const TIpAddress addr1,
+                              const TIpAddress addr2)
+{
+    return addr1.iFamily == kFamilyV4
+        && addr2.iFamily == kFamilyV4
+        && addr1.iV4 == addr2.iV4;
+}
+
+static TBool CompareIPv6Addrs(const TIpAddress addr1,
+                              const TIpAddress addr2)
+{
+    return addr1.iFamily == kFamilyV6
+        && addr2.iFamily == kFamilyV6
+        && memcmp((TByte*)addr1.iV6[0], (TByte*)addr2.iV6[0], 16) == 0;
+}
+
+
 class ExampleMediaPlayer : private Net::IResourceManager
 {
     static const Brn   kIconOpenHomeFileName;
@@ -46,8 +66,8 @@ class ExampleMediaPlayer : private Net::IResourceManager
     static const TUint kShellPort       = 2323;
 
 public:
-    ExampleMediaPlayer(HWND hwnd, Net::DvStack& aDvStack, const Brx& aUdn,
-                       const TChar* aRoom, const TChar* aProductName,
+    ExampleMediaPlayer(HWND hwnd, Net::DvStack& aDvStack, Net::CpStack&, 
+                       const Brx& aUdn, const TChar* aRoom, const TChar* aProductName,
                        const Brx& aUserAgent);
     virtual ~ExampleMediaPlayer();
 
@@ -67,6 +87,9 @@ public:
     void                    SetSongcastTimestampMappers(
                                               IOhmTimestamper& aTxTsMapper,
                                               IOhmTimestamper& aRxTsMapper);
+
+    void DebugLogOutput(const char* aMessage);
+
     Media::PipelineManager           &Pipeline();
     Net::DvDeviceStandard            *Device();
     Net::DvDevice                    *UpnpAvDevice();
@@ -74,7 +97,8 @@ public:
     FriendlyNameManagerUpnpAv        *iFnManagerUpnpAv;
     Av::FriendlyNameAttributeUpdater *iFnUpdaterUpnpAv;
 private: // from Net::IResourceManager
-    void WriteResource(const Brx& aUriTail, TIpAddress aInterface,
+    void WriteResource(const Brx& aUriTail, 
+                       const TIpAddress& aInterface,
                        std::vector<char*>& aLanguageList,
                        Net::IResourceWriter& aResourceWriter) override;
 private:
@@ -83,6 +107,7 @@ private:
     void  PresentationUrlChanged(const Brx& aUrl);
     TBool TryDisable(Net::DvDevice& aDevice);
     void  Disabled();
+
 protected:
     MediaPlayer                   *iMediaPlayer;
 #ifdef _DEBUG
@@ -110,8 +135,8 @@ private:
     Web::ConfigAppMediaPlayer *iConfigApp;
     HWND                       iHwnd; // Main window handle
     Bws<Uri::kMaxUriBytes+1>   iPresentationUrl;
-    Net::Shell* iShell;
-    Net::ShellCommandDebug* iShellDebug;
+    Shell* iShell;
+    ShellCommandDebug* iShellDebug;
 };
 
 class ExampleMediaPlayerInit

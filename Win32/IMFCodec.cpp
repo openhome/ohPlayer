@@ -93,6 +93,7 @@ private:
 
     OHPlayerByteStream *iByteStream;
     IMFSourceReader    *iSourceReader;
+    SpeakerProfile     *iSpeakerProfile;
 };
 
 } // namespace Codec
@@ -172,6 +173,8 @@ CodecBase* CodecFactory::NewMp3(IMimeTypeList& aMimeTypeList)
 
 // CodecIMF
 
+#pragma warning(push)
+#pragma warning(disable : 4100)
 CodecIMF::CodecIMF(IMimeTypeList& aMimeTypeList)
     : CodecBase("MMF")
     , kFmtMp3("Mp3")
@@ -192,6 +195,9 @@ CodecIMF::CodecIMF(IMimeTypeList& aMimeTypeList)
     , iByteStream(NULL)
     , iSourceReader(NULL)
 {
+#pragma warning(pop)
+
+
 #ifdef ENABLE_MP3
     aMimeTypeList.Add("audio/mpeg");
     aMimeTypeList.Add("audio/x-mpeg");
@@ -223,6 +229,8 @@ CodecIMF::CodecIMF(IMimeTypeList& aMimeTypeList)
         DBUG_F("Failed to initialise Media Foundation\n");
         return;
     }
+
+    iSpeakerProfile = new SpeakerProfile();
 }
 
 CodecIMF::~CodecIMF()
@@ -232,6 +240,8 @@ CodecIMF::~CodecIMF()
 
     // Finalise COM
     CoUninitialize();
+
+    delete iSpeakerProfile;
 }
 
 // Get the encoded bit rate of the stream from the SourceReader, if available.
@@ -482,7 +492,7 @@ failure:
     return false;
 }
 
-TBool CodecIMF::Recognise(const EncodedStreamInfo& aStreamInfo)
+TBool CodecIMF::Recognise(const EncodedStreamInfo& /*aStreamInfo*/)
 {
     HRESULT hr;
     TBool   retVal = false;
@@ -490,11 +500,6 @@ TBool CodecIMF::Recognise(const EncodedStreamInfo& aStreamInfo)
 #ifdef _DEBUG
     DBUG_F("Recognise\n");
 #endif
-
-    if (aStreamInfo.RawPcm())
-    {
-        return retVal;
-    }
 
     // Initialise Stream State
     iStreamStart  = false;
@@ -520,7 +525,7 @@ TBool CodecIMF::Recognise(const EncodedStreamInfo& aStreamInfo)
 
     if (FAILED(hr))
     {
-        DBUG_F("Recognise: MFCreateSourceReaderFromByteStream Failed\n");
+        DBUG_F("Recognise: MFCreateSourceReaderFromByteStream Failed\n");    
         goto failure;
     }
 
@@ -599,7 +604,8 @@ void CodecIMF::StreamInitialise()
                                      Brn(iStreamFormat),
                                      iTrackLengthJiffies,
                                      0,
-                                     false);
+                                     false,
+                                     *iSpeakerProfile);
 
     return;
 

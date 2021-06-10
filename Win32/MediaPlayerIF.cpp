@@ -146,8 +146,17 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
     }
 
     // Create the ExampleMediaPlayer instance.
-    g_emp = new ExampleMediaPlayer(hwnd, *dvStack, Brn(udn), productRoom,
+    g_emp = new ExampleMediaPlayer(hwnd, *dvStack, *cpStack, Brn(udn), productRoom,
                                    productName, Brx::Empty()/*aUserAgent*/);
+
+    // ~~ DEBUG
+#pragma warning(push)
+#pragma warning(disable : 4239)
+    g_lib->Env()
+          .Logger()
+          .SwapOutput(MakeFunctorMsg(*g_emp, &ExampleMediaPlayer::DebugLogOutput));
+#pragma warning(pop)
+
 
     // Add the audio driver to the pipeline.
     driver = new AudioDriver(dvStack->Env(), g_emp->Pipeline(), hwnd);
@@ -169,7 +178,10 @@ DWORD WINAPI InitAndRunMediaPlayer( LPVOID lpParam )
 
         DWORD initialTimeout = TenSeconds;
 
-        if (subnet != InitArgs::NO_SUBNET)
+        const TBool areSubnetsEqual = subnet.iFamily == kFamilyV4 ? CompareIPv4Addrs(subnet, InitArgs::NO_SUBNET)
+                                                                  : CompareIPv6Addrs(subnet, InitArgs::NO_SUBNET_V6);
+
+        if (areSubnetsEqual)
         {
             // If we are restarting due to a user instigated subnet change we
             // don't want to recheck for updates so set the initial check to be
