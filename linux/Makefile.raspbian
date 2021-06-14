@@ -76,7 +76,7 @@ ifdef USE_LIBAVCODEC
     RESTRICTED_CODECS = -lavresample -lavutil -lavcodec -lavformat
     CFLAGS += -DUSE_LIBAVCODEC
 else
-    RESTRICTED_CODECS = -lCodecAacFdkAdts -lCodecAacFdkMp4 -lCodecAacFdkBase -lCodecAacFdk -lCodecMp3
+    RESTRICTED_CODECS = -lCodecAacFdkAdts -lCodecAacFdk -lCodecAacFdkBase -lCodecMp3 -lCodecAacFdkMp4
 endif
 
 LIBS         = $(OPTIONAL_LIBS) -lasound -lConfigUiTestUtils -lConfigUi -lSourcePlaylist -lPodcast -lSourceSongcast -lSourceUpnpAv -lSourceRadio -lohMediaPlayer -lWebAppFramework -lohNetGeneratedProxies -lohNetCore $(RESTRICTED_CODECS) -lCodecAifc -lCodecAlacApple -lCodecAlacAppleBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecFlac -lCodecWav -lohPipeline -lpthread -lssl -lcrypto -ldl -lm

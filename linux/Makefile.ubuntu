@@ -20,7 +20,22 @@ PKG_CFLAGS := $(shell pkg-config --cflags gtk+-3.0 appindicator3-0.1)
 PKG_LIBS   := $(shell pkg-config --libs gtk+-3.0 appindicator3-0.1)
 
 # indicate to build that we have selected a valid target
-HWPLATFORM=$(shell uname -i)
+# NOTE: If we've specified an arch on the command line then we use that instead
+ifdef PLATFORM
+    ifeq ($(PLATFORM),Linux-x86)
+        HWPLATFORM=i686
+    else
+        ifeq ($(PLATFORM),Linux-x64)
+            HWPLATFORM=x86_64
+        else
+            $(error unknown platform. Please use 'Linux-x86' or 'Linux-x64')
+        endif
+    endif
+else
+    HWPLATFORM=$(shell uname -i)
+endif
+
+# HWPLATFORM=$(shell uname -i)
 ifeq ($(HWPLATFORM),i686)
     CC          = g++
     TARG_ARCH   = Linux-x86
@@ -50,7 +65,11 @@ RESDIR = $(PREFIX)/share/openhome-player
 DOCDIR = $(PREFIX)/share/doc/openhome-player
 
 CFLAGS = -c -Wall -std=c++0x $(PKG_CFLAGS) -DTARG_ARCH=$(TARG_ARCH) \
-         -DUSE_GTK -fstack-protector -fstack-check
+         -DUSE_GTK -fstack-protector -fstack-check -DDEFINE_LITTLE_ENDIAN
+
+ifeq ($(TARG_ARCH),Linux-x86)
+    CFLAGS += -m32
+endif
 
 # If 'DEBUG=0 is specified on the command line build a debug biuld.
 ifdef DEBUG
@@ -68,10 +87,10 @@ ifdef USE_LIBAVCODEC
     RESTRICTED_CODECS = -lavresample -lavutil -lavcodec -lavformat
     CFLAGS += -DUSE_LIBAVCODEC
 else
-    RESTRICTED_CODECS = -lCodecAdts -lCodecAac -lCodecAacBase -lCodecMp3
+    RESTRICTED_CODECS = -lCodecAacFdkMp4 -lCodecAacFdkAdts -lCodecAacFdkBase -lCodecAacFdk -lCodecMp3
 endif
 
-LIBS         = $(PKG_LIBS) -lnotify -lasound -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lSourceRadio -lShell -lohMediaPlayer -lWebAppFramework -lConfigUi -lohNetGeneratedProxies -lohNetCore $(RESTRICTED_CODECS) -lCodecAifc -lCodecAlacApple -lCodecAlacAppleBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecFlac -lCodecWav -lohPipeline -lpthread -lssl -lcrypto -ldl -lm
+LIBS         = $(PKG_LIBS) -lnotify -lasound -lConfigUiTestUtils -lConfigUi -lSourcePlaylist -lSourceSongcast -lSourceUpnpAv -lPodcast -lSourceRadio -lohMediaPlayer -lWebAppFramework  -lohNetGeneratedProxies -lohNetCore $(RESTRICTED_CODECS) -lCodecAifc -lCodecAlacApple -lCodecAlacAppleBase -lCodecPcm -lCodecAiff -lCodecAiffBase -lCodecVorbis -llibOgg -lCodecFlac -lCodecWav -lohPipeline -lpthread -lssl -lcrypto -ldl -lm
 
 INCLUDES     = -I../dependencies/$(TARG_ARCH)/ohMediaPlayer/include -I../dependencies/$(TARG_ARCH)/ohNetmon/include -I../dependencies/$(TARG_ARCH)/openssl/include -I../dependencies/$(TARG_ARCH)/ohNetGenerated-$(TARG_ARCH)-$(BUILD_TYPE)/include/ohnet/OpenHome/Net/Core
 

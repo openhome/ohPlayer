@@ -51,6 +51,8 @@ protected:
     PcmProcessorBase(IDataSink& aDataSink, Bwx& aBuffer);
 public: // IPcmProcessor
     virtual void BeginBlock();
+    void ProcessFragment(const Brx& aData, TUint aNumChannels, TUint aSubsampleBytes) override;
+    void ProcessSilence(const Brx& aData, TUint aNumChannels, TUint aSubsampleBytes) override;
     virtual void EndBlock();
     virtual void Flush();
 public:
@@ -58,6 +60,11 @@ public:
     void SetBitDepth(TUint bitDepth);
 protected:
     void Append(const TByte* aData, TUint aBytes);
+
+    virtual void ProcessFragment8(const Brx& aData, TUint aNumChannels) = 0;
+    virtual void ProcessFragment16(const Brx& aData, TUint aNumChannels) = 0;
+    virtual void ProcessFragment24(const Brx& aData, TUint aNumChannels) = 0;
+    virtual void ProcessFragment32(const Brx& aData, TUint aNumChannels) = 0;
 protected:
     IDataSink& iSink;
     Bwx&       iBuffer;
@@ -108,6 +115,43 @@ void PcmProcessorBase::BeginBlock()
 void PcmProcessorBase::EndBlock()
 {
     Flush();
+}
+
+void PcmProcessorBase::ProcessSilence(const Brx& aData, 
+                                      TUint aNumChannels,
+                                      TUint aNumSampleBytes)
+{
+    ProcessFragment(aData, aNumChannels, aNumSampleBytes);
+}
+
+void PcmProcessorBase::ProcessFragment(const Brx& aData,
+                                       TUint aNumChannels,
+                                       TUint /*aNumSampleBytes*/)
+{
+    switch (iBitDepth)
+    {
+        case 8: {
+            ProcessFragment8(aData, aNumChannels);
+            break;
+        }
+        case 16: {
+            ProcessFragment16(aData, aNumChannels);
+            break;
+        }
+        case 24: {
+            ProcessFragment24(aData, aNumChannels);
+            break;
+        }
+        case 32: {
+            ProcessFragment32(aData, aNumChannels);
+            break;
+        }
+        default: {
+            ASSERT_VA(false, "%s", "Unknown bit depth.");
+            break; // NOT REACHED
+        }
+    }
+
 }
 
 
@@ -949,9 +993,14 @@ TUint DriverAlsa::PipelineAnimatorDelayJiffies(AudioFormat aFormat,
     return iPimpl->DriverDelayJiffies(aSampleRate);
 }
 
-TUint DriverAlsa::PipelineAnimatorDsdBlockSizeBytes() const
+TUint DriverAlsa::PipelineAnimatorDsdBlockSizeWords() const
 {
 	return 0;
+}
+
+TUint DriverAlsa::PipelineAnimatorMaxBitDepth() const
+{
+    return 0;
 }
 
 Msg* DriverAlsa::ProcessMsg(MsgHalt* aMsg)

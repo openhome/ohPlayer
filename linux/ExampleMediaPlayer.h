@@ -38,6 +38,25 @@ namespace Av {
     class RamStore;
     class ControlPointProxy;
 
+// Helpers
+static TBool CompareIPv4Addrs(const TIpAddress addr1,
+                              const TIpAddress addr2)
+{
+    return addr1.iFamily == kFamilyV4
+        && addr2.iFamily == kFamilyV4
+        && addr1.iV4 == addr2.iV4;
+}
+
+static TBool CompareIPv6Addrs(const TIpAddress addr1,
+                              const TIpAddress addr2)
+{
+    return addr1.iFamily == kFamilyV6
+        && addr2.iFamily == kFamilyV6
+        && memcmp((TByte*)addr1.iV6[0], (TByte*)addr2.iV6[0], 16) == 0;
+}
+
+    
+
 class ExampleMediaPlayer : private Net::IResourceManager
 {
     static const Brn   kIconOpenHomeFileName;
@@ -67,7 +86,8 @@ public:
     Net::DvDeviceStandard  *Device();
     Net::DvDevice          *UpnpAvDevice();
 private: // from Net::IResourceManager
-    void WriteResource(const Brx& aUriTail, TIpAddress aInterface,
+    void WriteResource(const Brx& aUriTail, 
+                       const TIpAddress& aInterface,
                        std::vector<char*>& aLanguageList,
                        Net::IResourceWriter& aResourceWriter) override;
 private:
