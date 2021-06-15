@@ -26,7 +26,6 @@ NSTimer* _updateTimer = nil;
 
 OpenHome::Av::Example::MediaPlayerIF *samplePlayer = nil;
 
-static const TIpAddress NO_SUBNET = 0xFFFFFFFF;
 std::vector<MediaPlayerIF::SubnetRecord*> *subnetList = nil;
 NSMenuItem *subnetItem =  nil;
 
@@ -74,7 +73,13 @@ NSMenuItem *subnetItem =  nil;
 
     // schedule a repeating timer to periodically check for updates
     // to mediaplayer
-    samplePlayer = new OpenHome::Av::Example::MediaPlayerIF( NO_SUBNET );
+    TIpAddress initialAddress = {
+        kFamilyV4,  // iFamily
+        0xFFFFFF,   // iV4
+        { 255 },    // iV6
+    };
+    
+    samplePlayer = new OpenHome::Av::Example::MediaPlayerIF( initialAddress );
     _updateTimer = [NSTimer scheduledTimerWithTimeInterval:CHECK_INTERVAL target:self selector:@selector(checkUpdates:) userInfo:nil repeats:YES];
 
     // schedule an initial (short) timer to check for updates
@@ -411,7 +416,7 @@ NSMenuItem *subnetItem =  nil;
     if (!coordinator) {
         return nil;
     }
-    _managedObjectContext = [[NSManagedObjectContext alloc] init];
+    _managedObjectContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSMainQueueConcurrencyType];
     [_managedObjectContext setPersistentStoreCoordinator:coordinator];
 
     return _managedObjectContext;

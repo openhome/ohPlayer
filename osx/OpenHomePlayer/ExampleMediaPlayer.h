@@ -38,12 +38,13 @@
 
 namespace OpenHome {
     class PowerManager;
+    class Shell;
+    class ShellCommandDebug;
     namespace Net {
         class DviServerUpnp;
         class DvStack;
         class DvDevice;
-        class Shell;
-        class ShellCommandDebug;
+        class CpStack;
     }
     namespace Media {
         class PipelineManager;
@@ -70,7 +71,12 @@ namespace OpenHome {
                 static const TUint kShellPort       = 2323;
 
             public:
-                ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName, const Brx& aUserAgent);
+                ExampleMediaPlayer(Net::DvStack& aDvStack,
+                                   Net::CpStack& aCpStack,
+                                   const Brx& aUdn,
+                                   const TChar* aRoom,
+                                   const TChar* aProductName,
+                                   const Brx& aUserAgent);
                 virtual ~ExampleMediaPlayer();
                 void AddAttribute(const TChar* aAttribute); // FIXME - only required by Songcasting driver
                 virtual void Run(Net::CpStack& aCpStack);
@@ -93,7 +99,10 @@ namespace OpenHome {
                 void                    SetHost(Media::DriverOsx *driver) { iDriver = driver; }
 
             private: // from Net::IResourceManager
-                void WriteResource(const Brx& aUriTail, TIpAddress aInterface, std::vector<char*>& aLanguageList, Net::IResourceWriter& aResourceWriter) override;
+                void WriteResource(const Brx& aUriTail,
+                                   const TIpAddress& aInterface,
+                                   std::vector<char*>& aLanguageList,
+                                   Net::IResourceWriter& aResourceWriter) override;  
 
             private:
                 void RegisterPlugins(Environment& aEnv);
@@ -127,8 +136,8 @@ namespace OpenHome {
                 Web::FileResourceHandlerFactory iFileResourceHandlerFactory;
                 Web::ConfigAppMediaPlayer* iConfigApp;
                 Bws<Uri::kMaxUriBytes+1>   iPresentationUrl;
-                Net::Shell*             iShell;
-                Net::ShellCommandDebug* iShellDebug;
+                Shell*                  iShell;
+                ShellCommandDebug*      iShellDebug;
 
             };
         } // namespace Example

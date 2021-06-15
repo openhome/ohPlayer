@@ -21,6 +21,9 @@ ConfigPersistentStore::~ConfigPersistentStore()
     [prefs save];
 }
 
+void ConfigPersistentStore::Read(const Brx& /*aKey*/,
+                                 IWriter& /*aWriter*/)
+{ }
 
 void ConfigPersistentStore::Read(const Brx& aKey, Bwx& aDest)
 {
@@ -55,6 +58,11 @@ void ConfigPersistentStore::Read(const Brx& aKey, Bwx& aDest)
         char c = val & 0xff;
         aDest.TryAppend(c);
     }
+}
+
+void ConfigPersistentStore::ResetToDefaults()
+{
+    
 }
 
 // Encode a preference buffer as a null-terminated hex string

@@ -251,6 +251,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 				Base,
 			);
@@ -380,9 +381,9 @@
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/lib",
 				);
 				"OTHER_LDFLAGS[arch=*]" = (
-					"-lCodecAac",
-					"-lCodecAacBase",
-					"-lCodecAdts",
+					"-lCodecAacFdk",
+					"-lCodecAacFdkBase",
+					"-lCodecAacFdkAdts",
 					"-lCodecAifc",
 					"-lCodecAiff",
 					"-lCodecAiffBase",
@@ -408,12 +409,12 @@
 					"-lohNetCore",
 					"-lohNetDevices",
 					"-lohNetProxies",
-					"-lShell",
 					"-lTestFramework",
 					"-lohNetGeneratedDevices",
 					"-lohNetGeneratedProxies",
 					"-lcrypto",
 					"-lssl",
+					"-lPodcast",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -452,9 +453,9 @@
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/lib",
 				);
 				"OTHER_LDFLAGS[arch=*]" = (
-					"-lCodecAac",
-					"-lCodecAacBase",
-					"-lCodecAdts",
+					"-lCodecAacFdk",
+					"-lCodecAacFdkBase",
+					"-lCodecAacFdkAdts",
 					"-lCodecAifc",
 					"-lCodecAiff",
 					"-lCodecAiffBase",
@@ -480,12 +481,12 @@
 					"-lohNetCore",
 					"-lohNetDevices",
 					"-lohNetProxies",
-					"-lShell",
 					"-lTestFramework",
 					"-lohNetGeneratedDevices",
 					"-lohNetGeneratedProxies",
 					"-lcrypto",
 					"-lssl",
+					"-lPodcast",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -517,8 +518,8 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"POSIX_C_SOURCE=199309",
-					USE_AFSCODEC,
 					"$(inherited)",
+					DEFINE_LITTLE_ENDIAN,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -532,7 +533,7 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = "";
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -564,8 +565,8 @@
 				GCC_C_LANGUAGE_STANDARD = gnu89;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"POSIX_C_SOURCE=199309",
-					USE_AFSCODEC,
 					"$(inherited)",
+					DEFINE_LITTLE_ENDIAN,
 				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
@@ -578,7 +579,7 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
 				LIBRARY_SEARCH_PATHS = "";
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 			};
@@ -592,7 +593,6 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"POSIX_C_SOURCE=199309",
-					USE_AFSCODEC,
 					"$(inherited)",
 				);
 				HEADERMAP_INCLUDES_FLAT_ENTRIES_FOR_TARGET_BEING_BUILT = NO;
@@ -615,9 +615,9 @@
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/lib",
 				);
 				"OTHER_LDFLAGS[arch=*]" = (
-					"-lCodecAac",
-					"-lCodecAacBase",
-					"-lCodecAdts",
+					"-lCodecAacFdk",
+					"-lCodecAacFdkBase",
+					"-lCodecAacFdkAdts",
 					"-lCodecAifc",
 					"-lCodecAiff",
 					"-lCodecAiffBase",
@@ -643,12 +643,13 @@
 					"-lohNetCore",
 					"-lohNetDevices",
 					"-lohNetProxies",
-					"-lShell",
 					"-lTestFramework",
 					"-lohNetGeneratedDevices",
 					"-lohNetGeneratedProxies",
 					"-lcrypto",
 					"-lssl",
+					"-lPodcast",
+					"-lCodecAacFdkMp4",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -679,9 +680,9 @@
 					"$(PROJECT_DIR)/../dependencies/Mac-x64/openssl/lib",
 				);
 				"OTHER_LDFLAGS[arch=*]" = (
-					"-lCodecAac",
-					"-lCodecAacBase",
-					"-lCodecAdts",
+					"-lCodecAacFdk",
+					"-lCodecAacFdkBase",
+					"-lCodecAacFdkAdts",
 					"-lCodecAifc",
 					"-lCodecAiff",
 					"-lCodecAiffBase",
@@ -707,12 +708,12 @@
 					"-lohNetCore",
 					"-lohNetDevices",
 					"-lohNetProxies",
-					"-lShell",
 					"-lTestFramework",
 					"-lohNetGeneratedDevices",
 					"-lohNetGeneratedProxies",
 					"-lcrypto",
 					"-lssl",
+					"-lPodcast",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

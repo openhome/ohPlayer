@@ -61,6 +61,21 @@ TBool VolumeProfile::AlwaysOn() const
     return kAlwaysOn;
 }
 
+TUint VolumeProfile::OffsetMax() const
+{
+    return kOffsetMax;
+}
+
+TUint VolumeProfile::ThreadPriority() const
+{
+    return kThreadPriority;
+}
+
+IVolumeProfile::StartupVolume VolumeProfile::StartupVolumeConfig() const
+{
+    return StartupVolume::LastUsed;
+}
+
 void VolumeControl::SetHost(Media::DriverOsx *driver)
 {
     // Set the audio driver for use in volume calls.

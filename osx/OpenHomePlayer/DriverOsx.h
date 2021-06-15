@@ -7,7 +7,7 @@
 #include <OpenHome/Private/Thread.h>
 #include <OpenHome/Media/Pipeline/Msg.h>
 #include <OpenHome/Media/ClockPuller.h>
-#include <OpenHome/Media/Utils/ProcessorPcmUtils.h>
+#include <OpenHome/Media/Utils/ProcessorAudioUtils.h>
 #include <OpenHome/Net/Core/DvDevice.h>
 #include <OpenHome/Media/Pipeline/Pipeline.h>
 #include <OpenHome/Av/VolumeManager.h>
@@ -120,8 +120,13 @@ private: // from IMsgProcessor
     Msg* ProcessMsg(MsgQuit* aMsg) override;
 
 private: // from IPipelineAnimator
-    TUint PipelineAnimatorBufferJiffies() override;
-    TUint PipelineAnimatorDelayJiffies(TUint aSampleRate, TUint aBitDepth, TUint aNumChannels) override;
+    TUint PipelineAnimatorBufferJiffies() const override;
+    TUint PipelineAnimatorDelayJiffies(AudioFormat aFormat,
+                                       TUint aSampleRate,
+                                       TUint aBitDepth,
+                                       TUint aNumChannels) const override;
+    TUint PipelineAnimatorDsdBlockSizeWords() const override;
+    TUint PipelineAnimatorMaxBitDepth() const override;
 
     // Start playing the Host Audio
     void startQueue();

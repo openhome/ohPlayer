@@ -149,12 +149,12 @@ private:
         private: // from Media::IPipelineObserver
             void NotifyPipelineState(Media::EPipelineState aState) override;
             void NotifyMode(const Brx& aMode,
-                            const Media::ModeInfo& aInfo) override;
-            void NotifyTrack(Media::Track& aTrack, const Brx& aMode,
+                            const Media::ModeInfo& aInfo,
+                            const Media::ModeTransportControls& aControls) override;
+            void NotifyTrack(Media::Track& aTrack,
                              TBool aStartOfStream) override;
             void NotifyMetaText(const Brx& aText) override;
-            void NotifyTime(TUint aSeconds,
-                            TUint aTrackDurationSeconds) override;
+            void NotifyTime(TUint aSeconds) override;
             void NotifyStreamInfo(const Media::DecodedStreamInfo& aStreamInfo) override;
             };
 

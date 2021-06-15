@@ -13,8 +13,8 @@
 #include <OpenHome/Media/Debug.h>
 #include <OpenHome/Av/Debug.h>
 #include <OpenHome/Net/Core/DvDevice.h>
-#include <OpenHome/Net/Private/Shell.h>
-#include <OpenHome/Net/Private/ShellCommandDebug.h>
+#include <OpenHome/Private/Shell.h>
+#include <OpenHome/Private/ShellCommandDebug.h>
 
 #include "IconOpenHome.h"
 #include "OptionalFeatures.h"
@@ -30,13 +30,20 @@ using namespace OpenHome::Net;
 using namespace OpenHome::TestFramework;
 using namespace OpenHome::Web;
 
+const Brn kPrefix("OpenHome");
+
 const Brn ExampleMediaPlayer::kIconOpenHomeFileName("OpenHomeIcon");
 
 #define DBG(_x)
 //#define DBG(_x)   Log::Print(_x)
 
-ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, const TChar* aRoom, const TChar* aProductName, const Brx& aUserAgent) :
-  iDisabled("test", 0)
+ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
+                                       Net::CpStack& aCpStack,
+                                       const Brx& aUdn,
+                                       const TChar* aRoom,
+                                       const TChar* aProductName,
+                                       const Brx& aUserAgent)
+: iDisabled("test", 0)
 , iUserAgent(aUserAgent)
 , iTxTimestamper(NULL)
 , iRxTimestamper(NULL)
@@ -97,7 +104,12 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
     pipelineParams->SetGorgerDuration(pipelineParams->DecodedReservoirJiffies());
     
     // create MediaPlayer
+    auto p = MediaPlayerInitParams::New(Brn(aRoom),
+                                        Brn(aProductName),
+                                        kPrefix);
+    
     iMediaPlayer = new MediaPlayer( aDvStack,
+                                    aCpStack,
                                    *iDevice,
                                    *iRamStore,
                                    *iConfigPersistentStore,
@@ -106,23 +118,32 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack, const Brx& aUdn, 
                                    volumeProfile,
                                    *iInfoLogger,
                                    aUdn,
-                                   Brn(iRoom),
-                                   Brn(iProductName));
+                                   p);
     
     iFnUpdaterStandard = new
         Av::FriendlyNameAttributeUpdater(iMediaPlayer->FriendlyNameObservable(),
+                                         iMediaPlayer->ThreadPool(),
                                         *iDevice);
 
     iFnManagerUpnpAv = new
-        Av::FriendlyNameManagerUpnpAv(iMediaPlayer->Product());
+        Av::FriendlyNameManagerUpnpAv(kPrefix, iMediaPlayer->Product());
 
     iFnUpdaterUpnpAv = new
-        Av::FriendlyNameAttributeUpdater(*iFnManagerUpnpAv, *iDeviceUpnpAv);
+        Av::FriendlyNameAttributeUpdater(*iFnManagerUpnpAv,
+                                         iMediaPlayer->ThreadPool(),
+                                         *iDeviceUpnpAv);
 
     // Set up config app.
     static const TUint addr = 0;    // Bind to all addresses.
     static const TUint port = 0;    // Bind to whatever free port the OS allocates to the framework server.
-    iAppFramework = new WebAppFramework(aDvStack.Env(), addr, port, kMaxUiTabs, kUiSendQueueSize);
+    
+    auto webAppInit = new WebAppFrameworkInitParams();
+    webAppInit->SetServerPort(port);
+    webAppInit->SetSendQueueSize(kUiSendQueueSize);
+    
+    iAppFramework = new WebAppFramework(aDvStack.Env(),
+                                        webAppInit,
+                                        iMediaPlayer->ThreadPool());
 }
 
 ExampleMediaPlayer::~ExampleMediaPlayer()
@@ -156,7 +177,7 @@ void ExampleMediaPlayer::Run(Net::CpStack& aCpStack)
     
     AddConfigApp();
     // now we are ready to start our mediaplayer
-    iMediaPlayer->Start();
+    iMediaPlayer->Start(iRebootHandler);
     iAppFramework->Start();
 
     // now enable our UPNP devices
@@ -198,6 +219,7 @@ void ExampleMediaPlayer::AddConfigApp()
                                           sourcesBufs,
                                           Brn("SoftPlayer"),
                                           Brn(resDir),
+                                          30, //Resource handler count
                                           kMaxUiTabs,
                                           kUiSendQueueSize,
                                           iRebootHandler);
@@ -319,9 +341,9 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 #ifdef ENABLE_AAC
     // AAC is disabled by default as it requires a patent license
     Log::Print("Codec\tAac\n");
-    iMediaPlayer->Add(Codec::CodecFactory::NewAac(iMediaPlayer->MimeTypes()));
+    iMediaPlayer->Add(Codec::CodecFactory::NewAacFdkMp4(iMediaPlayer->MimeTypes()));
     Log::Print("Codec\tAdts\n");
-    iMediaPlayer->Add(Codec::CodecFactory::NewAdts(iMediaPlayer->MimeTypes()));
+    iMediaPlayer->Add(Codec::CodecFactory::NewAacFdkAdts(iMediaPlayer->MimeTypes()));
 #endif  /* ENABLE_AAC */
 #ifdef ENABLE_MP3
     // MP3 is disabled by default as it requires patent and copyright licenses
@@ -339,15 +361,17 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
     Log::Print("]\n");
     
     // Add protocol modules
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHls(aEnv, iUserAgent));
+    auto& ssl = iMediaPlayer->Ssl();
+    
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, ssl, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, ssl, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, ssl, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, ssl, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, ssl, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHls(aEnv, ssl, iUserAgent));
     
     // Add sources
-    iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer));
+    iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer, Optional<IPlaylistLoader>(nullptr)));
     
     iMediaPlayer->Add(SourceFactory::NewUpnpAv(*iMediaPlayer,
                                                *iDeviceUpnpAv));
@@ -356,7 +380,8 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
                                   *iMediaPlayer,
                                    Optional<IClockPuller>(nullptr),
                                    Optional<IOhmTimestamper>(iTxTimestamper),
-                                   Optional<IOhmTimestamper>(iRxTimestamper)));
+                                   Optional<IOhmTimestamper>(iRxTimestamper),
+                                   Optional<IOhmMsgProcessor>(nullptr)));
 
 #ifdef ENABLE_TIDAL
     // You must define your Tidal token
@@ -382,7 +407,10 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 }
 
 
-void ExampleMediaPlayer::WriteResource(const Brx& aUriTail, TIpAddress /*aInterface*/, std::vector<char*>& /*aLanguageList*/, IResourceWriter& aResourceWriter)
+void ExampleMediaPlayer::WriteResource(const Brx& aUriTail,
+                                       const TIpAddress& /*aInterface*/,
+                                       std::vector<char*>& /*aLanguageList*/,
+                                       IResourceWriter& aResourceWriter)
 {
     if (aUriTail == kIconOpenHomeFileName)
     {
