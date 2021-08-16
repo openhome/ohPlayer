@@ -1,0 +1,34 @@
+name: Build ohPlayer
+
+on: [push]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        docker_image:
+          - conanio/gcc9
+        include:
+          - docker_image: conanio/gcc9
+            gcc_version: 9
+            build_arch: x86_64
+    runs-on: ubuntu-latest
+    env:
+      CONAN_GCC_VERSIONS: ${{ matrix.gcc_version }}
+      CONAN_ARCHS: ${{matrix.build_arch}}
+      CONAN_DOCKER_IMAGE: ${{ matrix.docker_image }}
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@master
+        with:
+          python-version: '3.7'
+      - name: Install system deps
+        run: sudo apt-get install -y libasound2-dev libavcodec-dev libavformat-dev libavresample-dev
+      - name: Install ohDevTools
+        run: git clone https://github.com/merakiacoustic/ohdevtools.git ../ohdevtools
+      - name: Install ohDevTools deps
+        run: pip install boto3 requests
+      - name: Download the dependencies
+        run: ./go fetch ohWafHelpers ohNet ohNetGenerated ohMediaPlayer openssl
+      - name: Build the package
+        run: cd linux; DISABLE_GTK=0 make -f Makefile.raspbian
