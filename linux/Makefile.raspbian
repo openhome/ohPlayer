@@ -32,14 +32,8 @@ OPTIONAL_CFLAGS = $(GLIB_CFLAGS)
 OPTIONAL_LIBS   = $(GLIB_LIBS)
 endif
 
-HWPLATFORM=$(shell uname -i)
-ifeq ($(HWPLATFORM),i686)
-    CXX         = arm-linux-gnueabihf-g++
-    TARG_ARCH   = Linux-rpi
-else
-    CXX         = g++
-    TARG_ARCH   = Linux-rpi
-endif
+CXX         = g++
+TARG_ARCH   = Linux-x64
 
 TARGET    = $(OSPLATFORM)/openhome-player
 
@@ -57,8 +51,8 @@ RESDIR = $(PREFIX)/share/openhome-player
 # The directory to install changelog and license to
 DOCDIR = $(PREFIX)/share/doc/openhome-player
 
-CFLAGS = -c -Wall -std=c++0x $(OPTIONAL_CFLAGS) -DTARG_ARCH=$(TARG_ARCH) \
-         -fstack-protector -fstack-check -DDEFINE_LITTLE_ENDIAN
+CFLAGS = -c -std=c++0x $(OPTIONAL_CFLAGS) -DTARG_ARCH=$(TARG_ARCH) \
+         -fstack-protector -fstack-check -DDEFINE_LITTLE_ENDIAN -Wno-deprecated
 
 # If 'DEBUG=0 is specified on the command line build a debug biuld.
 ifdef DEBUG
@@ -117,7 +111,7 @@ $(OBJ_DIR)/%.o: %.cpp $(HEADERS)
 .PRECIOUS: $(TARGET) $(OBJECTS)
 
 $(TARGET): $(OBJECTS)
-	$(CXX) $(OBJECTS) -Wall $(LIBS) -o $@
+	$(CXX) $(OBJECTS) -Wno-deprecated $(LIBS) -o $@
 
 build:
 	@mkdir -p $(OBJ_DIR)
