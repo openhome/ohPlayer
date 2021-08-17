@@ -1,0 +1,8 @@
+[requires]
+ffmpeg/4.2@bincrafters/stable
+libpng/1.6.37
+openssl/1.1.1d
+glib/2.69.1
+
+[generators]
+cmake_find_package
