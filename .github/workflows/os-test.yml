@@ -1,0 +1,22 @@
+name: Display OS information
+
+on: [push]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        docker_image:
+          - conanio/gcc9
+        include:
+          - docker_image: conanio/gcc9
+            gcc_version: 9
+            build_arch: x86_64
+    runs-on: ubuntu-latest
+    env:
+      CONAN_GCC_VERSIONS: ${{ matrix.gcc_version }}
+      CONAN_ARCHS: ${{matrix.build_arch}}
+      CONAN_DOCKER_IMAGE: ${{ matrix.docker_image }}
+    steps:
+      - name: Display os info
+        run: cat /etc/os-release
