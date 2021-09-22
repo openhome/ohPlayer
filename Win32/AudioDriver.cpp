@@ -138,6 +138,12 @@ TUint AudioDriver::PipelineAnimatorMaxBitDepth() const
     return 0;
 }
 
+void AudioDriver::PipelineAnimatorGetMaxSampleRates(TUint& aPcm, TUint& aDsd) const
+{
+    aPcm = 0;
+    aDsd = 0;
+}
+
 
 TBool AudioDriver::CheckMixFormat(TUint aSampleRate,
                                   TUint aNumChannels,

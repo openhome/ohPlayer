@@ -178,7 +178,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>comctl32.lib;Ws2_32.lib;IPHLPAPI.lib;Dbghelp.lib;Avrt.lib;ohNetCore.lib;ohPipeline.lib;libeay32.lib;ssleay32.lib;ohMediaPlayer.lib;ohNetGeneratedProxies.lib;CodecAacFdkBase.lib;CodecAacFdk.lib;CodecAifc.lib;CodecAlacAppleBase.lib;CodecAlacApple.lib;CodecPcm.lib;CodecAiffBase.lib;CodecAiff.lib;libOgg.lib;CodecVorbis.lib;CodecAacFdkAdts.lib;CodecFlac.lib;CodecWav.lib;CodecMp3.lib;Podcast.lib;SourcePlaylist.lib;SourceUpnpAv.lib;SourceSongcast.lib;SourceRadio.lib;WebAppFramework.lib;ConfigUi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>comctl32.lib;Ws2_32.lib;IPHLPAPI.lib;Dbghelp.lib;Avrt.lib;ohNetCore.lib;ohPipeline.lib;libeay32.lib;ssleay32.lib;ohMediaPlayer.lib;ohNetGeneratedProxies.lib;CodecAacFdkBase.lib;CodecAacFdk.lib;CodecAifc.lib;CodecAlacAppleBase.lib;CodecAlacApple.lib;CodecPcm.lib;CodecAiffBase.lib;CodecAiff.lib;libOgg.lib;CodecVorbis.lib;CodecAacFdkAdts.lib;CodecAacFdkMp4.lib;CodecFlac.lib;CodecWav.lib;CodecMp3.lib;Podcast.lib;SourcePlaylist.lib;SourceUpnpAv.lib;SourceSongcast.lib;SourceRadio.lib;WebAppFramework.lib;ConfigUi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>

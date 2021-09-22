@@ -435,8 +435,6 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TIpAddress preferr
     TIpAddress            lastSubnet    = InitArgs::NO_SUBNET;
     const TChar          *lastSubnetStr = "Subnet.LastUsed";
 
-    //initParams->SetDvEnableBonjour();
-
     Net::Library* lib = new Net::Library(initParams);
     Debug::SetLevel(Debug::kPipeline | Debug::kMedia | Debug::kCodec);
     Debug::SetSeverity(Debug::kSeverityTrace);

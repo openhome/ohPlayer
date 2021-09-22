@@ -49,6 +49,7 @@ private: // from IPipelineAnimator
     TUint PipelineAnimatorDelayJiffies(AudioFormat aForamt, TUint aSampleRate, TUint aBitDepth, TUint aNumChannels) const override;
     TUint PipelineAnimatorDsdBlockSizeWords() const override;
     TUint PipelineAnimatorMaxBitDepth() const override;
+    void PipelineAnimatorGetMaxSampleRates(TUint& aPcm, TUint& aDsd) const override;
 
 private:
     IPipeline     &iPipeline;
