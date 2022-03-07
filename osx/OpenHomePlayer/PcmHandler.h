@@ -74,7 +74,7 @@ public:
      *
      * Will be called before any calls to ProcessFragment or ProcessSample.
      */
-    virtual void BeginBlock() {}
+    virtual void BeginBlock() override {}
 
     /**
      * Gives the processor a chance to copy memory in a single block.
@@ -85,7 +85,9 @@ public:
      * @param aData         Packed big endian pcm data.  Will always be a complete number of samples.
      * @param aNumChannels  Number of channels.
      */
-    virtual void ProcessFragment(const Brx& aData, TByte aSampleSize, TUint aNumChannels);
+    virtual void ProcessFragment(const Brx& aData, TUint aNumChannels, TUint aSampleSizeBytes) override;
+    
+    virtual void ProcessSilence(const Brx& aData, TUint aNumChannels, TUint aSampleSizeBytes) override;
 
     /**
      * Optional function.  Gives the processor a chance to copy memory in a single block.
@@ -106,12 +108,12 @@ public:
      *
      * No more calls to ProcessFragment or ProcessSample will be made after this.
      */
-    virtual void EndBlock() {}
+    virtual void EndBlock() override {}
 
     /**
      * If this is called, the processor should pass on any buffered audio.
      */
-    virtual void Flush() {}
+    virtual void Flush() override {}
 
 private:
     // The lowest common multiple of the available sample sizes  (1/2/3/4 bytes)

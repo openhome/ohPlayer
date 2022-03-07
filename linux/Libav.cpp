@@ -36,7 +36,7 @@
 #define DBUG_F(...) Log::Print(__VA_ARGS__)
 #endif
 
-extern "C"
+extern "C"     
 {
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
@@ -146,6 +146,7 @@ private:
     TBool            iSeekSuccess;
     TUint64          iByteTotal;
     OpaqueType       iClassData;
+    SpeakerProfile*  iSpeakerProfile;
 };
 
 } // namespace Codec
@@ -186,6 +187,8 @@ CodecLibAV::CodecLibAV(IMimeTypeList& aMimeTypeList)
     , iSeekSuccess(false)
     , iByteTotal(0)
 {
+    iSpeakerProfile = new SpeakerProfile();
+
 #ifdef ENABLE_MP3
     aMimeTypeList.Add("audio/mpeg");
     aMimeTypeList.Add("audio/x-mpeg");
@@ -210,6 +213,7 @@ CodecLibAV::CodecLibAV(IMimeTypeList& aMimeTypeList)
 
 CodecLibAV::~CodecLibAV()
 {
+    delete iSpeakerProfile;
 }
 
 #ifdef DEBUG
@@ -487,10 +491,12 @@ TBool CodecLibAV::Recognise(const EncodedStreamInfo& aStreamInfo)
     DBUG_F("[CodecLibAV] Recognise\n");
 #endif
 
-    if (aStreamInfo.StreamFormat()==EncodedStreamInfo::Format::Pcm)
+/*
+    if (aStreamInfo.Format() == EncodedStreamInfo::Format::Pcm)
     {
         return false;
     }
+*/
 
     if (!InitAVIOContext())
     {
@@ -771,7 +777,13 @@ void CodecLibAV::StreamInitialise()
                                      iTrackLengthJiffies,
                                      0,
                                      false,
+<<<<<<< HEAD
 				                     DeriveProfile(iAvCodecContext->channels));
+=======
+                                     *iSpeakerProfile);
+
+
+>>>>>>> 0f88520d108c8e78e77f6fd9deef52514eca228e
 
     // Create a frame to hold the decoded packets.
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55, 45, 101)
@@ -948,8 +960,12 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
                                      iTrackLengthJiffies,
                                      aSample,
                                      false,
+<<<<<<< HEAD
 				                     DeriveProfile(iAvCodecContext->channels)
 				     );
+=======
+                                     *iSpeakerProfile);
+>>>>>>> 0f88520d108c8e78e77f6fd9deef52514eca228e
 
     // Ditch any PCM we have buffered.
     iOutput.SetBytes(0);

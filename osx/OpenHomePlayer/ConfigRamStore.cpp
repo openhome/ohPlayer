@@ -1,6 +1,7 @@
-#include <OpenHome/Configuration/Tests/ConfigRamStore.h>
 #include <OpenHome/Private/Converter.h>
 #include <OpenHome/Private/Printer.h>
+
+#include "ConfigRamStore.h"
 
 using namespace OpenHome;
 using namespace OpenHome::Configuration;

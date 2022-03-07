@@ -109,10 +109,11 @@ Brn UpdateChecker::ReadValue(ReaderUntil& aReaderUntil, Brn& key)
 }
 
 // Check a given feed for a valid update returning the Url if found.
-TBool UpdateChecker::updateAvailable(Environment& aEnv,
-                                     const TChar* aFeed,
-                                     Bwx& aUrl)
+TBool UpdateChecker::updateAvailable(Environment& /*aEnv*/,
+                                     const TChar* /*aFeed*/,
+                                     Bwx& /*aUrl*/)
 {
+    /*
     const TUint        versionLen = 16;
 
     HttpReader         client(aEnv);
@@ -183,6 +184,7 @@ TBool UpdateChecker::updateAvailable(Environment& aEnv,
     catch (ReaderError&)
     {
     }
+    */
 
     return false;
 }

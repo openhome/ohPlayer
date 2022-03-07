@@ -22,7 +22,9 @@ class VolumeProfile : public IVolumeProfile
     static const TUint kVolumeMilliDbPerStep = 1024;
     static const TUint kBalanceMax = 12;
     static const TUint kFadeMax = 10;
+    static const TUint kOffsetMax = 4 * 1024;
     static const TBool kAlwaysOn = false;
+    static const TUint kThreadPriority = OpenHome::kPriorityHigh;
 private: // from IVolumeProfile
     TUint VolumeMax() const override;
     TUint VolumeDefault() const override;
@@ -33,6 +35,9 @@ private: // from IVolumeProfile
     TUint BalanceMax() const override;
     TUint FadeMax() const override;
     TBool AlwaysOn() const override;
+    TUint OffsetMax() const override;
+    TUint ThreadPriority() const override;
+    StartupVolume StartupVolumeConfig() const override;
 };
 
 class VolumeControl : public IVolume, public IBalance, public IFade

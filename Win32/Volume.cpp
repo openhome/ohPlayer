@@ -6,6 +6,8 @@
 #include "MemoryCheck.h"
 #include "Volume.h"
 
+#pragma warning(disable : 4091 ) // Disable warning C4091: Typedef ignored on left of... (Inside the Windows SDKs - ksmedia.h)
+
 using namespace OpenHome;
 using namespace OpenHome::Av;
 using namespace OpenHome::Media;
@@ -60,6 +62,21 @@ TUint VolumeProfile::FadeMax() const
 TBool VolumeProfile::AlwaysOn() const
 {
     return kAlwaysOn;
+}
+
+TUint VolumeProfile::OffsetMax() const
+{
+    return kOffsetMax;
+}
+
+TUint VolumeProfile::ThreadPriority() const
+{
+    return kThreadPriority;
+}
+
+IVolumeProfile::StartupVolume VolumeProfile::StartupVolumeConfig() const
+{
+    return StartupVolume::LastUsed;
 }
 
 void VolumeControl::SetVolume(TUint aVolume)

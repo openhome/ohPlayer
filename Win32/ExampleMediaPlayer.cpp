@@ -15,8 +15,8 @@
 #include <OpenHome/Web/ConfigUi/ConfigUiMediaPlayer.h>
 #include <OpenHome/Web/WebAppFramework.h>
 #include <OpenHome/Web/ConfigUi/ConfigUi.h>
-#include <OpenHome/Net/Private/Shell.h>
-#include <OpenHome/Net/Private/ShellCommandDebug.h>
+#include <OpenHome/Private/Shell.h>
+#include <OpenHome/Private/ShellCommandDebug.h>
 
 #include "ConfigRegStore.h"
 #include "ControlPointProxy.h"
@@ -35,12 +35,15 @@ using namespace OpenHome::Media;
 using namespace OpenHome::Net;
 using namespace OpenHome::Web;
 
+
 // ExampleMediaPlayer
+const Brn kPrefix("OpenHome");
 
 const Brn ExampleMediaPlayer::kIconOpenHomeFileName("OpenHomeIcon");
 
 ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
                                        Net::DvStack& aDvStack,
+                                       Net::CpStack& aCpStack,
                                        const Brx& aUdn,
                                        const TChar* aRoom,
                                        const TChar* aProductName,
@@ -108,11 +111,13 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
 
 
     // create MediaPlayer
-    iMediaPlayer = new MediaPlayer(aDvStack, *iDevice, *iRamStore,
+    auto p = MediaPlayerInitParams::New(Brn(aRoom), Brn(aProductName), kPrefix);
+  
+    iMediaPlayer = new MediaPlayer(aDvStack, aCpStack,
+                                   *iDevice, *iRamStore,
                                    *iConfigRegStore, iInitParams,
                                     volumeInit, volumeProfile, *iInfoLogger,
-                                    aUdn, Brn(aRoom),
-                                    Brn(aProductName));
+                                    aUdn, p);
 
 #ifdef _DEBUG
     iPipelineStateLogger = new LoggingPipelineObserver();
@@ -121,24 +126,28 @@ ExampleMediaPlayer::ExampleMediaPlayer(HWND hwnd,
 
     iFnUpdaterStandard = new
         Av::FriendlyNameAttributeUpdater(iMediaPlayer->FriendlyNameObservable(),
+                                         iMediaPlayer->ThreadPool(),
                                         *iDevice);
 
     iFnManagerUpnpAv = new
-        Av::FriendlyNameManagerUpnpAv(iMediaPlayer->Product());
+        Av::FriendlyNameManagerUpnpAv(kPrefix, iMediaPlayer->Product());
 
     iFnUpdaterUpnpAv = new
-        Av::FriendlyNameAttributeUpdater(*iFnManagerUpnpAv, *iDeviceUpnpAv);
+        Av::FriendlyNameAttributeUpdater(*iFnManagerUpnpAv, 
+                                         iMediaPlayer->ThreadPool(),
+                                         *iDeviceUpnpAv);
 
     // Set up config app.
-    static const TUint addr = 0;    // Bind to all addresses.
     static const TUint port = 0;    // Bind to whatever free port the OS
                                     // allocates to the framework server.
 
+    auto webAppInit = new WebAppFrameworkInitParams();
+    webAppInit->SetServerPort(port);
+    webAppInit->SetSendQueueSize(kUiSendQueueSize);
+
     iAppFramework = new WebAppFramework(aDvStack.Env(),
-                                        addr,
-                                        port,
-                                        kMaxUiTabs,
-                                        kUiSendQueueSize);
+                                        webAppInit,
+                                        iMediaPlayer->ThreadPool());
 }
 
 ExampleMediaPlayer::~ExampleMediaPlayer()
@@ -215,7 +224,7 @@ void ExampleMediaPlayer::RunWithSemaphore(Net::CpStack& aCpStack)
 {
     RegisterPlugins(iMediaPlayer->Env());
     AddConfigApp();
-    iMediaPlayer->Start();
+    iMediaPlayer->Start(iRebootHandler);
     iAppFramework->Start();
     iDevice->SetEnabled();
     iDeviceUpnpAv->SetEnabled();
@@ -283,8 +292,9 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 #else // USE_IMFCODEC
 #ifdef ENABLE_AAC
     // Disabled by default - requires patent license
-    iMediaPlayer->Add(Codec::CodecFactory::NewAac(iMediaPlayer->MimeTypes()));
-    iMediaPlayer->Add(Codec::CodecFactory::NewAdts(iMediaPlayer->MimeTypes()));
+    // NOTE: When enabled, additional libraries must be linked
+    iMediaPlayer->Add(Codec::CodecFactory::NewAacFdkMp4(iMediaPlayer->MimeTypes()));
+    iMediaPlayer->Add(Codec::CodecFactory::NewAacFdkAdts(iMediaPlayer->MimeTypes()));
 #endif // ENABLE_AAC
 
 #ifdef ENABLE_MP3
@@ -296,16 +306,19 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
     iMediaPlayer->Add(Codec::CodecFactory::NewPcm());
     iMediaPlayer->Add(Codec::CodecFactory::NewVorbis(iMediaPlayer->MimeTypes()));
 
+
     // Add protocol modules
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHls(aEnv, iUserAgent));
+    SslContext& ssl = iMediaPlayer->Ssl();
+
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, ssl, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, ssl, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, ssl, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, ssl, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, ssl, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHls(aEnv, ssl, iUserAgent));
 
     // Add sources
-    iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer));
+    iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer, Optional<IPlaylistLoader>(nullptr)));
 
     iMediaPlayer->Add(SourceFactory::NewUpnpAv(*iMediaPlayer, *iDeviceUpnpAv));
 
@@ -313,7 +326,8 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
                                   *iMediaPlayer,
                                    Optional<IClockPuller>(nullptr),
                                    Optional<IOhmTimestamper>(iTxTimestamper),
-                                   Optional<IOhmTimestamper>(iRxTimestamper)));
+                                   Optional<IOhmTimestamper>(iRxTimestamper),
+                                   Optional<IOhmMsgProcessor>(nullptr)));
 
 
 #ifdef ENABLE_TIDAL
@@ -340,7 +354,7 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 }
 
 void ExampleMediaPlayer::WriteResource(const Brx&          aUriTail,
-                                       TIpAddress          /*aInterface*/,
+                                       const TIpAddress&   /*aInterface*/,
                                        std::vector<char*>& /*aLanguageList*/,
                                        IResourceWriter&    aResourceWriter)
 {
@@ -375,9 +389,11 @@ void ExampleMediaPlayer::AddConfigApp()
                                           sourcesBufs,
                                           Brn("Softplayer"),
                                           Brn("res/"),
+                                          30,
                                           kMaxUiTabs,
                                           kUiSendQueueSize,
                                           iRebootHandler);
+
 
     iAppFramework->Add(iConfigApp,              // iAppFramework takes ownership
                        MakeFunctorGeneric(*this, &ExampleMediaPlayer::PresentationUrlChanged));
@@ -412,18 +428,17 @@ void ExampleMediaPlayer::Disabled()
 
 // ExampleMediaPlayerInit
 
-OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredSubnet)
+OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TIpAddress preferredSubnet)
 {
     TUint                 index         = 0;
     InitialisationParams *initParams    = InitialisationParams::Create();
-    TIpAddress            lastSubnet    = InitArgs::NO_SUBNET;;
+    TIpAddress            lastSubnet    = InitArgs::NO_SUBNET;
     const TChar          *lastSubnetStr = "Subnet.LastUsed";
 
-    //initParams->SetDvEnableBonjour();
-
     Net::Library* lib = new Net::Library(initParams);
-    Debug::SetLevel(/*Debug::kError | */Debug::kPipeline);
-
+    Debug::SetLevel(Debug::kPipeline | Debug::kMedia | Debug::kCodec);
+    Debug::SetSeverity(Debug::kSeverityTrace);
+  
     std::vector<NetworkAdapter*>* subnetList = lib->CreateSubnetList();
 
     if (subnetList->size() == 0)
@@ -457,7 +472,9 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
         TIpAddress subnet = (*subnetList)[i]->Subnet();
 
         // If the requested subnet is available, choose it.
-        if (subnet == preferredSubnet)
+        const TBool isPreferredSubnet = preferredSubnet.iFamily == kFamilyV4 ? CompareIPv4Addrs(preferredSubnet, subnet)
+                                                                             : CompareIPv6Addrs(preferredSubnet, subnet);
+        if (isPreferredSubnet)
         {
             index = i;
             break;
@@ -465,7 +482,10 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
 
         // If the last used subnet is available, note it.
         // We'll fall back to it if the requested subnet is not available.
-        if (subnet == lastSubnet)
+        const TBool isLastSubnet = lastSubnet.iFamily == kFamilyV4 ? CompareIPv4Addrs(lastSubnet, subnet)
+                                                                   : CompareIPv6Addrs(lastSubnet, subnet);
+
+        if (isLastSubnet)
         {
             index = i;
         }
@@ -481,10 +501,31 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
     iConfigRegStore.Write(Brn(lastSubnetStr),
                           Brn((TByte *)&subnet, sizeof(subnet)));
 
-    Log::Print("Using Subnet %d.%d.%d.%d\n", subnet&0xff, (subnet>>8)&0xff,
-                                             (subnet>>16)&0xff,
-                                             (subnet>>24)&0xff);
+    if (subnet.iFamily == kFamilyV4)
+    {
+        Log::Print("Using Subnet %d.%d.%d.%d\n", subnet.iV4 & 0xff, 
+                                                 (subnet.iV4 >> 8) & 0xff,
+                                                 (subnet.iV4 >> 16) & 0xff,
+                                                 (subnet.iV4 >> 24) & 0xff);
+    }
+    else
+    {
+        Log::Print("Using Subnet: %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x\n",
+                   subnet.iV6[0], subnet.iV6[1],
+                   subnet.iV6[2], subnet.iV6[3],
+                   subnet.iV6[4], subnet.iV6[5],
+                   subnet.iV6[6], subnet.iV6[7],
+                   subnet.iV6[8], subnet.iV6[9],
+                   subnet.iV6[10], subnet.iV6[11],
+                   subnet.iV6[12], subnet.iV6[13],
+                   subnet.iV6[14], subnet.iV6[15]);
+    }
 
     return lib;
 }
 
+
+void ExampleMediaPlayer::DebugLogOutput(const char* aMessage)
+{
+    OutputDebugStringA(aMessage);
+}

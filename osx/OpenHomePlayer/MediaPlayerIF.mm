@@ -21,6 +21,25 @@ using namespace OpenHome::Net;
 
 static NSString *const kUpdateUri = @RELEASE_URL;
 
+// Helpers
+static TBool CompareIPv4Addrs(const TIpAddress addr1,
+                              const TIpAddress addr2)
+{
+    return addr1.iFamily == kFamilyV4
+        && addr2.iFamily == kFamilyV4
+        && addr1.iV4 == addr2.iV4;
+}
+
+static TBool CompareIPv6Addrs(const TIpAddress addr1,
+                              const TIpAddress addr2)
+{
+    return addr1.iFamily == kFamilyV6
+        && addr2.iFamily == kFamilyV6
+        && memcmp((TByte*)addr1.iV6[0], (TByte*)addr2.iV6[0], 16) == 0;
+}
+
+
+
 MediaPlayerIF::MediaPlayerIF(TIpAddress subnet)
 {
 #ifdef DEBUG
@@ -117,7 +136,10 @@ OpenHome::Net::Library* MediaPlayerIF::CreateLibrary(TIpAddress preferredSubnet)
         TIpAddress subnet = (*subnetList)[i]->Subnet();
 
         // If the requested subnet is available, choose it.
-        if (subnet == preferredSubnet)
+        const TBool isPreferredSubnet = preferredSubnet.iFamily == kFamilyV4 ? CompareIPv4Addrs(preferredSubnet, subnet)
+                                                                             : CompareIPv6Addrs(preferredSubnet, subnet);
+        
+        if (isPreferredSubnet)
         {
             index = i;
             break;
@@ -125,7 +147,10 @@ OpenHome::Net::Library* MediaPlayerIF::CreateLibrary(TIpAddress preferredSubnet)
 
         // If the last used subnet is available, note it.
         // We'll fall back to it if the requested subnet is not available.
-        if (subnet == lastSubnet)
+        const TBool isLastSubnet = lastSubnet.iFamily == kFamilyV4 ? CompareIPv4Addrs(lastSubnet, subnet)
+                                                                   : CompareIPv6Addrs(lastSubnet, subnet);
+        
+        if (isLastSubnet)
         {
             index = i;
         }
@@ -141,10 +166,26 @@ OpenHome::Net::Library* MediaPlayerIF::CreateLibrary(TIpAddress preferredSubnet)
     iConfigPersistentStore.Write(Brn(lastSubnetStr),
                           Brn((TByte *)&subnet, sizeof(subnet)));
 
-    Log::Print("Using Subnet %d.%d.%d.%d\n", subnet&0xff, (subnet>>8)&0xff,
-               (subnet>>16)&0xff,
-               (subnet>>24)&0xff);
-
+    if (subnet.iFamily == kFamilyV4)
+    {
+        Log::Print("Using Subnet %d.%d.%d.%d\n", subnet.iV4 & 0xff,
+                                                 (subnet.iV4 >> 8) & 0xff,
+                                                 (subnet.iV4 >> 16) & 0xff,
+                                                 (subnet.iV4 >> 24) & 0xff);
+    }
+    else
+    {
+        Log::Print("Using Subnet: %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x\n",
+                   subnet.iV6[0], subnet.iV6[1],
+                   subnet.iV6[2], subnet.iV6[3],
+                   subnet.iV6[4], subnet.iV6[5],
+                   subnet.iV6[6], subnet.iV6[7],
+                   subnet.iV6[8], subnet.iV6[9],
+                   subnet.iV6[10], subnet.iV6[11],
+                   subnet.iV6[12], subnet.iV6[13],
+                   subnet.iV6[14], subnet.iV6[15]);
+    }
+    
     return lib;
 
 }
@@ -222,6 +263,7 @@ TBool MediaPlayerIF::setup (TIpAddress subnet)
     // Create MediaPlayer.
     iDriver = nil;
     iExampleMediaPlayer = new ExampleMediaPlayer(*iDvStack,
+                                                 *iCpStack,
                                                  Brn([udn cStringUsingEncoding:NSUTF8StringEncoding]),
                                                  room,
                                                  name,

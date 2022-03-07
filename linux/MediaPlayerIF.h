@@ -15,7 +15,19 @@ typedef struct
 
 typedef struct InitArgsStruct
 {
-    static const TIpAddress NO_SUBNET = 0xFFFFFFFF;
+    static constexpr TIpAddress NO_SUBNET =
+    {
+        kFamilyV4,  // iFamily
+        0xFFFFFF,   // iV4
+        { 255 }     // iV6
+    };
+
+    static constexpr TIpAddress NO_SUBNET_V6 =
+    {
+        kFamilyV6,  // iFamily
+        0xFFFFF,    // iV4
+        { 255 },    // iV6
+    };
 
     TIpAddress      subnet;              // Requested subnet
     OpenHome::TBool restarted;           // Has the MediaPlayer been restarted.

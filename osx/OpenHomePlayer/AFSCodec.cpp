@@ -136,6 +136,8 @@ private: // Stream format data
     TUint32 iBitDepth;
     TUint32 iBitRate;
     Float64 iDuration;
+    
+    SpeakerProfile* iSpeakerProfile;
 };
 
 } // namespace Codec
@@ -162,6 +164,8 @@ CodecAFS::CodecAFS(IMimeTypeList& aMimeTypeList)
 {
     // Initialise the object data.
     InitialiseData();
+    
+    iSpeakerProfile = new SpeakerProfile();
 
 #ifdef ENABLE_MP3
     aMimeTypeList.Add("audio/mpeg");
@@ -177,6 +181,7 @@ CodecAFS::CodecAFS(IMimeTypeList& aMimeTypeList)
 
 CodecAFS::~CodecAFS()
 {
+    delete iSpeakerProfile;
 }
 
 TBool CodecAFS::DecodeAudioData()
@@ -925,7 +930,8 @@ void CodecAFS::AFSPropertyListenerProc(
                                        Brn(myData->iStreamFormat),
                                        myData->iTrackLengthJiffies,
                                        0,
-                                       false);
+                                       false,
+                                       *(myData->iSpeakerProfile));
 
             // Create the audio queue, setting up the required PCM format.
             if (! myData->CreateAudioQueue(inAudioFileStream))
@@ -1254,7 +1260,8 @@ TBool CodecAFS::TrySeek(TUint aStreamId, TUint64 aSample)
                                      Brn(iStreamFormat),
                                      iTrackLengthJiffies,
                                      aSample,
-                                     false);
+                                     false,
+                                     *iSpeakerProfile);
 
     return true;
 }

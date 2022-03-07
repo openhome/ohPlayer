@@ -613,12 +613,12 @@ void ControlPointProxy::CPUpnpAv::NotifyPipelineState(Media::EPipelineState aSta
 }
 
 void ControlPointProxy::CPUpnpAv::NotifyMode(const Brx& /*aMode*/,
-                                             const Media::ModeInfo& /*aInfo*/)
+                                             const Media::ModeInfo& /*aInfo*/,
+                                             const Media::ModeTransportControls& /*aControls*/)
 {
 }
 
 void ControlPointProxy::CPUpnpAv::NotifyTrack(Media::Track& /*aTrack*/,
-                                              const Brx&    /*aMode*/,
                                               TBool         /*aStartOfStream*/)
 {
 }
@@ -627,8 +627,7 @@ void ControlPointProxy::CPUpnpAv::NotifyMetaText(const Brx& /*aText*/)
 {
 }
 
-void ControlPointProxy::CPUpnpAv::NotifyTime(TUint /*aSeconds*/,
-                                             TUint /*aTrackDurationSeconds*/)
+void ControlPointProxy::CPUpnpAv::NotifyTime(TUint /*aSeconds*/)
 {
 }
 

@@ -44,9 +44,13 @@ private: // from IMsgProcessor
     Msg* ProcessMsg(MsgDecodedStream* aMsg) override;
     Msg* ProcessMsg(MsgPlayable* aMsg) override;
     Msg* ProcessMsg(MsgQuit* aMsg) override;
-private: // from IPipelineDriver
-    TUint PipelineAnimatorBufferJiffies();
-    TUint PipelineAnimatorDelayJiffies(TUint aSampleRate, TUint aBitDepth, TUint aNumChannels);
+private: // from IPipelineAnimator
+    TUint PipelineAnimatorBufferJiffies() const override;
+    TUint PipelineAnimatorDelayJiffies(AudioFormat aForamt, TUint aSampleRate, TUint aBitDepth, TUint aNumChannels) const override;
+    TUint PipelineAnimatorDsdBlockSizeWords() const override;
+    TUint PipelineAnimatorMaxBitDepth() const override;
+    void PipelineAnimatorGetMaxSampleRates(TUint& aPcm, TUint& aDsd) const override;
+
 private:
     IPipeline     &iPipeline;
     TUint          iSampleRate;

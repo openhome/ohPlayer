@@ -62,6 +62,9 @@ TBool ConfigRegStore::GetAppRegistryKey()
     }
 }
 
+void ConfigRegStore::Read(const Brx& /*aKey*/, IWriter& /*aWriter*/)
+{ }
+
 void ConfigRegStore::Read(const Brx& aKey, Bwx& aDest)
 {
     AutoMutex a(iLock);
@@ -179,3 +182,6 @@ void ConfigRegStore::Delete(const Brx& aKey)
         }
     }
 }
+
+void ConfigRegStore::ResetToDefaults()
+{ }

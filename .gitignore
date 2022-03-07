@@ -18,3 +18,6 @@ tags
 
 # Osx finder files
 .DS_Store
+
+# VS 2017+ changes
+.vs/

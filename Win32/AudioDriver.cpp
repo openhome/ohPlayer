@@ -1,7 +1,7 @@
 #include <OpenHome/Private/Thread.h>
 #include <OpenHome/Media/Pipeline/Msg.h>
 #include <OpenHome/Media/ClockPuller.h>
-#include <OpenHome/Media/Utils/ProcessorPcmUtils.h>
+#include <OpenHome/Media/Utils/ProcessorAudioUtils.h>
 #include <OpenHome/Net/Core/DvDevice.h>
 #include <OpenHome/Media/Pipeline/Pipeline.h>
 #include <OpenHome/Private/Printer.h>
@@ -15,6 +15,8 @@
 
 #include <avrt.h>
 #include <stdlib.h>
+
+#pragma warning(disable : 4091 ) // Disable warning C4091: Typedef ignored on left of... (Inside the Windows SDKs - ksmedia.h)
 
 
 using namespace OpenHome;
@@ -113,17 +115,35 @@ Msg* AudioDriver::ProcessMsg(MsgDrain* aMsg)
     return NULL;
 }
 
-TUint AudioDriver::PipelineAnimatorDelayJiffies(TUint /*aSampleRate*/,
+TUint AudioDriver::PipelineAnimatorDelayJiffies(AudioFormat /*aFormat*/,
+                                                TUint /*aSampleRate*/,
                                                 TUint /*aBitDepth*/,
-                                                TUint /*aNumChannels*/)
+                                                TUint /*aNumChannels*/) const
 {
     return 0;
 }
 
-TUint AudioDriver::PipelineAnimatorBufferJiffies()
+TUint AudioDriver::PipelineAnimatorBufferJiffies() const
 {
     return 0;
 }
+
+TUint AudioDriver::PipelineAnimatorDsdBlockSizeWords() const
+{
+    return 0;
+}
+
+TUint AudioDriver::PipelineAnimatorMaxBitDepth() const
+{
+    return 0;
+}
+
+void AudioDriver::PipelineAnimatorGetMaxSampleRates(TUint& aPcm, TUint& aDsd) const
+{
+    aPcm = 0;
+    aDsd = 0;
+}
+
 
 TBool AudioDriver::CheckMixFormat(TUint aSampleRate,
                                   TUint aNumChannels,
