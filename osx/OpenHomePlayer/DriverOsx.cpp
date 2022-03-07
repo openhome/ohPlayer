@@ -356,15 +356,29 @@ void DriverOsx::Resume()
     resumeQueue();
 }
 
-TUint DriverOsx::PipelineAnimatorDelayJiffies(TUint /*aSampleRate*/, TUint /*aBitDepth*/, TUint /*aNumChannels*/)
+TUint DriverOsx::PipelineAnimatorDelayJiffies(AudioFormat /*aFormat*/,
+                                              TUint /*aSampleRate*/,
+                                              TUint /*aBitDepth*/,
+                                              TUint /*aNumChannels*/) const
 {
     return 0;
 }
 
-TUint DriverOsx::PipelineAnimatorBufferJiffies()
+TUint DriverOsx::PipelineAnimatorBufferJiffies() const
 {
     return 0;
 }
+
+TUint DriverOsx::PipelineAnimatorMaxBitDepth() const
+{
+    return  0;
+}
+
+TUint DriverOsx::PipelineAnimatorDsdBlockSizeWords() const
+{
+    return 0;
+}
+
 
 void DriverOsx::fillBuffer(AudioQueueBufferRef inBuffer)
 {

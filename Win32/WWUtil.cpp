@@ -25,6 +25,8 @@
 
 #include "WWUtil.h"
 
+#pragma warning(disable : 4091 ) // Disable warning C4091: Typedef ignored on left of... (Inside the Windows SDKs - ksmedia.h)
+
 void
 WWWaveFormatDebug(WAVEFORMATEX *v)
 {
@@ -52,6 +54,9 @@ WWWFEXDebug(WAVEFORMATEXTENSIBLE *v)
 {
     (void)v;
 
+#pragma warning( push )
+#pragma warning( disable : 4477 )
+
     dprintf(
         "  dwChannelMask=0x%x\n"
         "  Samples.wValidBitsPerSample=%d\n"
@@ -59,5 +64,7 @@ WWWFEXDebug(WAVEFORMATEXTENSIBLE *v)
         v->dwChannelMask,
         v->Samples.wValidBitsPerSample,
         v->SubFormat);
+
+#pragma warning( pop )
 }
 

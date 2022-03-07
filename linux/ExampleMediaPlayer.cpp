@@ -37,6 +37,7 @@ using namespace OpenHome::Net;
 using namespace OpenHome::Web;
 
 // ExampleMediaPlayer
+const Brn kPrefix("OpenHome");
 
 const Brn ExampleMediaPlayer::kIconOpenHomeFileName("OpenHomeIcon");
 
@@ -115,7 +116,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
     iInitParams->SetGorgerDuration(iInitParams->DecodedReservoirJiffies());
 
     // create MediaPlayer
-    auto mpInit = MediaPlayerInitParams::New(Brn(aRoom), Brn(aProductName));
+    auto mpInit = MediaPlayerInitParams::New(Brn(aRoom), Brn(aProductName), kPrefix);
     iMediaPlayer = new MediaPlayer( aDvStack, aCpStack, *iDevice, *iRamStore,
                                    *iConfigStore, iInitParams,
                                     volumeInit, volumeProfile, *iInfoLogger,
@@ -132,7 +133,7 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
                                         *iDevice);
 
     iFnManagerUpnpAv = new
-        Av::FriendlyNameManagerUpnpAv(iMediaPlayer->Product());
+        Av::FriendlyNameManagerUpnpAv(kPrefix, iMediaPlayer->Product());
 
     iFnUpdaterUpnpAv = new
         Av::FriendlyNameAttributeUpdater(*iFnManagerUpnpAv,
@@ -301,12 +302,14 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
     iMediaPlayer->Add(Codec::CodecFactory::NewVorbis(iMediaPlayer->MimeTypes()));
 
     // Add protocol modules
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, iUserAgent));
-    iMediaPlayer->Add(ProtocolFactory::NewHls(aEnv, iUserAgent));
+    SslContext& ssl = iMediaPlayer->Ssl();
+
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, ssl, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, ssl, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, ssl, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, ssl, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHttp(aEnv, ssl, iUserAgent));
+    iMediaPlayer->Add(ProtocolFactory::NewHls(aEnv, ssl, iUserAgent));
 
     // Add sources
     iMediaPlayer->Add(SourceFactory::NewPlaylist(*iMediaPlayer,Optional<IPlaylistLoader>(nullptr)));
@@ -344,7 +347,7 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 }
 
 void ExampleMediaPlayer::WriteResource(const Brx&          aUriTail,
-                                       TIpAddress          /*aInterface*/,
+                                       const TIpAddress&   /*aInterface*/,
                                        std::vector<char*>& /*aLanguageList*/,
                                        IResourceWriter&    aResourceWriter)
 {
@@ -418,7 +421,7 @@ void ExampleMediaPlayer::Disabled()
 
 // ExampleMediaPlayerInit
 
-OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredSubnet)
+OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TIpAddress preferredSubnet)
 {
     TUint                 index         = 0;
     InitialisationParams *initParams    = InitialisationParams::Create();
@@ -462,7 +465,9 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
         TIpAddress subnet = (*subnetList)[i]->Subnet();
 
         // If the requested subnet is available, choose it.
-        if (subnet == preferredSubnet)
+        const TBool isPreferredSubnet = preferredSubnet.iFamily == kFamilyV4 ? CompareIPv4Addrs(preferredSubnet, subnet)
+                                                                             : CompareIPv6Addrs(preferredSubnet, subnet);
+        if (isPreferredSubnet)
         {
             index = i;
             break;
@@ -470,7 +475,10 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
 
         // If the last used subnet is available, note it.
         // We'll fall back to it if the requested subnet is not available.
-        if (subnet == lastSubnet)
+        const TBool isLastSubnet = lastSubnet.iFamily == kFamilyV4 ? CompareIPv4Addrs(lastSubnet, subnet)
+                                                                   : CompareIPv6Addrs(lastSubnet, subnet);
+
+        if (isLastSubnet)
         {
             index = i;
         }
@@ -486,9 +494,25 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TUint32 preferredS
     configStore->Write(Brn(lastSubnetStr),
                        Brn((TByte *)&subnet, sizeof(subnet)));
 
-    Log::Print("Using Subnet %d.%d.%d.%d\n", subnet&0xff, (subnet>>8)&0xff,
-                                             (subnet>>16)&0xff,
-                                             (subnet>>24)&0xff);
+    if (subnet.iFamily == kFamilyV4)
+    {
+        Log::Print("Using Subnet %d.%d.%d.%d\n", subnet.iV4 & 0xff, 
+                                                 (subnet.iV4 >> 8) & 0xff,
+                                                 (subnet.iV4 >> 16) & 0xff,
+                                                 (subnet.iV4 >> 24) & 0xff);
+    }
+    else
+    {
+        Log::Print("Using Subnet: %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x\n",
+                   subnet.iV6[0], subnet.iV6[1],
+                   subnet.iV6[2], subnet.iV6[3],
+                   subnet.iV6[4], subnet.iV6[5],
+                   subnet.iV6[6], subnet.iV6[7],
+                   subnet.iV6[8], subnet.iV6[9],
+                   subnet.iV6[10], subnet.iV6[11],
+                   subnet.iV6[12], subnet.iV6[13],
+                   subnet.iV6[14], subnet.iV6[15]);
+    }
 
     return lib;
 }

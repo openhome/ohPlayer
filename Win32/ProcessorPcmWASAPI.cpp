@@ -1,4 +1,4 @@
-#include <OpenHome/Media/Utils/ProcessorPcmUtils.h>
+#include <OpenHome/Media/Utils/ProcessorAudioUtils.h>
 #include <OpenHome/Private/Printer.h>
 
 #include "MemoryCheck.h"
@@ -13,19 +13,88 @@ using namespace OpenHome::Media;
 // Takes PCM data from the pipeline and formats it for the WASAPI
 // audio subsystem.
 
-ProcessorPcmBufWASAPI::ProcessorPcmBufWASAPI() : iBitDepth(0)
+ProcessorPcmBufWASAPI::ProcessorPcmBufWASAPI()
+    : iBuf(DecodedAudio::kMaxBytes)
+{ }
+
+
+const Brx& ProcessorPcmBufWASAPI::Buf() const
 {
+    return iBuf;
 }
 
-void ProcessorPcmBufWASAPI::SetBitDepth(TUint bitDepth)
+const TByte* ProcessorPcmBufWASAPI::Ptr() const
 {
-    iBitDepth = bitDepth;
+    return iBuf.Ptr();
 }
 
-void ProcessorPcmBufWASAPI::ProcessFragment8(const Brx& aData,
-                                             TUint /*aNumChannels*/)
+void ProcessorPcmBufWASAPI::SetBitDepth(TUint aBitDepth)
 {
-    ProcessFragment(aData);
+    iBitDepth = aBitDepth;
+}
+
+
+void ProcessorPcmBufWASAPI::BeginBlock()
+{
+    iBuf.SetBytes(0);
+}
+
+void ProcessorPcmBufWASAPI::ProcessSilence(const Brx& aData, 
+                                           TUint aNumChannels, 
+                                           TUint aSubsampleBytes)
+{
+    ProcessFragment(aData, aNumChannels, aSubsampleBytes);
+}
+
+void ProcessorPcmBufWASAPI::EndBlock()
+{ }
+
+void ProcessorPcmBufWASAPI::Flush()
+{ }
+
+
+void ProcessorPcmBufWASAPI::CheckSize(TUint aAdditionalBytes)
+{
+    while (iBuf.Bytes() + aAdditionalBytes > iBuf.MaxBytes()) {
+        const TUint size = iBuf.MaxBytes() + DecodedAudio::kMaxBytes;
+        iBuf.Grow(size);
+    }
+}
+
+void ProcessorPcmBufWASAPI::ProcessFragment(const Brx& aData)
+{
+    CheckSize(aData.Bytes());
+    iBuf.Append(aData);
+}
+
+
+void ProcessorPcmBufWASAPI::ProcessFragment(const Brx& aData, 
+                                            TUint aNumChannels, 
+                                            TUint /*aSubsampleBytes*/)
+{
+    switch (iBitDepth)
+    {
+        case 8: {
+            ProcessFragment(aData);
+            break;
+        }
+        case 16: {
+            ProcessFragment16(aData, aNumChannels);
+            break;
+        }
+        case 24: {
+            ProcessFragment24(aData, aNumChannels);
+            break;
+        }
+        case 32: {
+            ProcessFragment32(aData, aNumChannels);
+            break;
+        }
+        default: {
+            ASSERT_VA(false, "%s", "Unknown bit depth.");
+            break;
+        }  
+    }
 }
 
 void ProcessorPcmBufWASAPI::ProcessFragment16(const Brx& aData,

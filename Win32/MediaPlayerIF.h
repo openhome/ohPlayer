@@ -17,7 +17,19 @@ typedef struct
 
 typedef struct
 {
-    static const TIpAddress NO_SUBNET = 0xFFFFFFFF;
+    static constexpr TIpAddress NO_SUBNET =
+    {
+        kFamilyV4,  // iFamily
+        0xFFFFFF,   // iV4
+        { 255 }     // iV6
+    };
+
+    static constexpr TIpAddress NO_SUBNET_V6 =
+    {
+        kFamilyV6,  // iFamily
+        0xFFFFF,    // iV4
+        { 255 },    // iV6
+    };
 
     HWND       hwnd;                     // Main window handle
     TIpAddress subnet;                   // Requested subnet

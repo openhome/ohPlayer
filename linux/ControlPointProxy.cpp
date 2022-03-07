@@ -686,7 +686,6 @@ void ControlPointProxy::CPUpnpAv::NotifyMode(const Brx& /*aMode*/,
 }
 
 void ControlPointProxy::CPUpnpAv::NotifyTrack(Media::Track& /*aTrack*/,
-                                              const Brx&    /*aMode*/,
                                               TBool         /*aStartOfStream*/)
 {
 }
@@ -695,8 +694,7 @@ void ControlPointProxy::CPUpnpAv::NotifyMetaText(const Brx& /*aText*/)
 {
 }
 
-void ControlPointProxy::CPUpnpAv::NotifyTime(TUint /*aSeconds*/,
-                                             TUint /*aTrackDurationSeconds*/)
+void ControlPointProxy::CPUpnpAv::NotifyTime(TUint /*aSeconds*/)
 {
 }
 

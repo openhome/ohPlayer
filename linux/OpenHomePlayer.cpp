@@ -210,7 +210,11 @@ static void updateSelectionHandler()
 
 static void NetworkSelectionHandler(GtkMenuItem * /*menuitem*/, gpointer args)
 {
-    TIpAddress subnet = GPOINTER_TO_UINT(args);
+    TIpAddress subnet = {
+        kFamilyV4,                // iFamily
+        GPOINTER_TO_UINT(args),   // iV4
+        { 255 }                   // iV6
+    };
 
     // Restart the media player on the selected subnet.
     ExitMediaPlayer();
@@ -279,6 +283,11 @@ static void CreateNetworkAdapterSubmenu(GtkWidget *networkMenuItem)
     // Put each subnet in our submenu.
     for (it=subnetList->begin(); it < subnetList->end(); it++)
     {
+        // Explicitly disable iPv6 (for now)
+        if ((*it)->subnet.iFamily != kFamilyV6) {
+            continue;
+        }
+
         GtkWidget *subnet;
 
         subnet = gtk_menu_item_new_with_label((*it)->menuString->c_str());
@@ -289,7 +298,7 @@ static void CreateNetworkAdapterSubmenu(GtkWidget *networkMenuItem)
         g_signal_connect(G_OBJECT(subnet),
                          "activate",
                          G_CALLBACK(NetworkSelectionHandler),
-                         GUINT_TO_POINTER((*it)->subnet));
+                         GUINT_TO_POINTER((*it)->subnet.iV4));
 
         // If this is the subnet we are currently using disable it's
         // selection.
@@ -470,17 +479,27 @@ int main(int argc, char **argv)
                 exit(1);
             }
 
+            OpenHome::TUint subnetIPv4 = 0;
+
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-            g_mPlayerArgs.subnet = (TIpAddress)((byte1 & 0xFF) |
-                                                ((byte2 & 0xFF) << 8)|
-                                                ((byte3 & 0xFF) << 16)|
-                                                ((byte4 & 0xFF) << 24));
+            subnetIPv4 = ((byte1 & 0xFF) |
+                         ((byte2 & 0xFF) << 8)|
+                         ((byte3 & 0xFF) << 16)|
+                         ((byte4 & 0xFF) << 24));
 #else // __ORDER_LITTLE_ENDIAN__
-            g_mPlayerArgs.subnet = (TIpAddress)((byte4 & 0xFF) |
-                                                ((byte3 & 0xFF) << 8)|
-                                                ((byte2 & 0xFF) << 16)|
-                                                ((byte1 & 0xFF) << 24));
+            subnetIPv4 = ((byte4 & 0xFF) |
+                         ((byte3 & 0xFF) << 8)|
+                         ((byte2 & 0xFF) << 16)|
+                         ((byte1 & 0xFF) << 24));
 #endif //__ORDER_LITTLE_ENDIAN__
+
+
+            g_mPlayerArgs.subnet = { 
+                kFamilyV4,     // iFamily
+                subnetIPv4,    // iV4
+                { 255 }        // iV6
+            };
+
         }
         else
         {
