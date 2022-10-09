@@ -132,7 +132,7 @@ private:
     AVFormatContext        *iAvFormatCtx;
     AVCodecContext         *iAvCodecContext;
     TBool                   iAvPacketCached;
-    AVPacket                iAvPacket;
+    AVPacket                *iAvPacket;
     AVFrame                *iAvFrame;
     SwrContext       *iSwrResampleCtx;
     TInt             iStreamId;
@@ -208,7 +208,12 @@ CodecLibAV::CodecLibAV(IMimeTypeList& aMimeTypeList)
     av_register_all();
     #endif
     // Initialise our encoded packet container.
-    av_init_packet(&iAvPacket);
+    iAvPacket = av_packet_alloc();
+    if (iAvPacket == NULL)
+    {
+        DBUG_F("audio_decoder_decode_frame: av_packet_alloc failed");
+        return; 
+    }
 }
 
 CodecLibAV::~CodecLibAV()
@@ -777,13 +782,8 @@ void CodecLibAV::StreamInitialise()
                                      iTrackLengthJiffies,
                                      0,
                                      false,
-<<<<<<< HEAD
-				                     DeriveProfile(iAvCodecContext->channels));
-=======
                                      *iSpeakerProfile);
 
-
->>>>>>> 0f88520d108c8e78e77f6fd9deef52514eca228e
 
     // Create a frame to hold the decoded packets.
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55, 45, 101)
@@ -822,7 +822,7 @@ void CodecLibAV::StreamCompleted()
     if (iAvPacketCached)
     {
         iAvPacketCached = false;
-        av_packet_unref(&iAvPacket);
+        av_packet_free(&iAvPacket);
     }
 
     if (iAvFrame != NULL)
@@ -915,7 +915,7 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
     // We attempt to force the issue by executing a read.
     if (! iSeekExecuted)
     {
-        if (av_read_frame(iAvFormatCtx,&iAvPacket) >= 0)
+        if (av_read_frame(iAvFormatCtx,iAvPacket) >= 0)
         {
             iAvPacketCached = true;
         }
@@ -960,12 +960,7 @@ TBool CodecLibAV::TrySeek(TUint aStreamId, TUint64 aSample)
                                      iTrackLengthJiffies,
                                      aSample,
                                      false,
-<<<<<<< HEAD
-				                     DeriveProfile(iAvCodecContext->channels)
-				     );
-=======
                                      *iSpeakerProfile);
->>>>>>> 0f88520d108c8e78e77f6fd9deef52514eca228e
 
     // Ditch any PCM we have buffered.
     iOutput.SetBytes(0);
@@ -1107,7 +1102,7 @@ void CodecLibAV::Process()
 
     if (! iAvPacketCached)
     {
-        if (av_read_frame(iAvFormatCtx,&iAvPacket) < 0)
+        if (av_read_frame(iAvFormatCtx,iAvPacket) < 0)
         {
 #ifdef DEBUG
             DBUG_F("Info: [CodecLibAV] Process - Frame read error or EOF\n");
@@ -1116,22 +1111,22 @@ void CodecLibAV::Process()
             THROW(CodecStreamEnded);
         }
     }
-    if (iAvPacket.stream_index != iStreamId)
+    if (iAvPacket->stream_index != iStreamId)
     {
-        DBUG_F("[CodecLibAV] Process - ERROR: Skip Packet with Stream %d\n",iAvPacket.stream_index);
+        DBUG_F("[CodecLibAV] Process - ERROR: Skip Packet with Stream %d\n",iAvPacket->stream_index);
 	    return;
     }
 
     iAvPacketCached = false;
 
-    ret = avcodec_send_packet(iAvCodecContext, &iAvPacket);
+    ret = avcodec_send_packet(iAvCodecContext, iAvPacket);
     if(ret < 0)
     {
 #ifdef DEBUG
         DBUG_F("Info: [CodecLibAV] Process - Error Decoding Frame\n");
 #endif // DEBUG
 
-        av_packet_unref(&iAvPacket);
+        av_packet_free(&iAvPacket);
 
         return;
     }
@@ -1140,7 +1135,7 @@ void CodecLibAV::Process()
         ret = avcodec_receive_frame(iAvCodecContext, iAvFrame);
         if (ret < 0 || ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) 
         {
-            av_packet_unref(&iAvPacket);
+            av_packet_free(&iAvPacket);
             return;
         }
 
@@ -1155,7 +1150,7 @@ void CodecLibAV::Process()
         {
             DBUG_F("ERROR:  Cannot obtain frame plane size\n");
 
-            av_packet_unref(&iAvPacket);
+            av_packet_free(&iAvPacket);
             THROW(CodecStreamCorrupt);
         }
 
@@ -1241,7 +1236,7 @@ void CodecLibAV::Process()
         }
     }
 
-    av_packet_unref(&iAvPacket);
+    av_packet_free(&iAvPacket);
 
     if (iStreamStart || iStreamEnded)
     {
