@@ -38,31 +38,19 @@ namespace Av {
     class RamStore;
     class ControlPointProxy;
 
-// Helpers
-static TBool CompareIPv4Addrs(const TIpAddress addr1,
-                              const TIpAddress addr2)
-{
-    return addr1.iFamily == kFamilyV4
-        && addr2.iFamily == kFamilyV4
-        && addr1.iV4 == addr2.iV4;
-}
-
-static TBool CompareIPv6Addrs(const TIpAddress addr1,
-                              const TIpAddress addr2)
-{
-    return addr1.iFamily == kFamilyV6
-        && addr2.iFamily == kFamilyV6
-        && memcmp((TByte*)addr1.iV6[0], (TByte*)addr2.iV6[0], 16) == 0;
-}
-
-    
-
 class ExampleMediaPlayer : private Net::IResourceManager
 {
     static const Brn   kIconOpenHomeFileName;
+    static const TUint kMinWebUiResourceThreads = 30; //Resource handler count
     static const TUint kMaxUiTabs       = 4;
     static const TUint kUiSendQueueSize = kMaxUiTabs * 200;
+    static const TUint kUiMsgBufCount   = kUiSendQueueSize + ((kUiSendQueueSize + 1) / 2);
+    static const TUint kUiMsgBufBytes   = 16;
+    static const TUint kMaxPinsDevice   = 6;
     static const TUint kShellPort       = 2323;
+    static const Brn   kResourceDir;
+    static const Brn   kPlayerName;
+
 public:
     ExampleMediaPlayer(Net::DvStack& aDvStack, Net::CpStack& aCpStack,
 					   const Brx& aUdn,
@@ -113,9 +101,11 @@ protected:
     Semaphore                         iSemShutdown;
     Web::WebAppFramework             *iAppFramework;
     RebootLogger                      iRebootHandler;
+
 private:
     Semaphore                  iDisabled;
     Av::VolumeControl          iVolume;
+    Media::AudioTimeCpu       *iAudioTime;
     ControlPointProxy         *iCpProxy;
     IOhmTimestamper           *iTxTimestamper;
     IOhmTimestamper           *iRxTimestamper;

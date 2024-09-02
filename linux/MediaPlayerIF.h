@@ -13,7 +13,7 @@ typedef struct
     OpenHome::TBool  isCurrent;   // Is this the current active subnet
 } SubnetRecord;
 
-typedef struct InitArgsStruct
+typedef struct InitArgs
 {
     static constexpr TIpAddress NO_SUBNET =
     {

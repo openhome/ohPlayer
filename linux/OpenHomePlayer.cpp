@@ -463,7 +463,7 @@ int main(int argc, char **argv)
     }
 
     g_mPlayerArgs.restarted = false;
-    g_mPlayerArgs.subnet    = InitArgs::NO_SUBNET;
+    g_mPlayerArgs.subnet    = TIpAddress();
 
     // Validate the format of any supplied subnet.
     if (argc == 2)

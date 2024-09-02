@@ -50,11 +50,11 @@ class PcmProcessorBase : public IPcmProcessor
 protected:
     PcmProcessorBase(IDataSink& aDataSink, Bwx& aBuffer);
 public: // IPcmProcessor
-    virtual void BeginBlock();
+    virtual void BeginBlock() override;
     void ProcessFragment(const Brx& aData, TUint aNumChannels, TUint aSubsampleBytes) override;
     void ProcessSilence(const Brx& aData, TUint aNumChannels, TUint aSubsampleBytes) override;
-    virtual void EndBlock();
-    virtual void Flush();
+    virtual void EndBlock() override;
+    virtual void Flush() override;
 public:
     void SetDuplicateChannel(TBool duplicateChannel);
     void SetBitDepth(TUint bitDepth);
@@ -993,14 +993,30 @@ TUint DriverAlsa::PipelineAnimatorDelayJiffies(AudioFormat aFormat,
     return iPimpl->DriverDelayJiffies(aSampleRate);
 }
 
-TUint DriverAlsa::PipelineAnimatorDsdBlockSizeWords() const
-{
-	return 0;
-}
-
 TUint DriverAlsa::PipelineAnimatorMaxBitDepth() const
 {
     return 0;
+}
+
+void DriverAlsa::PipelineAnimatorDsdBlockConfiguration(TUint& aSampleBlockWords, 
+                                                       TUint& aPadBytesPerChunk) const
+{
+    aSampleBlockWords=0;
+    aPadBytesPerChunk=0;
+}
+
+
+
+void DriverAlsa::PipelineAnimatorGetMaxSampleRates(TUint& aPcm, TUint& aDsd) const
+{
+    aPcm=0;
+    aDsd=0;
+}
+
+void DriverAlsa::PipelineAnimatorGetMaxSampleRates(TUint& aPcm, TUint& aDsd) const
+{
+    aPcm = 192000;
+    aDsd = 5644800;
 }
 
 Msg* DriverAlsa::ProcessMsg(MsgHalt* aMsg)
@@ -1044,3 +1060,6 @@ Msg* DriverAlsa::ProcessMsg(MsgDrain* aMsg)
 
     return aMsg;
 }
+
+
+

@@ -105,7 +105,7 @@ VolumeControl::VolumeControl()
         iElem = snd_mixer_find_selem(iHandle, iSid);
 
         // Quit the loop if control found.
-        if (iElem > NULL)
+        if (IsVolumeSupported())
         {
             break;
         }
@@ -177,9 +177,19 @@ void VolumeControl::SetVolume(TUint aVolume)
     return;
 }
 
-void VolumeControl::SetBalance(TInt /*aBalance*/)
+void VolumeControl::SetBalance(TInt aBalance)
 {
-    // Not Implemented
+    long left, right;
+        // Sanity Check
+    if (! IsVolumeSupported())
+    {
+        return;
+    }
+    snd_mixer_selem_get_playback_dB(iElem, SND_MIXER_SCHN_FRONT_LEFT,&left);
+    snd_mixer_selem_get_playback_dB(iElem, SND_MIXER_SCHN_FRONT_RIGHT, &right);
+ 
+    snd_mixer_selem_set_playback_dB(iElem, SND_MIXER_SCHN_FRONT_LEFT, 0.25*left, 0);
+    snd_mixer_selem_set_playback_dB(iElem, SND_MIXER_SCHN_FRONT_RIGHT, 0.75*right, 0);
 }
 
 void VolumeControl::SetFade(TInt /*aFade*/)

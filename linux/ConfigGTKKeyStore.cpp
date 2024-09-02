@@ -1,7 +1,6 @@
 #include <OpenHome/Private/Converter.h>
 #include <OpenHome/Private/Printer.h>
 
-#include <string>
 #include <vector>
 
 #include <sys/stat.h>

@@ -21,4 +21,5 @@ void RamStore::LoadStaticData(IStoreLoaderStatic& aLoader)
     aLoader.AddStaticItem(StaticDataKey::kBufModelInfo, "Example implementation of ohMediaPlayer");
     aLoader.AddStaticItem(StaticDataKey::kBufModelUrl, "http://www.openhome.org/wiki/OhMedia");
     aLoader.AddStaticItem(StaticDataKey::kBufModelImageUrl, iImageFileName.CString());
+    aLoader.AddStaticItem(StaticDataKey::kBufModelImageHiresUrl, iImageFileName.CString());
 }

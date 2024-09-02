@@ -18,6 +18,7 @@
 #include <OpenHome/Web/ConfigUi/ConfigUi.h>
 #include <OpenHome/Private/Shell.h>
 #include <OpenHome/Private/ShellCommandDebug.h>
+#include <OpenHome/OAuth.h>
 
 #include "ConfigGTKKeyStore.h"
 #include "ControlPointProxy.h"
@@ -40,6 +41,9 @@ using namespace OpenHome::Web;
 const Brn kPrefix("OpenHome");
 
 const Brn ExampleMediaPlayer::kIconOpenHomeFileName("OpenHomeIcon");
+const Brn ExampleMediaPlayer::kResourceDir(Brn("/usr/share/"
+                                              "openhome-player/res/"));
+const Brn ExampleMediaPlayer::kPlayerName("Softplayer");
 
 ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
 									   Net::CpStack& aCpStack,
@@ -116,10 +120,12 @@ ExampleMediaPlayer::ExampleMediaPlayer(Net::DvStack& aDvStack,
     iInitParams->SetGorgerDuration(iInitParams->DecodedReservoirJiffies());
 
     // create MediaPlayer
-    auto mpInit = MediaPlayerInitParams::New(Brn(aRoom), Brn(aProductName), kPrefix);
-    iMediaPlayer = new MediaPlayer( aDvStack, aCpStack, *iDevice, *iRamStore,
+    iAudioTime = new AudioTimeCpu(aDvStack.Env());
+	auto mpInit = MediaPlayerInitParams::New(Brn(aRoom), Brn(aProductName), kPrefix);
+    
+	iMediaPlayer = new MediaPlayer( aDvStack, aCpStack, *iDevice, *iRamStore,
                                    *iConfigStore, iInitParams,
-                                    volumeInit, volumeProfile, *iInfoLogger,
+                                   *iAudioTime, volumeInit, volumeProfile, *iInfoLogger,
                                     aUdn, mpInit);
 
 #ifdef DEBUG
@@ -167,6 +173,7 @@ ExampleMediaPlayer::~ExampleMediaPlayer()
     delete iDevice;
     delete iDeviceUpnpAv;
     delete iRamStore;
+	delete iAudioTime;
 }
 
 Environment& ExampleMediaPlayer::Env()
@@ -325,24 +332,31 @@ void ExampleMediaPlayer::RegisterPlugins(Environment& aEnv)
 
 #ifdef ENABLE_TIDAL
     // You must define your Tidal token
+    std::vector<OpenHome::OAuthAppDetails> aAppDetails;
+    aAppDetails.emplace_back(TildaAuthAppId, TildaAuthClientId, TildaAuthClientSecret);
+
     iMediaPlayer->Add(ProtocolFactory::NewTidal(
                                             aEnv,
-                                            Brn(TIDAL_TOKEN),
+											ssl,
+                                            TildaAuthClientId,
+                                            TildaAuthClientSecret,
+                                            aAppDetails,
                                             *iMediaPlayer));
 #endif  // ENABLE_TIDAL
 
 #ifdef ENABLE_QOBUZ
     // You must define your QOBUZ appId and secret key
     iMediaPlayer->Add(ProtocolFactory::NewQobuz(
-                                            Brn(QOBUZ_APPID),
-                                            Brn(QOBUZ_SECRET),
-                                            *iMediaPlayer));
+                                            QoubusAuthClientId,
+                                            QoubusAuthClientSecret,
+                                            *iMediaPlayer,
+											iUserAgent));
 #endif  // ENABLE_QOBUZ
 
 #ifdef ENABLE_RADIO
     // Radio is disabled by default as many stations depend on AAC
     iMediaPlayer->Add(SourceFactory::NewRadio(*iMediaPlayer,
-                                               Brn(TUNEIN_PARTNER_ID)));
+                                              TuneinAuthPartnerId));
 #endif  // ENABLE_RADIO
 }
 
@@ -380,12 +394,13 @@ void ExampleMediaPlayer::AddConfigApp()
                                           iMediaPlayer->ConfigManager(),
                                           iFileResourceHandlerFactory,
                                           sourcesBufs,
-                                          Brn("Softplayer"),
-                                          Brn("/usr/share/"
-                                              "openhome-player/res/"),
-                                          30,
+                                          kPlayerName,
+                                          kResourceDir,
+                                          kMinWebUiResourceThreads,
                                           kMaxUiTabs,
                                           kUiSendQueueSize,
+                                          kUiMsgBufCount, 
+                                          kUiMsgBufBytes,
                                           iRebootHandler);
 
     iAppFramework->Add(iConfigApp,              // iAppFramework takes ownership
@@ -425,7 +440,7 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TIpAddress preferr
 {
     TUint                 index         = 0;
     InitialisationParams *initParams    = InitialisationParams::Create();
-    TIpAddress            lastSubnet    = InitArgs::NO_SUBNET;
+    TIpAddress            lastSubnet    = TIpAddress();
     const TChar          *lastSubnetStr = "Subnet.LastUsed";
 
     //initParams->SetDvEnableBonjour();
@@ -445,9 +460,11 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TIpAddress preferr
     // Check the configuration store for the last subnet joined.
     try
     {
-        Bwn lastSubnetBuf = Bwn((TByte *)&lastSubnet, sizeof(lastSubnet));
-
-        configStore->Read(Brn(lastSubnetStr), lastSubnetBuf);
+        if(!TIpAddressUtils::IsZero(lastSubnet))
+        {
+            Bwn lastSubnetBuf = Bwn((TByte *)&lastSubnet, sizeof(lastSubnet));
+            configStore->Read(Brn(lastSubnetStr), lastSubnetBuf);
+        }
     }
     catch (StoreKeyNotFound&)
     {
@@ -464,9 +481,10 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TIpAddress preferr
     {
         TIpAddress subnet = (*subnetList)[i]->Subnet();
 
-        // If the requested subnet is available, choose it.
-        const TBool isPreferredSubnet = preferredSubnet.iFamily == kFamilyV4 ? CompareIPv4Addrs(preferredSubnet, subnet)
-                                                                             : CompareIPv6Addrs(preferredSubnet, subnet);
+        // If the requested subnet is available, choose it
+      
+        const TBool isPreferredSubnet = TIpAddressUtils::Equals(preferredSubnet, subnet);
+
         if (isPreferredSubnet)
         {
             index = i;
@@ -475,8 +493,7 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TIpAddress preferr
 
         // If the last used subnet is available, note it.
         // We'll fall back to it if the requested subnet is not available.
-        const TBool isLastSubnet = lastSubnet.iFamily == kFamilyV4 ? CompareIPv4Addrs(lastSubnet, subnet)
-                                                                   : CompareIPv6Addrs(lastSubnet, subnet);
+       const TBool isLastSubnet =  TIpAddressUtils::Equals(lastSubnet, subnet);
 
         if (isLastSubnet)
         {
@@ -494,25 +511,9 @@ OpenHome::Net::Library* ExampleMediaPlayerInit::CreateLibrary(TIpAddress preferr
     configStore->Write(Brn(lastSubnetStr),
                        Brn((TByte *)&subnet, sizeof(subnet)));
 
-    if (subnet.iFamily == kFamilyV4)
-    {
-        Log::Print("Using Subnet %d.%d.%d.%d\n", subnet.iV4 & 0xff, 
-                                                 (subnet.iV4 >> 8) & 0xff,
-                                                 (subnet.iV4 >> 16) & 0xff,
-                                                 (subnet.iV4 >> 24) & 0xff);
-    }
-    else
-    {
-        Log::Print("Using Subnet: %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x\n",
-                   subnet.iV6[0], subnet.iV6[1],
-                   subnet.iV6[2], subnet.iV6[3],
-                   subnet.iV6[4], subnet.iV6[5],
-                   subnet.iV6[6], subnet.iV6[7],
-                   subnet.iV6[8], subnet.iV6[9],
-                   subnet.iV6[10], subnet.iV6[11],
-                   subnet.iV6[12], subnet.iV6[13],
-                   subnet.iV6[14], subnet.iV6[15]);
-    }
+    Bws<TIpAddressUtils::kMaxAddressBytes> addressBuf;
+    TIpAddressUtils::ToString(subnet, addressBuf);
+    Log::Print("using subnet %.*s\n", PBUF(addressBuf));
 
     return lib;
 }

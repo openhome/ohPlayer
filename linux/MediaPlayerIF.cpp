@@ -28,6 +28,11 @@ using namespace OpenHome::Configuration;
 using namespace OpenHome::Media;
 using namespace OpenHome::Net;
 
+constexpr TIpAddress InitArgs::NO_SUBNET;
+constexpr TIpAddress InitArgs::NO_SUBNET_V6;
+
+
+
 static const TInt  TenSeconds    = 10;
 static const TInt  FourHours     = 4 * 60 * 60;
 
