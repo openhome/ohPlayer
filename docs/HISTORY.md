@@ -1,6 +1,6 @@
 # History
 
-* **2026-11-03** — Radio Browser media server (radio-browser.info integration).
+* **2026-10-27** — Radio Browser media server (radio-browser.info integration).
   * New DLNA Media Server device exposing the [radio-browser.info](https://www.radio-browser.info) community radio directory (45,000+ stations) to any UPnP control point. Browsable as `Radio Browser <room>` alongside MinimServer etc.
   * Navigation: Most popular, By country (short configurable list), By genre, By name (A-Z, a search-by-navigation workaround for control points that do not send ContentDirectory Search requests), each station list split into Hi-Res (>=192 kbps) / Mid-Res (96-191) / Low-Res (<96) sub-containers, alphabetically sorted.
   * Stations play on the renderer through its usual protocols (icecast/AAC, HLS m3u8). Station artwork (favicon) is passed through.
